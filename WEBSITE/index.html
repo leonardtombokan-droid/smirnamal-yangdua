@@ -1184,7 +1184,7 @@ tr:hover td { background:rgba(26,58,92,0.03); }
           <hr class="pub-footer-divider">
           <div class="pub-footer-alamat">
             <span>📍 Kelurahan Malalayang Dua, Lingk. 8 Manado</span>
-            <span>✉️ gmimsmirnamalabar@gmail.com</span>
+            <span>✉️ <span id="footerEmail"></span></span>
             <span>🌐 smirnamalalayangdua.org</span>
           </div>
         </div>
@@ -1631,7 +1631,7 @@ tr:hover td { background:rgba(26,58,92,0.03); }
       </div>
       <div class="form-group-modal">
         <label>📧 Email Tujuan Notifikasi</label>
-        <input type="email" id="emailNotifTarget" placeholder="admin@gereja.org" style="width:100%">
+        <input type="email" id="emailNotifTarget" placeholder="Masukkan alamat email tujuan" style="width:100%">
         <small style="color:var(--text-muted);font-size:11px">Email ini akan menerima notifikasi setiap ada perubahan data</small>
       </div>
       <div style="border-top:1px solid var(--border);padding-top:14px">
@@ -1906,7 +1906,8 @@ tr:hover td { background:rgba(26,58,92,0.03); }
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+<script data-cfasync="false">
+// GMIM Smirna - Sistem Informasi Digital
 const SUPABASE_URL = 'https://vgjhlvzjwnhsgpozznrp.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZnamhsdnpqd25oc2dwb3p6bnJwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE2MjM0NDIsImV4cCI6MjA4NzE5OTQ0Mn0.o4kikie_9ifzIEDKEoaA1jf5XHJkU8YUF6KkFpRWIfg';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {auth:{storageKey:'sb_pub'}});
@@ -4200,6 +4201,9 @@ window.addEventListener('DOMContentLoaded', () => {
   loadSosmed();
   initEmailJS();
 });
+
+// Set email di footer via JS (agar tidak diblokir Cloudflare)
+(function(){const e=document.getElementById('footerEmail');if(e){const u='gmimsmirnamalabar';const d='gmail.com';e.textContent=u+'@'+d;e.style.cursor='pointer';e.title='Klik untuk kirim email';e.onclick=()=>window.location='mailto:'+u+'@'+d;}})();
 
 // ===== PWA =====
 let deferredPrompt=null;
