@@ -2306,3 +2306,5 @@ if ('serviceWorker' in navigator) {
   window.addEventListener('load',()=>{navigator.serviceWorker.register('./sw.js').then(()=>console.log('✅ PWA aktif')).catch(()=>console.log('ℹ️ SW tidak tersedia'));});
 }
 
+
+}
