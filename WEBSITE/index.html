@@ -1653,6 +1653,57 @@ tr:hover td { background:rgba(26,58,92,0.03); }
       <div class="table-controls"><button class="btn btn-primary" onclick="openAkunModal()">+ Tambah Akun</button></div>
       <div class="table-wrapper"><table><thead><tr><th>Kolom</th><th>Username</th><th>Password</th><th>Penatua</th><th>Diaken</th><th>Aksi</th></tr></thead><tbody id="akunBody"><tr><td colspan="6" class="loading"><div class="spinner"></div></td></tr></tbody></table></div>
     </div>
+
+    <!-- PAGE: FOTO SLIDESHOW -->
+    <div class="page" id="page-slideshow">
+      <div class="page-header"><h1>🖼️ Foto Slideshow</h1><p>Kelola foto yang tampil di halaman publik (maks. 6 foto)</p></div>
+      <div style="background:var(--bg-card);border:1.5px solid var(--border);border-radius:12px;padding:24px;margin-bottom:24px">
+        <h3 style="margin-bottom:16px;font-size:15px;color:var(--primary)">Upload Foto Baru</h3>
+        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+          <label style="display:inline-flex;align-items:center;gap:8px;background:var(--primary);color:white;padding:10px 20px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600">
+            <span>📁 Pilih Foto</span>
+            <input type="file" accept="image/*" multiple style="display:none" onchange="uploadSlideshow(this)">
+          </label>
+          <span style="font-size:13px;color:var(--text-muted)">Format: JPG/PNG/WEBP · Maks 5MB per foto · Bisa pilih beberapa sekaligus</span>
+        </div>
+      </div>
+      <div style="background:var(--bg-card);border:1.5px solid var(--border);border-radius:12px;padding:24px">
+        <h3 style="margin-bottom:16px;font-size:15px;color:var(--primary)">Foto Saat Ini</h3>
+        <div id="slideshowGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px">
+          <div style="color:var(--text-muted);padding:32px;text-align:center;grid-column:1/-1">Memuat...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE: VIDEO YOUTUBE ADMIN -->
+    <div class="page" id="page-video-admin">
+      <div class="page-header"><h1>▶️ Video YouTube</h1><p>Kelola video yang tampil di halaman publik (maks. 4 video)</p></div>
+      <div style="background:var(--bg-card);border:1.5px solid var(--border);border-radius:12px;padding:24px;margin-bottom:24px">
+        <h3 style="margin-bottom:16px;font-size:15px;color:var(--primary)">Tambah Video Baru</h3>
+        <div style="display:grid;gap:14px;max-width:560px">
+          <div>
+            <label style="font-size:13px;font-weight:600;color:var(--text);display:block;margin-bottom:6px">Link YouTube <span style="color:var(--danger)">*</span></label>
+            <input type="url" id="videoUrl" placeholder="https://www.youtube.com/watch?v=..." style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit">
+          </div>
+          <div>
+            <label style="font-size:13px;font-weight:600;color:var(--text);display:block;margin-bottom:6px">Judul Video <span style="color:var(--danger)">*</span></label>
+            <input type="text" id="videoJudul" placeholder="Contoh: Ibadah Minggu 15 Juni 2025" style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit">
+          </div>
+          <div>
+            <label style="font-size:13px;font-weight:600;color:var(--text);display:block;margin-bottom:6px">Deskripsi (opsional)</label>
+            <input type="text" id="videoDesc" placeholder="Deskripsi singkat..." style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit">
+          </div>
+          <button onclick="simpanVideo()" style="background:var(--primary);color:white;border:none;border-radius:8px;padding:11px 28px;font-size:14px;font-weight:600;cursor:pointer;align-self:start">✅ Simpan Video</button>
+        </div>
+      </div>
+      <div style="background:var(--bg-card);border:1.5px solid var(--border);border-radius:12px;padding:24px">
+        <h3 style="margin-bottom:16px;font-size:15px;color:var(--primary)">Video Saat Ini</h3>
+        <div id="videoAdminList">
+          <div style="color:var(--text-muted);padding:24px;text-align:center">Memuat...</div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -1974,6 +2025,6 @@ tr:hover td { background:rgba(26,58,92,0.03); }
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
-<script src="app.js"></script>
+<script src="app"></script>
 </body>
 </html>
