@@ -721,6 +721,20 @@ tr:hover td { background:rgba(26,58,92,0.03); }
 }
 .warta-box:hover .warta-zoom-hint { opacity: 1; }
 
+/* WARTA PDF BUTTON */
+.warta-pdf-btn {
+  position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
+  background: rgba(26,58,92,0.92); color: #fff;
+  padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600;
+  text-decoration: none; white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  transition: background 0.2s, opacity 0.2s;
+  opacity: 0; pointer-events: none;
+  z-index: 3;
+}
+.warta-box:hover .warta-pdf-btn { opacity: 1; pointer-events: auto; }
+.warta-box .warta-pdf-btn:hover { background: var(--accent, #c8a96e); color: #1a3a5c; }
+
 /* WARTA LIGHTBOX */
 .warta-lightbox {
   display: none;
@@ -3104,6 +3118,7 @@ async function loadPubWartaBeranda() {
           <img src="${w.foto_url}" alt="Warta Jemaat ${i}">
           <div class="warta-badge">📋 ${i}</div>
           <div class="warta-zoom-hint">🔍 Klik untuk perbesar</div>
+          ${w.pdf_url ? `<a class="warta-pdf-btn" href="${w.pdf_url}" target="_blank" download onclick="event.stopPropagation()">📥 Download PDF</a>` : ''}
         </div>`;
       } else {
         html += `<div class="warta-box" style="cursor:default">
@@ -3352,6 +3367,7 @@ async function loadPubWarta() {
           <img src="${w.foto_url}" alt="Warta Jemaat ${i}" onerror="this.parentElement.innerHTML='<div class=\\'warta-empty\\'><div class=\\'warta-icon\\'>📋</div><span>Warta ${i}</span></div>'">
           <div class="warta-badge">📋 ${i}</div>
           <div class="warta-zoom-hint">🔍 Klik untuk perbesar</div>
+          ${w.pdf_url ? `<a class="warta-pdf-btn" href="${w.pdf_url}" target="_blank" download onclick="event.stopPropagation()">📥 Download PDF</a>` : ''}
         </div>`;
       } else {
         html += `<div class="warta-box" style="cursor:default">
@@ -3450,11 +3466,19 @@ async function loadWartaAdmin() {
         <div class="wac-info">
           <span class="wac-slot">Warta ${i}</span>
           <span class="wac-tgl">${w ? tgl : 'Kosong'}</span>
+          <span style="font-size:11px;color:${w && w.pdf_url ? 'var(--success)' : 'var(--text-muted)'}">
+            ${w && w.pdf_url ? '📄 PDF tersedia' : '📄 Belum ada PDF'}
+          </span>
           ${isSuperAdmin() ? `
             <label style="margin-left:auto">
               <input type="file" accept="image/*" style="display:none" onchange="uploadWarta(${i}, this)">
-              <span class="btn btn-outline btn-sm" style="cursor:pointer">📤 Upload</span>
+              <span class="btn btn-outline btn-sm" style="cursor:pointer">🖼️ Upload Gambar</span>
             </label>
+            <label>
+              <input type="file" accept="application/pdf" style="display:none" onchange="uploadWartaPdf(${i}, this)">
+              <span class="btn btn-outline btn-sm" style="cursor:pointer">📄 Upload PDF</span>
+            </label>
+            ${w && w.pdf_url ? `<button class="btn btn-danger btn-sm" onclick="hapusWartaPdf(${i})">🗑️ PDF</button>` : ''}
             ${w ? `<button class="btn btn-danger btn-sm" onclick="hapusWarta(${i})">🗑️</button>` : ''}
           ` : ''}
         </div>
@@ -3488,6 +3512,37 @@ async function hapusWarta(slot) {
   const { error } = await sbAdmin.from('warta_jemaat').delete().eq('slot', slot);
   if (error) { showToast('Gagal hapus: ' + error.message, 'error'); return; }
   showToast(`Warta ${slot} dihapus`, 'success');
+  loadWartaAdmin();
+}
+
+async function uploadWartaPdf(slot, input) {
+  if (!input.files || !input.files[0]) return;
+  const file = input.files[0];
+  if (file.size > 20 * 1024 * 1024) { showToast('Ukuran PDF maksimal 20MB', 'error'); return; }
+  showToast('Mengupload PDF...', 'info');
+  const fileName = `warta/pdf_slot${slot}_${Date.now()}.pdf`;
+  const { data: upData, error: upErr } = await sbAdmin.storage.from('foto').upload(fileName, file, { upsert: true, contentType: 'application/pdf' });
+  if (upErr) { showToast('Upload PDF gagal: ' + upErr.message, 'error'); return; }
+  const { data: urlData } = sbAdmin.storage.from('foto').getPublicUrl(fileName);
+  const pdfUrl = urlData.publicUrl;
+  // Cek apakah slot sudah ada
+  const { data: existing } = await sbAdmin.from('warta_jemaat').select('slot').eq('slot', slot).single();
+  let dbErr;
+  if (existing) {
+    ({ error: dbErr } = await sbAdmin.from('warta_jemaat').update({ pdf_url: pdfUrl, updated_at: new Date().toISOString() }).eq('slot', slot));
+  } else {
+    ({ error: dbErr } = await sbAdmin.from('warta_jemaat').insert({ slot: slot, pdf_url: pdfUrl, updated_at: new Date().toISOString() }));
+  }
+  if (dbErr) { showToast('Gagal simpan PDF: ' + dbErr.message, 'error'); return; }
+  showToast(`PDF Warta ${slot} berhasil diupload ✅`, 'success');
+  loadWartaAdmin();
+}
+
+async function hapusWartaPdf(slot) {
+  if (!confirm(`Hapus PDF Warta ${slot}?`)) return;
+  const { error } = await sbAdmin.from('warta_jemaat').update({ pdf_url: null }).eq('slot', slot);
+  if (error) { showToast('Gagal hapus PDF: ' + error.message, 'error'); return; }
+  showToast(`PDF Warta ${slot} dihapus`, 'success');
   loadWartaAdmin();
 }
 
