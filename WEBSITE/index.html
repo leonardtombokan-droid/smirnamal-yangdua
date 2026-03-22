@@ -3774,51 +3774,6 @@ async function loadSidebarKehadiran() {
     elKh.innerHTML = '<div style="color:var(--text-muted);font-size:13px">Belum ada data</div>';
   }
 }
-    if (error || !data || !data.length) {
-      elKh.innerHTML = '<div style="color:var(--text-muted);font-size:13px">Belum ada data</div>';
-      return;
-    }
-    const sesiIcon = {subuh:'🌅', pagi:'☀️', malam:'🌙'};
-    elKh.innerHTML = data.map(d => `
-      <div style="padding:6px 0;border-bottom:1px dashed var(--border)">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
-          <span style="font-size:13px;font-weight:600;color:var(--primary)">${sesiIcon[d.sesi]||''} ${d.sesi}</span>
-          <span style="font-size:11px;color:var(--text-muted)">${formatTanggal(d.tanggal)}</span>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;font-size:11px">
-          <div style="background:#dbeafe;border-radius:4px;padding:3px 6px;text-align:center">
-            <div style="color:#1e40af;font-weight:700">${d.laki_laki||0}</div>
-            <div style="color:#60a5fa">L</div>
-          </div>
-          <div style="background:#fce7f3;border-radius:4px;padding:3px 6px;text-align:center">
-            <div style="color:#9d174d;font-weight:700">${d.perempuan||0}</div>
-            <div style="color:#f472b6">P</div>
-          </div>
-          <div style="background:var(--accent-light);border-radius:4px;padding:3px 6px;text-align:center">
-            <div style="color:var(--primary);font-weight:700">${(d.laki_laki||0)+(d.perempuan||0)}</div>
-            <div style="color:var(--accent)">Tot</div>
-          </div>
-        </div>
-        ${d.kadim ? `<div style="font-size:11px;color:var(--text-muted);margin-top:3px">👤 Kadim: ${d.kadim}</div>` : ''}
-        <div style="margin-top:6px;padding-top:5px;border-top:1px dashed var(--border)">
-          <div style="font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:3px">Persembahan</div>
-          ${d.pundi_persembahan ? `<div style="font-size:11px;color:var(--text-muted);display:flex;justify-content:space-between"><span>🙏 Persembahan</span><span style="font-weight:600;color:var(--primary)">${Number(d.pundi_persembahan).toLocaleString('id-ID')}</span></div>` : ''}
-          ${d.pundi_diakonia ? `<div style="font-size:11px;color:var(--text-muted);display:flex;justify-content:space-between"><span>🤝 Diakonia</span><span style="font-weight:600;color:var(--primary)">${Number(d.pundi_diakonia).toLocaleString('id-ID')}</span></div>` : ''}
-          ${d.pundi_pembangunan ? `<div style="font-size:11px;color:var(--text-muted);display:flex;justify-content:space-between"><span>🏗️ Pembangunan</span><span style="font-weight:600;color:var(--primary)">${Number(d.pundi_pembangunan).toLocaleString('id-ID')}</span></div>` : ''}
-          ${d.pundi_ekstra ? `<div style="font-size:11px;color:var(--text-muted);display:flex;justify-content:space-between"><span>➕ Ekstra</span><span style="font-weight:600;color:var(--primary)">${Number(d.pundi_ekstra).toLocaleString('id-ID')}</span></div>` : ''}
-          ${d.pundi_puasa_diakonal ? `<div style="font-size:11px;color:var(--text-muted);display:flex;justify-content:space-between"><span>🕊️ Puasa Diakonal</span><span style="font-weight:600;color:var(--primary)">${Number(d.pundi_puasa_diakonal).toLocaleString('id-ID')}</span></div>` : ''}
-          <div style="font-size:11px;display:flex;justify-content:space-between;margin-top:3px;padding-top:3px;border-top:1px solid var(--border)">
-            <span style="font-weight:700;color:var(--primary)">Total Pundi</span>
-            <span style="font-weight:700;color:var(--accent)">${Number((d.pundi_persembahan||0)+(d.pundi_diakonia||0)+(d.pundi_pembangunan||0)+(d.pundi_ekstra||0)+(d.pundi_puasa_diakonal||0)).toLocaleString('id-ID')}</span>
-          </div>
-        </div>
-      </div>`).join('');
-  } catch(e) {
-    elKh.innerHTML = '<div style="color:var(--text-muted);font-size:13px">Belum ada data</div>';
-  }
-}
-
-
 // ===== MODAL ULANG TAHUN PUBLIK =====
 function showUltahModal(mode) {
   const isMinggu = mode === 'minggu';
