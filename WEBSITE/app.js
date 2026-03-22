@@ -251,6 +251,12 @@ async function doLogin() {
     const el = document.getElementById(id);
     if (el) el.style.display = isSuperAdmin() ? 'block' : 'none';
   });
+  // Tampilkan menu slideshow & video hanya untuk superadmin
+  const navSlide = document.getElementById('navSlideshow');
+  if (navSlide) navSlide.style.display = isSuperAdmin() ? 'flex' : 'none';
+  const navVid = document.getElementById('navVideo');
+  if (navVid) navVid.style.display = isSuperAdmin() ? 'flex' : 'none';
+
   const btnSosmed = document.getElementById('btnSosmedAdmin');
   if (btnSosmed) btnSosmed.style.display = isSuperAdmin() ? 'block' : 'none';
   const btnEmail = document.getElementById('btnEmailAdmin');
@@ -299,6 +305,8 @@ function showPage(name) {
   if (name==='komisi-kerja') loadStrukturAdmin('komisi');
   if (name==='berita') loadBeritaAdmin();
   if (name==='warta') loadWartaAdmin();
+  if (name==='slideshow') loadSlideshowAdmin();
+  if (name==='video-admin') loadVideoAdmin();
   if (window.innerWidth<768) { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebarBackdrop').classList.remove('open'); }
 }
 
@@ -1624,6 +1632,7 @@ function switchPubSection(sec, el) {
   if (sec === 'warta') loadPubWarta();
   if (sec === 'pengumuman-full') loadPubPengumuman();
   if (sec === 'home') { loadPubPengumumanRingkasan(); loadPubWartaBeranda(); }
+  if (sec === 'video') loadPubVideo();
 }
 
 async function loadPubWartaBeranda() {
@@ -2118,10 +2127,14 @@ async function loadSosmed() {
     if (data && data[0] && data[0].isi) {
       const links = JSON.parse(data[0].isi);
       const map = {fb:'sosmedFb',ig:'sosmedIg',tt:'sosmedTt',yt:'sosmedYt',wa:'sosmedWa'};
+      let hasAny = false;
       Object.keys(map).forEach(key=>{
         const el=document.getElementById(map[key]);
-        if(el && links[key]) { el.href=links[key]; el.style.display='inline-flex'; }
+        if(el && links[key]) { el.href=links[key]; el.style.display='inline-flex'; hasAny=true; }
       });
+      // Tampilkan bar sosmed hanya jika ada minimal 1 link
+      const bar = document.getElementById('sosmedBar');
+      if(bar && hasAny) bar.style.display='flex';
     }
   } catch(e){}
 }
@@ -2227,6 +2240,236 @@ async function openSosmedModal() {
   } catch(e){}
 }
 
+// ===== VIDEO YOUTUBE =====
+function extractYoutubeId(url) {
+  if (!url) return null;
+  url = url.trim();
+  // Format: youtu.be/ID
+  let m = url.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/);
+  if (m) return m[1];
+  // Format: youtube.com/watch?v=ID
+  m = url.match(/[?&]v=([a-zA-Z0-9_-]{11})/);
+  if (m) return m[1];
+  // Format: youtube.com/embed/ID
+  m = url.match(/\/embed\/([a-zA-Z0-9_-]{11})/);
+  if (m) return m[1];
+  // Format: youtube.com/shorts/ID
+  m = url.match(/\/shorts\/([a-zA-Z0-9_-]{11})/);
+  if (m) return m[1];
+  return null;
+}
+
+function youtubeThumbnail(videoId) {
+  return `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
+}
+
+function youtubeEmbed(videoId) {
+  return `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1`;
+}
+
+// --- PUBLIC ---
+async function loadPubVideo() {
+  const grid = document.getElementById('pubVideoGrid');
+  if (!grid) return;
+  grid.innerHTML = '<div class="pub-loading">Memuat video...</div>';
+  try {
+    const { data } = await sb.from('video_youtube').select('*').order('created_at', { ascending: false }).limit(4);
+    if (!data || !data.length) {
+      grid.innerHTML = '<div style="color:var(--text-muted);padding:32px;text-align:center;grid-column:1/-1">Belum ada video.</div>';
+      return;
+    }
+    grid.innerHTML = data.map(v => {
+      const vid = extractYoutubeId(v.url);
+      if (!vid) return '';
+      return `<div class="video-card">
+        <div class="video-embed">
+          <iframe src="${youtubeEmbed(vid)}" allowfullscreen loading="lazy" title="${v.judul||''}"></iframe>
+        </div>
+        <div class="video-info">
+          <div class="video-title">${v.judul||'Video Jemaat'}</div>
+          ${v.deskripsi ? `<div class="video-desc">${v.deskripsi}</div>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    grid.innerHTML = `<div style="color:red;padding:32px;grid-column:1/-1">Error: ${e.message}</div>`;
+  }
+}
+
+// --- ADMIN ---
+async function loadVideoAdmin() {
+  const list = document.getElementById('videoAdminList');
+  if (!list) return;
+  list.innerHTML = '<div class="pub-loading">Memuat...</div>';
+  try {
+    const { data } = await sbAdmin.from('video_youtube').select('*').order('created_at', { ascending: false });
+    if (!data || !data.length) {
+      list.innerHTML = '<div style="color:var(--text-muted);padding:24px;text-align:center">Belum ada video. Tambahkan di atas.</div>';
+      return;
+    }
+    list.innerHTML = data.map(v => {
+      const vid = extractYoutubeId(v.url);
+      const thumb = vid ? youtubeThumbnail(vid) : '';
+      return `<div class="video-admin-item">
+        ${thumb ? `<img src="${thumb}" class="video-admin-thumb" onerror="this.style.display='none'">` : ''}
+        <div class="video-admin-info">
+          <div class="video-admin-title">${v.judul||'(tanpa judul)'}</div>
+          ${v.deskripsi ? `<div class="video-admin-url" style="margin-bottom:2px">${v.deskripsi}</div>` : ''}
+          <div class="video-admin-url">${v.url}</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:4px">${new Date(v.created_at).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'})}</div>
+        </div>
+        <button onclick="hapusVideo(${v.id})" style="flex-shrink:0;background:none;border:1px solid var(--danger);color:var(--danger);border-radius:6px;padding:6px 12px;cursor:pointer;font-size:12px">🗑️ Hapus</button>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    list.innerHTML = `<div style="color:red">Error: ${e.message}</div>`;
+  }
+}
+
+async function simpanVideo() {
+  const url = document.getElementById('videoUrl').value.trim();
+  const judul = document.getElementById('videoJudul').value.trim();
+  const desc = document.getElementById('videoDesc').value.trim();
+  if (!url) { showToast('Link YouTube wajib diisi', 'error'); return; }
+  if (!judul) { showToast('Judul wajib diisi', 'error'); return; }
+  const vid = extractYoutubeId(url);
+  if (!vid) { showToast('Link YouTube tidak valid. Coba copy ulang dari browser.', 'error'); return; }
+  // Cek max 4 video
+  const { data: existing } = await sbAdmin.from('video_youtube').select('id');
+  if (existing && existing.length >= 4) {
+    showToast('Maksimal 4 video. Hapus video lama terlebih dahulu.', 'error');
+    return;
+  }
+  const { error } = await sbAdmin.from('video_youtube').insert({ url, judul, deskripsi: desc||null });
+  if (error) { showToast('Gagal simpan: ' + error.message, 'error'); return; }
+  showToast('Video berhasil ditambahkan ✅', 'success');
+  document.getElementById('videoUrl').value = '';
+  document.getElementById('videoJudul').value = '';
+  document.getElementById('videoDesc').value = '';
+  loadVideoAdmin();
+}
+
+async function hapusVideo(id) {
+  if (!confirm('Hapus video ini?')) return;
+  const { error } = await sbAdmin.from('video_youtube').delete().eq('id', id);
+  if (error) { showToast('Gagal hapus: ' + error.message, 'error'); return; }
+  showToast('Video dihapus ✅', 'success');
+  loadVideoAdmin();
+}
+
+// ===== SLIDESHOW ADMIN =====
+async function loadSlideshowAdmin() {
+  const grid = document.getElementById('slideshowGrid');
+  if (!grid) return;
+  grid.innerHTML = '<div style="color:var(--text-muted);padding:32px;text-align:center">Memuat...</div>';
+  try {
+    const { data } = await sbAdmin.from('foto_slideshow').select('*').order('urutan', { ascending: true });
+    if (!data || !data.length) {
+      grid.innerHTML = '<div style="color:var(--text-muted);padding:32px;text-align:center;grid-column:1/-1">Belum ada foto. Klik "Tambah Foto" untuk upload.</div>';
+      return;
+    }
+    grid.innerHTML = data.map(f => `
+      <div style="border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--card)">
+        <div style="position:relative;height:150px;background:#eee">
+          <img src="${f.foto_url}" style="width:100%;height:100%;object-fit:cover" onerror="this.parentElement.innerHTML='<div style=padding:32px;text-align:center;color:#999>Foto tidak ditemukan</div>'">
+          <button onclick="hapusSlideshow(${f.id},'${f.foto_url}')" style="position:absolute;top:8px;right:8px;background:rgba(220,38,38,0.9);color:white;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px">🗑️ Hapus</button>
+        </div>
+        <div style="padding:10px;font-size:12px;color:var(--text-muted)">
+          <input type="number" value="${f.urutan||0}" min="1" max="99" style="width:50px;padding:4px;border:1px solid var(--border);border-radius:4px;margin-right:8px" onchange="updateUrutanSlideshow(${f.id},this.value)">
+          <span>Urutan</span>
+        </div>
+      </div>`).join('');
+  } catch(e) {
+    grid.innerHTML = `<div style="color:red;padding:32px;grid-column:1/-1">Error: ${e.message}</div>`;
+  }
+}
+
+async function uploadSlideshow(input) {
+  if (!input.files || !input.files.length) return;
+  // Cek jumlah foto saat ini
+  const { data: existing } = await sbAdmin.from('foto_slideshow').select('id');
+  if (existing && existing.length + input.files.length > 6) {
+    showToast(`Maksimal 6 foto. Saat ini ada ${existing.length} foto.`, 'error');
+    return;
+  }
+  let successCount = 0;
+  let urutan = (existing ? existing.length : 0) + 1;
+  for (const file of Array.from(input.files)) {
+    if (file.size > 5 * 1024 * 1024) { showToast(`${file.name}: ukuran maks 5MB`, 'error'); continue; }
+    showToast(`Mengupload ${file.name}...`, 'info');
+    const ext = file.name.split('.').pop().toLowerCase();
+    const fileName = `slideshow/slide_${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+    const { error: upErr } = await sbAdmin.storage.from('foto').upload(fileName, file, { upsert: false });
+    if (upErr) { showToast(`Upload ${file.name} gagal: ${upErr.message}`, 'error'); continue; }
+    const { data: urlData } = sbAdmin.storage.from('foto').getPublicUrl(fileName);
+    const { error: dbErr } = await sbAdmin.from('foto_slideshow').insert({ foto_url: urlData.publicUrl, urutan: urutan++, storage_path: fileName });
+    if (dbErr) { showToast(`Simpan ${file.name} gagal: ${dbErr.message}`, 'error'); continue; }
+    successCount++;
+  }
+  if (successCount > 0) showToast(`${successCount} foto berhasil diupload ✅`, 'success');
+  loadSlideshowAdmin();
+  input.value = '';
+}
+
+async function hapusSlideshow(id, fotoUrl) {
+  if (!confirm('Hapus foto ini dari slideshow?')) return;
+  // Hapus dari storage
+  try {
+    const { data: row } = await sbAdmin.from('foto_slideshow').select('storage_path').eq('id', id).single();
+    if (row && row.storage_path) await sbAdmin.storage.from('foto').remove([row.storage_path]);
+  } catch(e) {}
+  const { error } = await sbAdmin.from('foto_slideshow').delete().eq('id', id);
+  if (error) { showToast('Gagal hapus: ' + error.message, 'error'); return; }
+  showToast('Foto dihapus ✅', 'success');
+  loadSlideshowAdmin();
+}
+
+async function updateUrutanSlideshow(id, urutan) {
+  await sbAdmin.from('foto_slideshow').update({ urutan: parseInt(urutan) }).eq('id', id);
+  showToast('Urutan disimpan', 'success');
+}
+
+// ===== HERO SLIDESHOW =====
+async function initHeroSlideshow() {
+  const heroBg = document.getElementById('pubHeroBg');
+  if (!heroBg) return;
+
+  // Coba ambil foto dari database
+  let photos = [];
+  try {
+    const { data } = await sb.from('foto_slideshow').select('foto_url').order('urutan', { ascending: true });
+    if (data && data.length) photos = data.map(d => d.foto_url);
+  } catch(e) {}
+
+  // Fallback: gunakan foto gereja bawaan
+  if (!photos.length) {
+    photos = ['https://vgjhlvzjwnhsgpozznrp.supabase.co/storage/v1/object/public/foto/gedung%20gereja%20gmim%20smirna.jpg'];
+  }
+
+  // Rebuild slides di DOM
+  heroBg.innerHTML = '';
+  photos.forEach((url, i) => {
+    const img = document.createElement('img');
+    img.src = url;
+    img.className = 'hero-slide' + (i === 0 ? ' slide-active' : '');
+    img.alt = `Foto ${i+1}`;
+    img.onerror = () => img.style.display = 'none';
+    heroBg.appendChild(img);
+  });
+
+  if (photos.length < 2) return; // Tidak perlu slideshow jika hanya 1 foto
+
+  let current = 0;
+  setInterval(() => {
+    const slides = heroBg.querySelectorAll('.hero-slide');
+    const valid = Array.from(slides).filter(s => s.style.display !== 'none');
+    if (valid.length < 2) return;
+    valid[current % valid.length].classList.remove('slide-active');
+    current = (current + 1) % valid.length;
+    valid[current].classList.add('slide-active');
+  }, 4000);
+}
+
 // ===== INIT =====
 window.addEventListener('DOMContentLoaded', () => {
   // Set default bulan kehadiran
@@ -2237,6 +2480,8 @@ window.addEventListener('DOMContentLoaded', () => {
   loadVisitorCounter();
   loadSosmed();
   initEmailJS();
+  // Mulai slideshow (async, ambil dari database)
+  initHeroSlideshow();
 });
 
 // Set email di footer via JS (agar tidak diblokir Cloudflare)
