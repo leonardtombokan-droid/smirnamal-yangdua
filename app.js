@@ -1140,7 +1140,40 @@ function cetakKartuKeluarga(arg){const namaKeluarga=(typeof arg==='string')?arg:
   const io=members.find(m=>m.diinput_oleh);
   document.getElementById('kkInfoInput').textContent=io?`Diinput: ${io.diinput_oleh} — ${new Date(io.waktu_input).toLocaleString('id-ID')}`:'Data lama';
   document.getElementById('kkAnggotaBody').innerHTML=sorted.map(m=>`<tr><td style="padding:6px;border-bottom:1px solid #e5e7eb">${m.nama_lengkap||'-'}</td><td style="padding:6px;border-bottom:1px solid #e5e7eb;text-align:center">${m.lp||'-'}</td><td style="padding:6px;border-bottom:1px solid #e5e7eb">${formatTanggal(m.tanggal_lahir)}</td><td style="padding:6px;border-bottom:1px solid #e5e7eb">${hitungUmur(m.tanggal_lahir)}</td><td style="padding:6px;border-bottom:1px solid #e5e7eb">${m.relasi||'-'}</td><td style="padding:6px;border-bottom:1px solid #e5e7eb;text-align:center">${m.baptis==='sudah-baptis'?'✓':'-'}</td><td style="padding:6px;border-bottom:1px solid #e5e7eb;text-align:center">${m.sidi==='sudah-sidi'?'✓':'-'}</td></tr>`).join('');
+  // Generate QR Code tanda tangan digital
+  _generateKKQr('kkQrKetua', 'Ketua BPMJ GMIM Smirna|Pdt. Alfius Mangode, M.Th.|' + namaKeluarga + '|' + new Date().toISOString().slice(0,10));
+  _generateKKQr('kkQrSekretaris', 'Sekretaris BPMJ GMIM Smirna|Pnt. Dr. Ir. Ari Berty Rondonuwu, M.Sc.M.Si.|' + namaKeluarga + '|' + new Date().toISOString().slice(0,10));
+
   document.getElementById('modalCetakKK').classList.add('open');
+}
+
+function _generateKKQr(elId, text) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  el.innerHTML = '';
+  if (typeof QRCode !== 'undefined') {
+    new QRCode(el, {
+      text: text,
+      width: 72,
+      height: 72,
+      colorDark: '#1a3a5c',
+      colorLight: '#ffffff',
+      correctLevel: QRCode.CorrectLevel.M
+    });
+  } else {
+    // Fallback SVG barcode sederhana
+    const size = 72;
+    const data = text.split('').map(c => c.charCodeAt(0));
+    const bars = [];
+    let x = 2, barW = 2;
+    for (let i = 0; i < Math.min(data.length, 30); i++) {
+      const h = 20 + (data[i] % 40);
+      bars.push('<rect x="' + x + '" y="' + ((size - h) / 2) + '" width="' + barW + '" height="' + h + '" fill="#1a3a5c"/>');
+      x += barW + (data[i] % 2 === 0 ? 1 : 2);
+      if (x > size - 4) break;
+    }
+    el.innerHTML = '<svg width="' + size + '" height="' + size + '" xmlns="http://www.w3.org/2000/svg" style="border:1px solid #e5e7eb;border-radius:4px">' + bars.join('') + '</svg>';
+  }
 }
 
 // ===== IMPORT =====

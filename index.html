@@ -29,6 +29,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
 :root {
   --primary: #1a3a5c;
@@ -1814,6 +1815,27 @@ tr:hover td { background:rgba(26,58,92,0.03); }
       </table>
       <div style="font-size:11px;color:var(--text-muted);text-align:right">Dicetak: <span id="kkTanggalCetak"></span></div>
       <div style="font-size:11px;color:var(--text-muted);text-align:right;margin-top:2px">📝 <span id="kkInfoInput"></span></div>
+
+      <!-- Blok Tanda Tangan BPMJ -->
+      <div style="margin-top:20px;border-top:1px solid #e5e7eb;padding-top:14px">
+        <div style="text-align:center;font-size:12px;font-weight:700;color:var(--primary);margin-bottom:12px;text-transform:uppercase;letter-spacing:0.5px">
+          BADAN PEKERJA MAJELIS JEMAAT GMIM "SMIRNA"
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px">
+          <!-- Ketua -->
+          <div style="text-align:center;flex:1">
+            <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px">Ketua,</div>
+            <div id="kkQrKetua" style="display:flex;justify-content:center;margin-bottom:6px"></div>
+            <div style="font-size:11px;font-weight:600;color:#1a1a1a">Pdt. Alfius Mangode, M.Th.</div>
+          </div>
+          <!-- Sekretaris -->
+          <div style="text-align:center;flex:1">
+            <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px">Sekretaris,</div>
+            <div id="kkQrSekretaris" style="display:flex;justify-content:center;margin-bottom:6px"></div>
+            <div style="font-size:11px;font-weight:600;color:#1a1a1a">Pnt. Dr. Ir. Ari Berty Rondonuwu, M.Sc.M.Si.</div>
+          </div>
+        </div>
+      </div>
     </div>
     <div class="modal-footer"><button class="btn btn-outline" onclick="document.getElementById('modalCetakKK').classList.remove('open')">Tutup</button><button class="btn btn-primary" onclick="window.print()">🖨️ Cetak</button></div>
   </div>
