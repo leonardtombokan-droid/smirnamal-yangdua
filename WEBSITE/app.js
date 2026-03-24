@@ -1769,7 +1769,7 @@ async function loadSidebarKehadiran() {
   if (!elKh) return;
   try {
     const { data, error } = await sb.from('kehadiran_ibadah')
-      .select('tanggal,sesi,laki_laki,perempuan,kadim,pundi_persembahan,pundi_diakonia,pundi_pembangunan,pundi_ekstra,pundi_puasa_diakonal,pundi_lainnya')
+      .select('tanggal,sesi,laki_laki,perempuan,kadim,pundi_persembahan,pundi_diakonia,pundi_pembangunan,pundi_ekstra')
       .order('tanggal', {ascending:false})
       .limit(4);
     if (error || !data || !data.length) {
@@ -1778,14 +1778,8 @@ async function loadSidebarKehadiran() {
     }
     const sesiIcon = {subuh:'🌅', pagi:'☀️', malam:'🌙'};
     elKh.innerHTML = data.map(d => {
-      const totLainnya = getPundiLainnyaTotal(d);
+      const totLainnya = 0;
       let lainnyaHtml = '';
-      try {
-        const arr = JSON.parse(d.pundi_lainnya||'[]');
-        lainnyaHtml = arr.map(p=>`<div style="font-size:11px;color:var(--text-muted);display:flex;justify-content:space-between"><span>📌 ${p.label}</span><span style="font-weight:600;color:var(--primary)">${Number(p.nilai||0).toLocaleString('id-ID')}</span></div>`).join('');
-      } catch(e) {
-        if(d.pundi_puasa_diakonal) lainnyaHtml=`<div style="font-size:11px;color:var(--text-muted);display:flex;justify-content:space-between"><span>🕊️ Puasa Diakonal</span><span style="font-weight:600;color:var(--primary)">${Number(d.pundi_puasa_diakonal).toLocaleString('id-ID')}</span></div>`;
-      }
       return `
       <div style="padding:6px 0;border-bottom:1px dashed var(--border)">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
