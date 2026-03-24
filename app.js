@@ -1154,17 +1154,15 @@ function cetakKK() {
   // Clone konten agar tidak merusak DOM asli
   const clone = konten.cloneNode(true);
 
-  // Konversi semua canvas QR ke img dengan ukuran tetap 72x72
-  const canvases = konten.querySelectorAll('canvas');
-  const cloneCanvasWrappers = clone.querySelectorAll('#kkQrKetua, #kkQrSekretaris');
-  canvases.forEach((canvas, i) => {
-    const dataUrl = canvas.toDataURL('image/png');
-    const img = document.createElement('img');
-    img.src = dataUrl;
-    img.style.cssText = 'width:72px;height:72px;display:block;margin:0 auto;';
-    if (cloneCanvasWrappers[i]) {
-      cloneCanvasWrappers[i].innerHTML = '';
-      cloneCanvasWrappers[i].appendChild(img);
+  // Konversi canvas QR di DOM asli ke dataURL, lalu masukkan ke clone sebagai img
+  ['kkQrKetua','kkQrSekretaris'].forEach(qrId => {
+    const origEl = document.getElementById(qrId);
+    const cloneEl = clone.querySelector('#' + qrId);
+    if (!origEl || !cloneEl) return;
+    const canvas = origEl.querySelector('canvas');
+    if (canvas) {
+      const dataUrl = canvas.toDataURL('image/png');
+      cloneEl.innerHTML = '<img src="' + dataUrl + '" style="width:72px;height:72px;display:block;margin:0 auto;">';
     }
   });
 
@@ -1181,30 +1179,13 @@ ${styles}
   @page { size: A5 portrait; margin: 10mm 12mm; }
   * { box-sizing: border-box; }
   body { margin:0; padding:0; background:#fff; font-family:'Source Sans 3',Arial,sans-serif; }
-  :root {
-    --primary:#1a3a5c; --accent:#c8a96e; --accent-light:#e8d5a3;
-    --text:#1a1a2e; --text-muted:#6b7280; --border:#ddd5c0;
-  }
-  #kartuKeluargaPrint {
-    border:2px solid #1a3a5c;
-    border-radius:8px;
-    padding:14px;
-    font-size:11px;
-    color:#1a1a2e;
-    background:#fff;
-    -webkit-print-color-adjust:exact;
-    print-color-adjust:exact;
-  }
+  :root { --primary:#1a3a5c; --accent:#c8a96e; --accent-light:#e8d5a3; --text:#1a1a2e; --text-muted:#6b7280; --border:#ddd5c0; }
+  #kartuKeluargaPrint { border:2px solid #1a3a5c; border-radius:8px; padding:14px; font-size:11px; color:#1a1a2e; background:#fff; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
   table { width:100%; border-collapse:collapse; font-size:10px; margin-bottom:8px; }
   thead tr { background:#1a3a5c !important; color:#fff !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
   thead th { padding:5px 4px; color:#fff !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
   tbody td { padding:5px 4px; border-bottom:1px solid #e5e7eb; }
   img { display:block; }
-  #kkQrKetua img, #kkQrSekretaris img {
-    width:72px !important;
-    height:72px !important;
-    margin:0 auto;
-  }
 </style>
 </head>
 <body>${clone.outerHTML}</body>
@@ -1231,18 +1212,19 @@ function _generateKKQr(elId, text) {
       colorLight: '#ffffff',
       correctLevel: QRCode.CorrectLevel.M
     });
-    // Paksa ukuran img/canvas yang di-generate QRCode
+    // QRCode.js menghasilkan canvas + img — sembunyikan img, tampilkan canvas saja
     setTimeout(() => {
-      const imgs = el.querySelectorAll('img, canvas');
-      imgs.forEach(img => {
-        img.style.width = '72px';
-        img.style.height = '72px';
-        img.style.display = 'block';
-        img.style.margin = '0 auto';
-      });
+      const img = el.querySelector('img');
+      const canvas = el.querySelector('canvas');
+      if (img) img.style.display = 'none';
+      if (canvas) {
+        canvas.style.display = 'block';
+        canvas.style.margin = '0 auto';
+        canvas.style.width = '72px';
+        canvas.style.height = '72px';
+      }
     }, 100);
   } else {
-    // Fallback SVG barcode sederhana
     const size = 72;
     const data = text.split('').map(c => c.charCodeAt(0));
     const bars = [];
