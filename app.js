@@ -1147,6 +1147,63 @@ function cetakKartuKeluarga(arg){const namaKeluarga=(typeof arg==='string')?arg:
   document.getElementById('modalCetakKK').classList.add('open');
 }
 
+function cetakKK() {
+  const konten = document.getElementById('kartuKeluargaPrint');
+  if (!konten) { window.print(); return; }
+
+  // Ambil semua style dari halaman utama
+  const styles = Array.from(document.querySelectorAll('link[rel="stylesheet"], style'))
+    .map(el => el.outerHTML).join('\n');
+
+  // Ambil semua canvas QR dan ubah ke image data URL
+  konten.querySelectorAll('canvas').forEach(canvas => {
+    const img = new Image();
+    img.src = canvas.toDataURL('image/png');
+    img.style.cssText = canvas.style.cssText;
+    img.width = canvas.width;
+    img.height = canvas.height;
+    canvas.parentNode.replaceChild(img, canvas);
+  });
+
+  const html = `<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Kartu Keluarga GMIM Smirna</title>
+${styles}
+<style>
+  @page { size: A5 portrait; margin: 10mm 12mm; }
+  body { margin:0; padding:0; background:#fff; font-family:'Source Sans 3',Arial,sans-serif; }
+  :root {
+    --primary:#1a3a5c; --accent:#c8a96e; --accent-light:#e8d5a3;
+    --text:#1a1a2e; --text-muted:#6b7280; --border:#ddd5c0;
+  }
+  #kartuKeluargaPrint {
+    border:2px solid #1a3a5c!important;
+    border-radius:8px!important;
+    padding:14px!important;
+    font-size:11px!important;
+    -webkit-print-color-adjust:exact!important;
+    print-color-adjust:exact!important;
+  }
+  table { width:100%!important; border-collapse:collapse!important; font-size:10px!important; }
+  thead tr { background:#1a3a5c!important; color:#fff!important; -webkit-print-color-adjust:exact!important; print-color-adjust:exact!important; }
+  thead th { padding:5px 4px!important; color:#fff!important; -webkit-print-color-adjust:exact!important; print-color-adjust:exact!important; }
+  tbody td { padding:5px 4px!important; border-bottom:1px solid #e5e7eb!important; }
+  img { max-width:100%; }
+</style>
+</head>
+<body>${konten.outerHTML}</body>
+</html>`;
+
+  const win = window.open('', '_blank', 'width=600,height=800');
+  win.document.write(html);
+  win.document.close();
+  win.onload = function() {
+    setTimeout(() => { win.focus(); win.print(); win.close(); }, 400);
+  };
+}
+
 function _generateKKQr(elId, text) {
   const el = document.getElementById(elId);
   if (!el) return;
