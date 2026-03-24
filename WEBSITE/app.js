@@ -409,7 +409,7 @@ function searchJemaat(){filterJemaat();}
 function renderTable() {
   const start=(currentPage-1)*perPage;
   const tbody=document.getElementById('jemaatBody');
-  if (!filteredJemaat.slice(start,start+perPage).length){tbody.innerHTML='<tr><td colspan="10" style="text-align:center;padding:32px;color:var(--text-muted)">Tidak ada data</td></tr>';document.getElementById('pagination').innerHTML='';return;}
+  if (!filteredJemaat.slice(start,start+perPage).length){tbody.innerHTML='<tr><td colspan="14" style="text-align:center;padding:32px;color:var(--text-muted)">Tidak ada data</td></tr>';document.getElementById('pagination').innerHTML='';return;}
   tbody.innerHTML=filteredJemaat.slice(start,start+perPage).map((j,i)=>`
     <tr>
       <td>${start+i+1}</td>
@@ -421,6 +421,10 @@ function renderTable() {
       <td><span class="badge ${j.baptis==='sudah-baptis'?'badge-baptis':'badge-belum'}">${j.baptis==='sudah-baptis'?'✓':'✗'}</span></td>
       <td><span class="badge ${j.sidi==='sudah-sidi'?'badge-baptis':'badge-belum'}">${j.sidi==='sudah-sidi'?'✓':'✗'}</span></td>
       <td>${j.relasi||'-'}</td>
+      <td>${j.alamat_rumah||'-'}</td>
+      <td>${j.jemaat_asal||'-'}</td>
+      <td>${j.alamat_kolom||'-'}</td>
+      <td><span class="badge ${j.status_jemaat==='baru'?'badge-baptis':'badge-belum'}">${j.status_jemaat==='baru'?'Baru':'Lama'}</span></td>
       <td>${(isAdmin()||currentUser.kolom===j.kolom)?`<button class="btn btn-outline btn-sm" onclick="editJemaat(${j.id})">✏️</button> <button class="btn btn-danger btn-sm" onclick="deleteJemaat(${j.id},'${(j.nama_lengkap||'').replace(/'/g,"\\'")}')">🗑️</button>`:'—'}</td>
     </tr>`).join('');
   renderPagination();
