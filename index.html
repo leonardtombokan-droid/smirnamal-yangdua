@@ -2022,6 +2022,35 @@ tr:hover td { background:rgba(26,58,92,0.03); }
   </div>
 </div>
 
+
+<!-- MODAL EDIT ALAMAT KELUARGA -->
+<div class="modal-overlay" id="modalAlamat">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header">
+      <h2 id="modalAlamatNama">✏️ Edit Alamat Keluarga</h2>
+      <button class="modal-close" onclick="document.getElementById('modalAlamat').classList.remove('open')">×</button>
+    </div>
+    <input type="hidden" id="modalAlamatIds">
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px">Data alamat akan disimpan ke semua anggota keluarga ini sekaligus.</p>
+    <div class="form-group-modal full">
+      <label>🏠 Alamat Rumah</label>
+      <input type="text" id="modalAlamatRumah" placeholder="Alamat tempat tinggal..." style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:6px;font-size:14px;font-family:inherit;outline:none">
+    </div>
+    <div class="form-group-modal full">
+      <label>⛪ Jemaat Asal</label>
+      <input type="text" id="modalAlamatJemaat" placeholder="Nama jemaat asal..." style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:6px;font-size:14px;font-family:inherit;outline:none">
+    </div>
+    <div class="form-group-modal full">
+      <label>📍 Kolom Wilayah</label>
+      <input type="text" id="modalAlamatKolom" placeholder="Wilayah/kolom..." style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:6px;font-size:14px;font-family:inherit;outline:none">
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="document.getElementById('modalAlamat').classList.remove('open')">Batal</button>
+      <button class="btn btn-primary" onclick="simpanAlamatKeluarga()">💾 Simpan</button>
+    </div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
