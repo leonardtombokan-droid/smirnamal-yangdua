@@ -1151,19 +1151,25 @@ function cetakKK() {
   const konten = document.getElementById('kartuKeluargaPrint');
   if (!konten) { window.print(); return; }
 
-  // Ambil semua style dari halaman utama
+  // Clone konten agar tidak merusak DOM asli
+  const clone = konten.cloneNode(true);
+
+  // Konversi semua canvas QR ke img dengan ukuran tetap 72x72
+  const canvases = konten.querySelectorAll('canvas');
+  const cloneCanvasWrappers = clone.querySelectorAll('#kkQrKetua, #kkQrSekretaris');
+  canvases.forEach((canvas, i) => {
+    const dataUrl = canvas.toDataURL('image/png');
+    const img = document.createElement('img');
+    img.src = dataUrl;
+    img.style.cssText = 'width:72px;height:72px;display:block;margin:0 auto;';
+    if (cloneCanvasWrappers[i]) {
+      cloneCanvasWrappers[i].innerHTML = '';
+      cloneCanvasWrappers[i].appendChild(img);
+    }
+  });
+
   const styles = Array.from(document.querySelectorAll('link[rel="stylesheet"], style'))
     .map(el => el.outerHTML).join('\n');
-
-  // Ambil semua canvas QR dan ubah ke image data URL
-  konten.querySelectorAll('canvas').forEach(canvas => {
-    const img = new Image();
-    img.src = canvas.toDataURL('image/png');
-    img.style.cssText = canvas.style.cssText;
-    img.width = canvas.width;
-    img.height = canvas.height;
-    canvas.parentNode.replaceChild(img, canvas);
-  });
 
   const html = `<!DOCTYPE html>
 <html lang="id">
@@ -1173,34 +1179,42 @@ function cetakKK() {
 ${styles}
 <style>
   @page { size: A5 portrait; margin: 10mm 12mm; }
+  * { box-sizing: border-box; }
   body { margin:0; padding:0; background:#fff; font-family:'Source Sans 3',Arial,sans-serif; }
   :root {
     --primary:#1a3a5c; --accent:#c8a96e; --accent-light:#e8d5a3;
     --text:#1a1a2e; --text-muted:#6b7280; --border:#ddd5c0;
   }
   #kartuKeluargaPrint {
-    border:2px solid #1a3a5c!important;
-    border-radius:8px!important;
-    padding:14px!important;
-    font-size:11px!important;
-    -webkit-print-color-adjust:exact!important;
-    print-color-adjust:exact!important;
+    border:2px solid #1a3a5c;
+    border-radius:8px;
+    padding:14px;
+    font-size:11px;
+    color:#1a1a2e;
+    background:#fff;
+    -webkit-print-color-adjust:exact;
+    print-color-adjust:exact;
   }
-  table { width:100%!important; border-collapse:collapse!important; font-size:10px!important; }
-  thead tr { background:#1a3a5c!important; color:#fff!important; -webkit-print-color-adjust:exact!important; print-color-adjust:exact!important; }
-  thead th { padding:5px 4px!important; color:#fff!important; -webkit-print-color-adjust:exact!important; print-color-adjust:exact!important; }
-  tbody td { padding:5px 4px!important; border-bottom:1px solid #e5e7eb!important; }
-  img { max-width:100%; }
+  table { width:100%; border-collapse:collapse; font-size:10px; margin-bottom:8px; }
+  thead tr { background:#1a3a5c !important; color:#fff !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  thead th { padding:5px 4px; color:#fff !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  tbody td { padding:5px 4px; border-bottom:1px solid #e5e7eb; }
+  img { display:block; }
+  #kkQrKetua img, #kkQrSekretaris img {
+    width:72px !important;
+    height:72px !important;
+    margin:0 auto;
+  }
 </style>
 </head>
-<body>${konten.outerHTML}</body>
+<body>${clone.outerHTML}</body>
 </html>`;
 
-  const win = window.open('', '_blank', 'width=600,height=800');
+  const win = window.open('', '_blank', 'width=700,height=900');
   win.document.write(html);
   win.document.close();
   win.onload = function() {
-    setTimeout(() => { win.focus(); win.print(); win.close(); }, 400);
+    setTimeout(() => { win.focus(); win.print(); win.close(); }, 500);
   };
 }
 
@@ -1217,6 +1231,16 @@ function _generateKKQr(elId, text) {
       colorLight: '#ffffff',
       correctLevel: QRCode.CorrectLevel.M
     });
+    // Paksa ukuran img/canvas yang di-generate QRCode
+    setTimeout(() => {
+      const imgs = el.querySelectorAll('img, canvas');
+      imgs.forEach(img => {
+        img.style.width = '72px';
+        img.style.height = '72px';
+        img.style.display = 'block';
+        img.style.margin = '0 auto';
+      });
+    }, 100);
   } else {
     // Fallback SVG barcode sederhana
     const size = 72;
@@ -1229,7 +1253,7 @@ function _generateKKQr(elId, text) {
       x += barW + (data[i] % 2 === 0 ? 1 : 2);
       if (x > size - 4) break;
     }
-    el.innerHTML = '<svg width="' + size + '" height="' + size + '" xmlns="http://www.w3.org/2000/svg" style="border:1px solid #e5e7eb;border-radius:4px">' + bars.join('') + '</svg>';
+    el.innerHTML = '<svg width="' + size + '" height="' + size + '" xmlns="http://www.w3.org/2000/svg" style="border:1px solid #e5e7eb;border-radius:4px;display:block;margin:0 auto">' + bars.join('') + '</svg>';
   }
 }
 
