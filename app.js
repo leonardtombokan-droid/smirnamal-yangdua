@@ -948,19 +948,40 @@ function renderKeluarga(data) {
       const jemaatAsal=members.find(m=>m.jemaat_asal)?.jemaat_asal||'';
       const alamatKolom=members.find(m=>m.alamat_kolom)?.alamat_kolom||'';
       const memberIds=members.map(m=>m.id).join(',');
-      return `<div class="keluarga-card"><div class="keluarga-card-header"><h4>🏠 ${fam}</h4><div style="display:flex;gap:6px;align-items:center">${noKK?`<span class="kk-badge">KK: ${noKK}</span>`:''}<span style="padding:2px 10px;border-radius:20px;font-size:11px;font-weight:700;${statusJemaat==='baru'?'background:#fef3c7;color:#92400e':'background:#d1fae5;color:#065f46'}">${statusJemaat==='baru'?'🆕 Baru':'✅ Lama'}</span></div></div><div class="keluarga-anggota">${members.map(m=>`<div class="anggota-item"><span class="anggota-relasi">${m.relasi||'-'}</span><span class="anggota-name">${m.nama_lengkap||'-'}</span><span class="anggota-lp">${m.lp||''}</span><span class="anggota-umur">${m.tanggal_lahir?hitungUmur(m.tanggal_lahir):''}</span></div>`).join('')}</div><div style="margin:8px 16px;padding:8px 10px;background:rgba(26,58,92,0.04);border-radius:6px;border:1px solid var(--border);font-size:12px;color:var(--text-muted)">${alamatRumah?`<div>🏠 <strong>Alamat:</strong> ${alamatRumah}</div>`:''} ${jemaatAsal?`<div>⛪ <strong>Jemaat Asal:</strong> ${jemaatAsal}</div>`:''} ${alamatKolom?`<div>📍 <strong>Kolom Wilayah:</strong> ${alamatKolom}</div>`:''} ${!alamatRumah&&!jemaatAsal&&!alamatKolom?`<div style="color:#aaa;font-style:italic">Belum ada data alamat</div>`:''}</div><div class="keluarga-footer">${members.length} anggota &nbsp;|&nbsp; Kolom ${kolom} &nbsp;|&nbsp;<button class="btn btn-outline btn-sm" style="padding:3px 10px;font-size:12px" onclick="cetakKartuKeluarga('${fam.replace(/'/g,"\'")}')">🖨️ Cetak KK</button><button class="btn btn-outline btn-sm" style="padding:3px 10px;font-size:12px;margin-left:4px" onclick="bukaModalPeta('${fam.replace(/'/g,"\'")}')">📍 Peta</button><button class="btn btn-outline btn-sm" style="padding:3px 10px;font-size:12px;margin-left:4px;color:var(--primary);border-color:var(--primary)" onclick="bukaModalAlamat('${fam.replace(/'/g,"\'")}','${memberIds}','${(alamatRumah||'').replace(/'/g,"\'")}','${(jemaatAsal||'').replace(/'/g,"\'")}','${(alamatKolom||'').replace(/'/g,"\'")}')">✏️ Edit Alamat</button></div></div>`;
+      const _fam=fam.replace(/"/g,'&quot;');
+      const _al=(alamatRumah||'').replace(/"/g,'&quot;');
+      const _ja=(jemaatAsal||'').replace(/"/g,'&quot;');
+      const _ak=(alamatKolom||'').replace(/"/g,'&quot;');
+      const _anggota=members.map(m=>'<div class="anggota-item"><span class="anggota-relasi">'+(m.relasi||'-')+'</span><span class="anggota-name">'+(m.nama_lengkap||'-')+'</span><span class="anggota-lp">'+(m.lp||'')+'</span><span class="anggota-umur">'+(m.tanggal_lahir?hitungUmur(m.tanggal_lahir):'')+'</span></div>').join('');
+      const _info=((alamatRumah?'<div>🏠 <b>Alamat:</b> '+alamatRumah+'</div>':'')+(jemaatAsal?'<div>⛪ <b>Jemaat Asal:</b> '+jemaatAsal+'</div>':'')+(alamatKolom?'<div>📍 <b>Kolom Wilayah:</b> '+alamatKolom+'</div>':''))||'<div style="color:#aaa;font-style:italic">Belum ada data alamat — klik Edit Alamat</div>';
+      return '<div class="keluarga-card" data-fam="'+_fam+'" data-ids="'+memberIds+'" data-alamat="'+_al+'" data-jemaat="'+_ja+'" data-kolom-wil="'+_ak+'">'
+        +'<div class="keluarga-card-header"><h4>🏠 '+fam+'</h4><div style="display:flex;gap:6px;align-items:center">'+(noKK?'<span class="kk-badge">KK: '+noKK+'</span>':'')
+        +'<span style="padding:2px 10px;border-radius:20px;font-size:11px;font-weight:700;'+(statusJemaat==='baru'?'background:#fef3c7;color:#92400e':'background:#d1fae5;color:#065f46')+'">'+(statusJemaat==='baru'?'🆕 Baru':'✅ Lama')+'</span></div></div>'
+        +'<div class="keluarga-anggota">'+_anggota+'</div>'
+        +'<div style="margin:8px 16px;padding:8px 10px;background:rgba(26,58,92,0.04);border-radius:6px;border:1px solid var(--border);font-size:12px;color:var(--text-muted)">'+_info+'</div>'
+        +'<div class="keluarga-footer">'+members.length+' anggota &nbsp;|&nbsp; Kolom '+kolom+' &nbsp;|&nbsp;'
+        +'<button class="btn btn-outline btn-sm" style="padding:3px 10px;font-size:12px" onclick="cetakKartuKeluarga(this)">🖨️ Cetak KK</button>'
+        +'<button class="btn btn-outline btn-sm" style="padding:3px 10px;font-size:12px;margin-left:4px" onclick="bukaModalPetaCard(this)">📍 Peta</button>'
+        +'<button class="btn btn-outline btn-sm" style="padding:3px 10px;font-size:12px;margin-left:4px;color:var(--primary);border-color:var(--primary)" onclick="bukaModalAlamatCard(this)">✏️ Edit Alamat</button>'
+        +'</div></div>';
+    }).join('')}</div></div>`;
   }).join('');
 }
 
 
 // ===== EDIT ALAMAT KELUARGA =====
-function bukaModalAlamat(namaKeluarga, memberIds, alamatRumah, jemaatAsal, alamatKolom) {
-  document.getElementById('modalAlamatNama').textContent = '🏠 ' + namaKeluarga;
-  document.getElementById('modalAlamatIds').value = memberIds;
-  document.getElementById('modalAlamatRumah').value = alamatRumah || '';
-  document.getElementById('modalAlamatJemaat').value = jemaatAsal || '';
-  document.getElementById('modalAlamatKolom').value = alamatKolom || '';
+function bukaModalAlamatCard(btn) {
+  const card = btn.closest('.keluarga-card');
+  document.getElementById('modalAlamatNama').textContent = '🏠 ' + card.dataset.fam;
+  document.getElementById('modalAlamatIds').value = card.dataset.ids;
+  document.getElementById('modalAlamatRumah').value = card.dataset.alamat || '';
+  document.getElementById('modalAlamatJemaat').value = card.dataset.jemaat || '';
+  document.getElementById('modalAlamatKolom').value = card.dataset.kolomWil || '';
   document.getElementById('modalAlamat').classList.add('open');
+}
+
+function bukaModalPetaCard(btn) {
+  bukaModalPeta(btn.closest('.keluarga-card').dataset.fam);
 }
 
 async function simpanAlamatKeluarga() {
@@ -985,6 +1006,9 @@ async function simpanAlamatKeluarga() {
     if (btn) { btn.disabled = false; btn.textContent = '💾 Simpan'; }
   }
 }
+
+// Fix cetakKartuKeluarga to accept button element
+const _cetakOri = window._cetakOri;
 
 // ===== PENATUA =====
 async function loadPenatua() {
@@ -1101,7 +1125,7 @@ async function simpanKoordinat(){
 }
 
 // ===== CETAK KK =====
-function cetakKartuKeluarga(namaKeluarga){
+function cetakKartuKeluarga(arg){const namaKeluarga=(typeof arg==='string')?arg:arg.closest('.keluarga-card').dataset.fam;
   const members=allKeluargaData.filter(j=>j.nama_keluarga===namaKeluarga);if(!members.length)return;
   const rep=members[0];const relasiOrder={'Suami':1,'Istri':2,'Anak':3,'Lainnya':4};
   const sorted=[...members].sort((a,b)=>(relasiOrder[a.relasi]||5)-(relasiOrder[b.relasi]||5));
