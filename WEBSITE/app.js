@@ -1490,12 +1490,14 @@ function openModalPengumuman(data = null) {
   document.getElementById('modalPengumuman').classList.add('open');
 }
 
-// Override loadPengumumanAdmin untuk tampilkan lampiran
+// Override loadPengumumanAdmin untuk tampilkan lampiran (filter data sistem)
 async function loadPengumumanAdmin() {
   const { data } = await sb.from('pengumuman').select('*').order('created_at', { ascending: false });
   const el = document.getElementById('pengumumanAdminList');
-  if (!data || !data.length) { el.innerHTML = '<div style="color:var(--text-muted);padding:32px;text-align:center">Belum ada pengumuman</div>'; return; }
-  el.innerHTML = data.map(p => `
+  // Filter out system/config entries
+  const filtered = (data || []).filter(p => !p.judul || !p.judul.startsWith('_'));
+  if (!filtered.length) { el.innerHTML = '<div style="color:var(--text-muted);padding:32px;text-align:center">Belum ada pengumuman. Klik "+ Tambah Pengumuman" untuk menambahkan.</div>'; return; }
+  el.innerHTML = filtered.map(p => `
     <div class="peng-admin-card">
       <div class="peng-admin-title">${p.judul || ''}</div>
       <div class="peng-admin-isi">${p.isi || ''}</div>
@@ -1509,6 +1511,22 @@ async function loadPengumumanAdmin() {
         </div>
       </div>
     </div>`).join('');
+}
+
+// Edit pengumuman — load data lalu buka modal
+async function editPengumuman(id) {
+  const { data, error } = await sbAdmin.from('pengumuman').select('*').eq('id', id).single();
+  if (error || !data) { showToast('Gagal memuat data pengumuman', 'error'); return; }
+  openModalPengumuman(data);
+}
+
+// Hapus pengumuman dengan konfirmasi
+async function deletePengumuman(id) {
+  if (!confirm('Yakin ingin menghapus pengumuman ini? Tindakan tidak dapat dibatalkan.')) return;
+  const { error } = await sbAdmin.from('pengumuman').delete().eq('id', id);
+  if (error) { showToast('Gagal menghapus: ' + error.message, 'error'); return; }
+  showToast('Pengumuman berhasil dihapus 🗑️', 'success');
+  loadPengumumanAdmin();
 }
 
 // Override loadPubPengumuman untuk tampilkan lampiran
