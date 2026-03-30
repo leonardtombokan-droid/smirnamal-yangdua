@@ -1561,20 +1561,27 @@ async function loadPubBerita() {
   if (!el) return;
   const data = await sbFetch('berita', 'aktif=eq.true&order=created_at.desc&limit=20');
   if (!data.length) { el.innerHTML = '<div style="color:var(--text-muted);font-size:13px">Belum ada berita</div>'; return; }
-  const katIcon = { kegiatan:'⛪', sosial:'🤝', pengembangan:'🏗️', informasi:'ℹ️', lainnya:'📌' };
-  const katLabel = { kegiatan:'Kegiatan Ibadah', sosial:'Kegiatan Sosial', pengembangan:'Pengembangan', informasi:'Informasi Umum', lainnya:'Lainnya' };
   el.innerHTML = data.map(b => {
     const stripped = (b.isi||'').replace(/<[^>]+>/g,'');
     const preview = stripped.length > 120 ? stripped.substring(0,120)+'...' : stripped;
+    const katIcon = { kegiatan:'⛪', sosial:'🤝', pengembangan:'🏗️', informasi:'ℹ️', lainnya:'📌' };
+    const katLabel = { kegiatan:'Kegiatan Ibadah', sosial:'Kegiatan Sosial', pengembangan:'Pengembangan', informasi:'Informasi Umum', lainnya:'Lainnya' };
+    const tgl = new Date(b.created_at).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});
     return `
     <div class="berita-pub-card" onclick="openBeritaDetail(${b.id})">
-      ${b.foto_url ? `<img class="bp-foto" src="${b.foto_url}" alt="${b.judul}" onerror="this.style.display='none'">` : ''}
+      <div class="bp-foto-wrap">
+        ${b.foto_url
+          ? `<img class="bp-foto" src="${b.foto_url}" alt="${b.judul}" onerror="this.parentElement.innerHTML='<div class=\\"bp-foto-placeholder\\">📰</div>'">`
+          : '<div class="bp-foto-placeholder">📰</div>'}
+        <span class="bp-kat-badge">${katIcon[b.kategori]||'📌'} ${katLabel[b.kategori]||b.kategori||'Berita'}</span>
+      </div>
       <div class="bp-body">
-        <div class="bp-kat">${katIcon[b.kategori]||'📌'} ${katLabel[b.kategori]||b.kategori||'-'}</div>
         <div class="bp-judul">${b.judul||''}</div>
         <div class="bp-isi">${preview}</div>
-        <span class="bp-baca">Baca selengkapnya →</span>
-        <div class="bp-tgl">✍️ ${b.ditulis_oleh||'-'} &nbsp;·&nbsp; 📅 ${new Date(b.created_at).toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'})}</div>
+        <div class="bp-footer">
+          <div class="bp-tgl">📅 ${tgl} · ✍️ ${b.ditulis_oleh||'-'}</div>
+          <span class="bp-baca">Baca →</span>
+        </div>
       </div>
     </div>`;
   }).join('');
