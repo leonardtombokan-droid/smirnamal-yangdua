@@ -6,6 +6,15 @@
 <title>SID GMIM Smirna</title>
 <meta name="application-name" content="SID GMIM Smirna">
 <meta name="description" content="Sistem Informasi Digital GMIM Smirna Wilayah Malabar">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://smirnamalalayangdua.org/">
+<meta property="og:title" content="SID GMIM Smirna - Sistem Informasi Digital">
+<meta property="og:description" content="Sistem Informasi Digital GMIM Smirna Wilayah Malabar - Malalayangdua, Manado">
+<meta property="og:image" content="https://smirnamalalayangdua.org/icon-512.png">
+<meta property="og:locale" content="id_ID">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="SID GMIM Smirna">
+<meta name="twitter:description" content="Sistem Informasi Digital GMIM Smirna Wilayah Malabar">
 <meta name="theme-color" content="#1a3a5c">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -25,10 +34,14 @@
 .ql-container.ql-snow { border: 1.5px solid var(--border) !important; min-height: 180px; }
 .ql-editor { min-height: 180px; }
 #bIsiEditor { display: block; }
+/* Images in berita content */
+.berita-detail-isi img, .ql-editor img { max-width: 100%; height: auto; border-radius: 8px; margin: 12px 0; display: block; }
+.bp-isi img { max-width: 100%; height: auto; border-radius: 6px; margin: 8px 0; }
 </style>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
 :root {
   --primary: #1a3a5c;
@@ -63,7 +76,7 @@ body{font-family:'Source Sans 3',sans-serif;background:var(--bg);color:var(--tex
 .pub-hero-bg {
   position: absolute; inset:0;
   background-size:cover; background-position:center 30%;
-  opacity:0.35; filter:brightness(0.6) saturate(0.9);
+  opacity:0.85; filter:brightness(0.75) saturate(1.0);
   transition: opacity 0.5s;
 }
 .pub-hero-bg img {
@@ -76,7 +89,7 @@ body{font-family:'Source Sans 3',sans-serif;background:var(--bg);color:var(--tex
 }
 .pub-hero-gradient {
   position:absolute; inset:0; z-index:1;
-  background: rgba(45,0,80,0.55);
+  background: linear-gradient(to bottom, rgba(15,39,64,0.45) 0%, rgba(15,39,64,0.65) 100%);
 }
 .pub-hero-overlay {
   position: relative; z-index:2;
@@ -1027,10 +1040,82 @@ tr:hover td { background:rgba(26,58,92,0.03); }
 .berita-pub-card .bp-baca { display:inline-block; margin-top:10px; font-size:12px; color:var(--accent); font-weight:700; text-decoration:none; }
 
 @media print {
-  .sidebar,.table-controls,.pagination,.btn,.modal-overlay,.toast,.mobile-toggle { display:none!important; }
-  .main-content { margin-left:0!important; padding:0!important; }
-  table { font-size:11px; }
-  th { background:#1a3a5c!important; color:white!important; -webkit-print-color-adjust:exact; }
+  /* Sembunyikan semua elemen kecuali modal cetak KK */
+  body > * { display:none!important; }
+  #modalCetakKK {
+    display:block!important;
+    position:fixed!important;
+    top:0!important; left:0!important;
+    width:100%!important; height:auto!important;
+    background:none!important;
+    padding:0!important;
+    overflow:visible!important;
+    z-index:9999!important;
+  }
+  #modalCetakKK .modal {
+    display:block!important;
+    position:static!important;
+    box-shadow:none!important;
+    border-radius:0!important;
+    padding:0!important;
+    margin:0 auto!important;
+    max-width:100%!important;
+    width:100%!important;
+    overflow:visible!important;
+    border:none!important;
+    background:transparent!important;
+  }
+  #modalCetakKK .modal-header,
+  #modalCetakKK .modal-footer { display:none!important; }
+
+  @page {
+    size: A5 portrait;
+    margin: 10mm 12mm 10mm 12mm;
+  }
+
+  #kartuKeluargaPrint {
+    display:block!important;
+    width:100%!important;
+    border:2px solid #1a3a5c!important;
+    border-radius:8px!important;
+    padding:14px!important;
+    font-size:11px!important;
+    color:#1a1a2e!important;
+    background:#fff!important;
+    -webkit-print-color-adjust:exact!important;
+    print-color-adjust:exact!important;
+    page-break-inside:avoid!important;
+  }
+
+  #kartuKeluargaPrint table {
+    width:100%!important;
+    border-collapse:collapse!important;
+    font-size:10px!important;
+    margin-bottom:8px!important;
+  }
+  #kartuKeluargaPrint thead tr {
+    background:#1a3a5c!important;
+    color:#fff!important;
+    -webkit-print-color-adjust:exact!important;
+    print-color-adjust:exact!important;
+  }
+  #kartuKeluargaPrint thead th {
+    padding:5px 4px!important;
+    color:#fff!important;
+    -webkit-print-color-adjust:exact!important;
+    print-color-adjust:exact!important;
+  }
+  #kartuKeluargaPrint tbody td {
+    padding:5px 4px!important;
+    border-bottom:1px solid #e5e7eb!important;
+  }
+
+  #kkQrKetua img, #kkQrSekretaris img,
+  #kkQrKetua canvas, #kkQrSekretaris canvas {
+    display:block!important;
+    width:64px!important;
+    height:64px!important;
+  }
 }
 </style>
 </head>
@@ -1421,7 +1506,7 @@ tr:hover td { background:rgba(26,58,92,0.03); }
         <button class="btn btn-excel" onclick="exportExcel('jemaat')">📥 Excel</button>
         <select class="perpage-select" onchange="changePerPage(this.value)"><option value="25">25 data</option><option value="50">50 data</option><option value="99999">Semua</option></select>
       </div>
-      <div class="table-wrapper"><table id="jemaatTable"><thead><tr><th>No</th><th>Nama Lengkap</th><th>L/P</th><th>Tgl Lahir</th><th>Umur</th><th>Pekerjaan</th><th>Baptis</th><th>Sidi</th><th>Relasi</th><th>Alamat Rumah</th><th>Jemaat Asal</th><th>Kolom Wilayah</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="jemaatBody"><tr><td colspan="10" class="loading"><div class="spinner"></div></td></tr></tbody></table></div>
+      <div class="table-wrapper"><table id="jemaatTable"><thead><tr><th>No</th><th>Nama Lengkap</th><th>L/P</th><th>Tgl Lahir</th><th>Umur</th><th>Pekerjaan</th><th>Baptis</th><th>Sidi</th><th>Relasi</th><th>Aksi</th></tr></thead><tbody id="jemaatBody"><tr><td colspan="10" class="loading"><div class="spinner"></div></td></tr></tbody></table></div>
       <div class="pagination" id="pagination"></div>
     </div>
 
@@ -1436,7 +1521,7 @@ tr:hover td { background:rgba(26,58,92,0.03); }
         <button class="btn btn-excel" onclick="exportExcel('per-kolom')">📥 Excel</button>
         <select class="perpage-select" onchange="changeSubPerPage(this.value)"><option value="25">25 data</option><option value="50">50 data</option><option value="99999">Semua</option></select>
       </div>
-      <div class="table-wrapper"><table id="subJemaatTable"><thead><tr><th>No</th><th>Kolom</th><th>Nama Lengkap</th><th>L/P</th><th>Tgl Lahir</th><th>Umur</th><th>Pekerjaan</th><th>Baptis</th><th>Sidi</th><th>Relasi</th><th>Alamat Rumah</th><th>Jemaat Asal</th><th>Kolom Wilayah</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="subJemaatBody"></tbody></table></div>
+      <div class="table-wrapper"><table id="subJemaatTable"><thead><tr><th>No</th><th>Kolom</th><th>Nama Lengkap</th><th>L/P</th><th>Tgl Lahir</th><th>Umur</th><th>Pekerjaan</th><th>Baptis</th><th>Sidi</th><th>Relasi</th><th>Aksi</th></tr></thead><tbody id="subJemaatBody"></tbody></table></div>
       <div class="pagination" id="subPagination"></div>
     </div>
 
@@ -1450,7 +1535,7 @@ tr:hover td { background:rgba(26,58,92,0.03); }
         <button class="btn btn-outline" onclick="printTable('sidiTable')">🖨️ Cetak</button>
         <button class="btn btn-excel" onclick="exportExcel('sidi')">📥 Excel</button>
       </div>
-      <div class="table-wrapper"><table id="sidiTable"><thead><tr><th>No</th><th>Kolom</th><th>Nama Lengkap</th><th>L/P</th><th>Tgl Lahir</th><th>Umur</th><th>Pekerjaan</th><th>Baptis</th><th>Relasi</th><th>Alamat Rumah</th><th>Jemaat Asal</th><th>Kolom Wilayah</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="sidiBody"></tbody></table></div>
+      <div class="table-wrapper"><table id="sidiTable"><thead><tr><th>No</th><th>Kolom</th><th>Nama Lengkap</th><th>L/P</th><th>Tgl Lahir</th><th>Umur</th><th>Pekerjaan</th><th>Baptis</th><th>Relasi</th><th>Aksi</th></tr></thead><tbody id="sidiBody"></tbody></table></div>
       <div class="pagination" id="sidiPagination"></div>
     </div>
 
@@ -1464,7 +1549,7 @@ tr:hover td { background:rgba(26,58,92,0.03); }
         <button class="btn btn-outline" onclick="printTable('belumSidiTable')">🖨️ Cetak</button>
         <button class="btn btn-excel" onclick="exportExcel('belum-sidi')">📥 Excel</button>
       </div>
-      <div class="table-wrapper"><table id="belumSidiTable"><thead><tr><th>No</th><th>Kolom</th><th>Nama Lengkap</th><th>L/P</th><th>Tgl Lahir</th><th>Umur</th><th>Pekerjaan</th><th>Baptis</th><th>Relasi</th><th>Alamat Rumah</th><th>Jemaat Asal</th><th>Kolom Wilayah</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="belumSidiBody"></tbody></table></div>
+      <div class="table-wrapper"><table id="belumSidiTable"><thead><tr><th>No</th><th>Kolom</th><th>Nama Lengkap</th><th>L/P</th><th>Tgl Lahir</th><th>Umur</th><th>Pekerjaan</th><th>Baptis</th><th>Relasi</th><th>Aksi</th></tr></thead><tbody id="belumSidiBody"></tbody></table></div>
       <div class="pagination" id="belumSidiPagination"></div>
     </div>
 
@@ -1814,8 +1899,29 @@ tr:hover td { background:rgba(26,58,92,0.03); }
       </table>
       <div style="font-size:11px;color:var(--text-muted);text-align:right">Dicetak: <span id="kkTanggalCetak"></span></div>
       <div style="font-size:11px;color:var(--text-muted);text-align:right;margin-top:2px">📝 <span id="kkInfoInput"></span></div>
+
+      <!-- Blok Tanda Tangan BPMJ -->
+      <div style="margin-top:20px;border-top:1px solid #e5e7eb;padding-top:14px">
+        <div style="text-align:center;font-size:12px;font-weight:700;color:var(--primary);margin-bottom:12px;text-transform:uppercase;letter-spacing:0.5px">
+          BADAN PEKERJA MAJELIS JEMAAT GMIM "SMIRNA"
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px">
+          <!-- Ketua -->
+          <div style="text-align:center;flex:1">
+            <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px">Ketua,</div>
+            <div id="kkQrKetua" style="display:flex;justify-content:center;margin-bottom:6px"></div>
+            <div style="font-size:11px;font-weight:600;color:#1a1a1a">Pdt. Alfius Mangode, M.Th.</div>
+          </div>
+          <!-- Sekretaris -->
+          <div style="text-align:center;flex:1">
+            <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px">Sekretaris,</div>
+            <div id="kkQrSekretaris" style="display:flex;justify-content:center;margin-bottom:6px"></div>
+            <div style="font-size:11px;font-weight:600;color:#1a1a1a">Pnt. Dr. Ir. Ari Berty Rondonuwu, M.Sc.M.Si.</div>
+          </div>
+        </div>
+      </div>
     </div>
-    <div class="modal-footer"><button class="btn btn-outline" onclick="document.getElementById('modalCetakKK').classList.remove('open')">Tutup</button><button class="btn btn-primary" onclick="window.print()">🖨️ Cetak</button></div>
+    <div class="modal-footer"><button class="btn btn-outline" onclick="document.getElementById('modalCetakKK').classList.remove('open')">Tutup</button><button class="btn btn-primary" onclick="cetakKK()">🖨️ Cetak</button></div>
   </div>
 </div>
 
@@ -2019,6 +2125,35 @@ tr:hover td { background:rgba(26,58,92,0.03); }
     <div style="background:#f9fafb;border-radius:8px;padding:14px;margin-bottom:14px;font-size:14px;color:var(--text)" id="tanggapanAspIsi"></div>
     <div class="form-group-modal"><label>Tanggapan dari BPMJ</label><textarea id="tanggapanIsi" rows="4" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:6px;font-family:inherit;font-size:14px;outline:none;resize:vertical" placeholder="Tulis tanggapan..."></textarea></div>
     <div class="modal-footer"><button class="btn btn-outline" onclick="document.getElementById('modalTanggapan').classList.remove('open')">Batal</button><button class="btn btn-primary" onclick="saveTanggapan()">💾 Kirim Tanggapan</button></div>
+  </div>
+</div>
+
+
+<!-- MODAL EDIT ALAMAT KELUARGA -->
+<div class="modal-overlay" id="modalAlamat">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header">
+      <h2 id="modalAlamatNama">✏️ Edit Alamat Keluarga</h2>
+      <button class="modal-close" onclick="document.getElementById('modalAlamat').classList.remove('open')">×</button>
+    </div>
+    <input type="hidden" id="modalAlamatIds">
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px">Data alamat akan disimpan ke semua anggota keluarga ini sekaligus.</p>
+    <div class="form-group-modal full">
+      <label>🏠 Alamat Rumah</label>
+      <input type="text" id="modalAlamatRumah" placeholder="Alamat tempat tinggal..." style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:6px;font-size:14px;font-family:inherit;outline:none">
+    </div>
+    <div class="form-group-modal full">
+      <label>⛪ Jemaat Asal</label>
+      <input type="text" id="modalAlamatJemaat" placeholder="Nama jemaat asal..." style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:6px;font-size:14px;font-family:inherit;outline:none">
+    </div>
+    <div class="form-group-modal full">
+      <label>📍 Kolom Wilayah</label>
+      <input type="text" id="modalAlamatKolom" placeholder="Wilayah/kolom..." style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:6px;font-size:14px;font-family:inherit;outline:none">
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="document.getElementById('modalAlamat').classList.remove('open')">Batal</button>
+      <button class="btn btn-primary" onclick="simpanAlamatKeluarga()">💾 Simpan</button>
+    </div>
   </div>
 </div>
 

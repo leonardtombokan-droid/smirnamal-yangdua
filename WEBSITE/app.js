@@ -92,14 +92,25 @@ function switchPubTab(tabId) {
 async function sbFetch(table, params='') {
   try {
     let q = sb.from(table).select('*');
-    // Parse params sederhana
-    if (params.includes('aktif=eq.true')) q = q.eq('aktif', true);
-    if (params.includes('order=created_at.desc')) q = q.order('created_at', {ascending:false});
-    if (params.includes('order=urutan.asc')) q = q.order('urutan', {ascending:true});
-    if (params.includes('order=tanggal.desc')) q = q.order('tanggal', {ascending:false});
-    if (params.includes('limit=10')) q = q.limit(10);
-    if (params.includes('limit=20')) q = q.limit(20);
-    if (params.includes('limit=3')) q = q.limit(3);
+    if (params) {
+      // Dynamic eq filter: parse all field=eq.value pairs
+      const eqMatches = [...params.matchAll(/(\w+)=eq\.([^&]+)/g)];
+      for (const m of eqMatches) {
+        const field = m[1]; let val = decodeURIComponent(m[2]);
+        if (field === 'order' || field === 'limit') continue;
+        // Auto type conversion
+        if (val === 'true') val = true;
+        else if (val === 'false') val = false;
+        else if (/^\d+$/.test(val)) val = parseInt(val);
+        q = q.eq(field, val);
+      }
+      // Order
+      const orderMatch = params.match(/order=(\w+)\.(asc|desc)/);
+      if (orderMatch) q = q.order(orderMatch[1], {ascending: orderMatch[2] === 'asc'});
+      // Limit
+      const limitMatch = params.match(/limit=(\d+)/);
+      if (limitMatch) q = q.limit(parseInt(limitMatch[1]));
+    }
     const res = await q;
     return res.data || [];
   } catch(e) { console.error('sbFetch error:', e.message); return []; }
@@ -366,7 +377,7 @@ function renderSubJemaat() {
   const pages=Math.ceil(data.length/subPerPage); if (subCurrentPage>pages) subCurrentPage=1;
   const start=(subCurrentPage-1)*subPerPage;
   const tbody=document.getElementById(cfg.body);
-  if (!data.slice(start,start+subPerPage).length) { tbody.innerHTML=`<tr><td colspan="${cfg.showSidi?15:14}" style="text-align:center;padding:32px;color:var(--text-muted)">Tidak ada data</td></tr>`; document.getElementById(cfg.pag).innerHTML=''; return; }
+  if (!data.slice(start,start+subPerPage).length) { tbody.innerHTML='<tr><td colspan="11" style="text-align:center;padding:32px;color:var(--text-muted)">Tidak ada data</td></tr>'; document.getElementById(cfg.pag).innerHTML=''; return; }
   tbody.innerHTML=data.slice(start,start+subPerPage).map((j,i)=>`<tr>
     <td>${start+i+1}</td>
     <td><span class="badge badge-l" style="background:#e8f4f0;color:#2d6a4f">Kol ${j.kolom||'-'}</span></td>
@@ -378,10 +389,6 @@ function renderSubJemaat() {
     <td><span class="badge ${j.baptis==='sudah-baptis'?'badge-baptis':'badge-belum'}">${j.baptis==='sudah-baptis'?'✓':'✗'}</span></td>
     ${cfg.showSidi?`<td><span class="badge ${j.sidi==='sudah-sidi'?'badge-baptis':'badge-belum'}">${j.sidi==='sudah-sidi'?'✓':'✗'}</span></td>`:''}
     <td>${j.relasi||'-'}</td>
-    <td>${j.alamat_rumah||'-'}</td>
-    <td>${j.jemaat_asal||'-'}</td>
-    <td>${j.alamat_kolom||'-'}</td>
-    <td><span class="badge ${j.status_jemaat==='baru'?'badge-baptis':'badge-belum'}">${j.status_jemaat==='baru'?'Baru':'Lama'}</span></td>
     <td style="white-space:nowrap">${(isAdmin()||currentUser.kolom===j.kolom)?`<button class="btn btn-outline btn-sm" onclick="editJemaat(${j.id})">✏️</button> <button class="btn btn-danger btn-sm" onclick="deleteJemaat(${j.id},'${(j.nama_lengkap||'').replace(/'/g,"\\'")}')">🗑️</button>`:'—'}</td>
   </tr>`).join('');
   const pagEl=document.getElementById(cfg.pag);
@@ -413,7 +420,7 @@ function searchJemaat(){filterJemaat();}
 function renderTable() {
   const start=(currentPage-1)*perPage;
   const tbody=document.getElementById('jemaatBody');
-  if (!filteredJemaat.slice(start,start+perPage).length){tbody.innerHTML='<tr><td colspan="14" style="text-align:center;padding:32px;color:var(--text-muted)">Tidak ada data</td></tr>';document.getElementById('pagination').innerHTML='';return;}
+  if (!filteredJemaat.slice(start,start+perPage).length){tbody.innerHTML='<tr><td colspan="10" style="text-align:center;padding:32px;color:var(--text-muted)">Tidak ada data</td></tr>';document.getElementById('pagination').innerHTML='';return;}
   tbody.innerHTML=filteredJemaat.slice(start,start+perPage).map((j,i)=>`
     <tr>
       <td>${start+i+1}</td>
@@ -425,10 +432,6 @@ function renderTable() {
       <td><span class="badge ${j.baptis==='sudah-baptis'?'badge-baptis':'badge-belum'}">${j.baptis==='sudah-baptis'?'✓':'✗'}</span></td>
       <td><span class="badge ${j.sidi==='sudah-sidi'?'badge-baptis':'badge-belum'}">${j.sidi==='sudah-sidi'?'✓':'✗'}</span></td>
       <td>${j.relasi||'-'}</td>
-      <td>${j.alamat_rumah||'-'}</td>
-      <td>${j.jemaat_asal||'-'}</td>
-      <td>${j.alamat_kolom||'-'}</td>
-      <td><span class="badge ${j.status_jemaat==='baru'?'badge-baptis':'badge-belum'}">${j.status_jemaat==='baru'?'Baru':'Lama'}</span></td>
       <td>${(isAdmin()||currentUser.kolom===j.kolom)?`<button class="btn btn-outline btn-sm" onclick="editJemaat(${j.id})">✏️</button> <button class="btn btn-danger btn-sm" onclick="deleteJemaat(${j.id},'${(j.nama_lengkap||'').replace(/'/g,"\\'")}')">🗑️</button>`:'—'}</td>
     </tr>`).join('');
   renderPagination();
@@ -953,10 +956,70 @@ function renderKeluarga(data) {
       const noKK=members.find(m=>m.no_kk)?.no_kk||'';
       const alamatRumah=members.find(m=>m.alamat_rumah)?.alamat_rumah||'';
       const statusJemaat=members.find(m=>m.status_jemaat)?.status_jemaat||'lama';
-      return `<div class="keluarga-card"><div class="keluarga-card-header"><h4>🏠 ${fam}</h4><div style="display:flex;gap:6px;align-items:center">${noKK?`<span class="kk-badge">KK: ${noKK}</span>`:''}<span style="padding:2px 10px;border-radius:20px;font-size:11px;font-weight:700;${statusJemaat==='baru'?'background:#fef3c7;color:#92400e':'background:#d1fae5;color:#065f46'}">${statusJemaat==='baru'?'🆕 Baru':'✅ Lama'}</span></div></div><div class="keluarga-anggota">${members.map(m=>`<div class="anggota-item"><span class="anggota-relasi">${m.relasi||'-'}</span><span class="anggota-name">${m.nama_lengkap||'-'}</span><span class="anggota-lp">${m.lp||''}</span><span class="anggota-umur">${m.tanggal_lahir?hitungUmur(m.tanggal_lahir):''}</span></div>`).join('')}</div>${alamatRumah?`<div style="margin:0 16px 8px;padding:6px 10px;background:rgba(26,58,92,0.04);border-radius:6px;border:1px solid var(--border);font-size:12px;color:var(--text-muted)">🏠 ${alamatRumah}</div>`:''}<div class="keluarga-footer">${members.length} anggota &nbsp;|&nbsp; Kolom ${kolom} &nbsp;|&nbsp;<button class="btn btn-outline btn-sm" style="padding:3px 10px;font-size:12px" onclick="cetakKartuKeluarga('${fam.replace(/'/g,"\\'")}')">🖨️ Cetak KK</button><button class="btn btn-outline btn-sm" style="padding:3px 10px;font-size:12px;margin-left:4px" onclick="bukaModalPeta('${fam.replace(/'/g,"\\'")}')">📍 Peta</button></div></div>`;
+      const jemaatAsal=members.find(m=>m.jemaat_asal)?.jemaat_asal||'';
+      const alamatKolom=members.find(m=>m.alamat_kolom)?.alamat_kolom||'';
+      const memberIds=members.map(m=>m.id).join(',');
+      const _fam=fam.replace(/"/g,'&quot;');
+      const _al=(alamatRumah||'').replace(/"/g,'&quot;');
+      const _ja=(jemaatAsal||'').replace(/"/g,'&quot;');
+      const _ak=(alamatKolom||'').replace(/"/g,'&quot;');
+      const _anggota=members.map(m=>'<div class="anggota-item"><span class="anggota-relasi">'+(m.relasi||'-')+'</span><span class="anggota-name">'+(m.nama_lengkap||'-')+'</span><span class="anggota-lp">'+(m.lp||'')+'</span><span class="anggota-umur">'+(m.tanggal_lahir?hitungUmur(m.tanggal_lahir):'')+'</span></div>').join('');
+      const _info=((alamatRumah?'<div>🏠 <b>Alamat:</b> '+alamatRumah+'</div>':'')+(jemaatAsal?'<div>⛪ <b>Jemaat Asal:</b> '+jemaatAsal+'</div>':'')+(alamatKolom?'<div>📍 <b>Kolom Wilayah:</b> '+alamatKolom+'</div>':''))||'<div style="color:#aaa;font-style:italic">Belum ada data alamat — klik Edit Alamat</div>';
+      return '<div class="keluarga-card" data-fam="'+_fam+'" data-ids="'+memberIds+'" data-alamat="'+_al+'" data-jemaat="'+_ja+'" data-kolom-wil="'+_ak+'">'
+        +'<div class="keluarga-card-header"><h4>🏠 '+fam+'</h4><div style="display:flex;gap:6px;align-items:center">'+(noKK?'<span class="kk-badge">KK: '+noKK+'</span>':'')
+        +'<span style="padding:2px 10px;border-radius:20px;font-size:11px;font-weight:700;'+(statusJemaat==='baru'?'background:#fef3c7;color:#92400e':'background:#d1fae5;color:#065f46')+'">'+(statusJemaat==='baru'?'🆕 Baru':'✅ Lama')+'</span></div></div>'
+        +'<div class="keluarga-anggota">'+_anggota+'</div>'
+        +'<div style="margin:8px 16px;padding:8px 10px;background:rgba(26,58,92,0.04);border-radius:6px;border:1px solid var(--border);font-size:12px;color:var(--text-muted)">'+_info+'</div>'
+        +'<div class="keluarga-footer">'+members.length+' anggota &nbsp;|&nbsp; Kolom '+kolom+' &nbsp;|&nbsp;'
+        +'<button class="btn btn-outline btn-sm" style="padding:3px 10px;font-size:12px" onclick="cetakKartuKeluarga(this)">🖨️ Cetak KK</button>'
+        +'<button class="btn btn-outline btn-sm" style="padding:3px 10px;font-size:12px;margin-left:4px" onclick="bukaModalPetaCard(this)">📍 Peta</button>'
+        +'<button class="btn btn-outline btn-sm" style="padding:3px 10px;font-size:12px;margin-left:4px;color:var(--primary);border-color:var(--primary)" onclick="bukaModalAlamatCard(this)">✏️ Edit Alamat</button>'
+        +'</div></div>';
     }).join('')}</div></div>`;
   }).join('');
 }
+
+
+// ===== EDIT ALAMAT KELUARGA =====
+function bukaModalAlamatCard(btn) {
+  const card = btn.closest('.keluarga-card');
+  document.getElementById('modalAlamatNama').textContent = '🏠 ' + card.dataset.fam;
+  document.getElementById('modalAlamatIds').value = card.dataset.ids;
+  document.getElementById('modalAlamatRumah').value = card.dataset.alamat || '';
+  document.getElementById('modalAlamatJemaat').value = card.dataset.jemaat || '';
+  document.getElementById('modalAlamatKolom').value = card.dataset.kolomWil || '';
+  document.getElementById('modalAlamat').classList.add('open');
+}
+
+function bukaModalPetaCard(btn) {
+  bukaModalPeta(btn.closest('.keluarga-card').dataset.fam);
+}
+
+async function simpanAlamatKeluarga() {
+  const ids = document.getElementById('modalAlamatIds').value.split(',').map(Number).filter(Boolean);
+  const alamat_rumah = document.getElementById('modalAlamatRumah').value.trim();
+  const jemaat_asal = document.getElementById('modalAlamatJemaat').value.trim();
+  const alamat_kolom = document.getElementById('modalAlamatKolom').value.trim();
+  if (!ids.length) { showToast('Tidak ada anggota keluarga', 'error'); return; }
+  const btn = document.querySelector('#modalAlamat .btn-primary');
+  if (btn) { btn.disabled = true; btn.textContent = 'Menyimpan...'; }
+  try {
+    const { error } = await sbAdmin.from('jemaat')
+      .update({ alamat_rumah, jemaat_asal, alamat_kolom, updated_at: new Date().toISOString() })
+      .in('id', ids);
+    if (error) { showToast('Gagal simpan: ' + error.message, 'error'); return; }
+    showToast('Alamat keluarga berhasil disimpan ✅', 'success');
+    document.getElementById('modalAlamat').classList.remove('open');
+    loadKeluarga();
+  } catch(e) {
+    showToast('Error: ' + e.message, 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '💾 Simpan'; }
+  }
+}
+
+// Fix cetakKartuKeluarga to accept button element
+const _cetakOri = window._cetakOri;
 
 // ===== PENATUA =====
 async function loadPenatua() {
@@ -1073,7 +1136,7 @@ async function simpanKoordinat(){
 }
 
 // ===== CETAK KK =====
-function cetakKartuKeluarga(namaKeluarga){
+function cetakKartuKeluarga(arg){const namaKeluarga=(typeof arg==='string')?arg:arg.closest('.keluarga-card').dataset.fam;
   const members=allKeluargaData.filter(j=>j.nama_keluarga===namaKeluarga);if(!members.length)return;
   const rep=members[0];const relasiOrder={'Suami':1,'Istri':2,'Anak':3,'Lainnya':4};
   const sorted=[...members].sort((a,b)=>(relasiOrder[a.relasi]||5)-(relasiOrder[b.relasi]||5));
@@ -1088,7 +1151,103 @@ function cetakKartuKeluarga(namaKeluarga){
   const io=members.find(m=>m.diinput_oleh);
   document.getElementById('kkInfoInput').textContent=io?`Diinput: ${io.diinput_oleh} — ${new Date(io.waktu_input).toLocaleString('id-ID')}`:'Data lama';
   document.getElementById('kkAnggotaBody').innerHTML=sorted.map(m=>`<tr><td style="padding:6px;border-bottom:1px solid #e5e7eb">${m.nama_lengkap||'-'}</td><td style="padding:6px;border-bottom:1px solid #e5e7eb;text-align:center">${m.lp||'-'}</td><td style="padding:6px;border-bottom:1px solid #e5e7eb">${formatTanggal(m.tanggal_lahir)}</td><td style="padding:6px;border-bottom:1px solid #e5e7eb">${hitungUmur(m.tanggal_lahir)}</td><td style="padding:6px;border-bottom:1px solid #e5e7eb">${m.relasi||'-'}</td><td style="padding:6px;border-bottom:1px solid #e5e7eb;text-align:center">${m.baptis==='sudah-baptis'?'✓':'-'}</td><td style="padding:6px;border-bottom:1px solid #e5e7eb;text-align:center">${m.sidi==='sudah-sidi'?'✓':'-'}</td></tr>`).join('');
+  // Generate QR Code tanda tangan digital
+  _generateKKQr('kkQrKetua', 'Ketua BPMJ GMIM Smirna|Pdt. Alfius Mangode, M.Th.|' + namaKeluarga + '|' + new Date().toISOString().slice(0,10));
+  _generateKKQr('kkQrSekretaris', 'Sekretaris BPMJ GMIM Smirna|Pnt. Dr. Ir. Ari Berty Rondonuwu, M.Sc.M.Si.|' + namaKeluarga + '|' + new Date().toISOString().slice(0,10));
+
   document.getElementById('modalCetakKK').classList.add('open');
+}
+
+function cetakKK() {
+  const konten = document.getElementById('kartuKeluargaPrint');
+  if (!konten) { window.print(); return; }
+
+  // Clone konten agar tidak merusak DOM asli
+  const clone = konten.cloneNode(true);
+
+  // Konversi canvas QR di DOM asli ke dataURL, lalu masukkan ke clone sebagai img
+  ['kkQrKetua','kkQrSekretaris'].forEach(qrId => {
+    const origEl = document.getElementById(qrId);
+    const cloneEl = clone.querySelector('#' + qrId);
+    if (!origEl || !cloneEl) return;
+    const canvas = origEl.querySelector('canvas');
+    if (canvas) {
+      const dataUrl = canvas.toDataURL('image/png');
+      cloneEl.innerHTML = '<img src="' + dataUrl + '" style="width:72px;height:72px;display:block;margin:0 auto;">';
+    }
+  });
+
+  const styles = Array.from(document.querySelectorAll('link[rel="stylesheet"], style'))
+    .map(el => el.outerHTML).join('\n');
+
+  const html = `<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Kartu Keluarga GMIM Smirna</title>
+${styles}
+<style>
+  @page { size: A5 portrait; margin: 10mm 12mm; }
+  * { box-sizing: border-box; }
+  body { margin:0; padding:0; background:#fff; font-family:'Source Sans 3',Arial,sans-serif; }
+  :root { --primary:#1a3a5c; --accent:#c8a96e; --accent-light:#e8d5a3; --text:#1a1a2e; --text-muted:#6b7280; --border:#ddd5c0; }
+  #kartuKeluargaPrint { border:2px solid #1a3a5c; border-radius:8px; padding:14px; font-size:11px; color:#1a1a2e; background:#fff; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  table { width:100%; border-collapse:collapse; font-size:10px; margin-bottom:8px; }
+  thead tr { background:#1a3a5c !important; color:#fff !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  thead th { padding:5px 4px; color:#fff !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  tbody td { padding:5px 4px; border-bottom:1px solid #e5e7eb; }
+  img { display:block; }
+</style>
+</head>
+<body>${clone.outerHTML}</body>
+</html>`;
+
+  const win = window.open('', '_blank', 'width=700,height=900');
+  win.document.write(html);
+  win.document.close();
+  win.onload = function() {
+    setTimeout(() => { win.focus(); win.print(); win.close(); }, 500);
+  };
+}
+
+function _generateKKQr(elId, text) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  el.innerHTML = '';
+  if (typeof QRCode !== 'undefined') {
+    new QRCode(el, {
+      text: text,
+      width: 72,
+      height: 72,
+      colorDark: '#1a3a5c',
+      colorLight: '#ffffff',
+      correctLevel: QRCode.CorrectLevel.M
+    });
+    // QRCode.js menghasilkan canvas + img — sembunyikan img, tampilkan canvas saja
+    setTimeout(() => {
+      const img = el.querySelector('img');
+      const canvas = el.querySelector('canvas');
+      if (img) img.style.display = 'none';
+      if (canvas) {
+        canvas.style.display = 'block';
+        canvas.style.margin = '0 auto';
+        canvas.style.width = '72px';
+        canvas.style.height = '72px';
+      }
+    }, 100);
+  } else {
+    const size = 72;
+    const data = text.split('').map(c => c.charCodeAt(0));
+    const bars = [];
+    let x = 2, barW = 2;
+    for (let i = 0; i < Math.min(data.length, 30); i++) {
+      const h = 20 + (data[i] % 40);
+      bars.push('<rect x="' + x + '" y="' + ((size - h) / 2) + '" width="' + barW + '" height="' + h + '" fill="#1a3a5c"/>');
+      x += barW + (data[i] % 2 === 0 ? 1 : 2);
+      if (x > size - 4) break;
+    }
+    el.innerHTML = '<svg width="' + size + '" height="' + size + '" xmlns="http://www.w3.org/2000/svg" style="border:1px solid #e5e7eb;border-radius:4px;display:block;margin:0 auto">' + bars.join('') + '</svg>';
+  }
 }
 
 // ===== IMPORT =====
@@ -1358,7 +1517,9 @@ async function loadPubPengumuman() {
   const el = document.getElementById('pubPengumumanList');
   if (!el) return;
   if (!data || !data.length) { el.innerHTML = '<div style="color:var(--text-muted)">Belum ada pengumuman</div>'; return; }
-  el.innerHTML = data.map(p => `
+  const filtered = data.filter(p => !p.judul || !p.judul.startsWith('_'));
+  if (!filtered.length) { el.innerHTML = '<div style="color:var(--text-muted)">Belum ada pengumuman</div>'; return; }
+  el.innerHTML = filtered.map(p => `
     <div class="peng-card">
       <div class="peng-title">${p.judul || ''}</div>
       <div class="peng-isi">${p.isi || ''}</div>
@@ -1577,13 +1738,40 @@ function openModalBerita(data = null) {
       theme: 'snow',
       placeholder: 'Tulis isi berita di sini...',
       modules: {
-        toolbar: [
-          [{ 'header': [1, 2, 3, false] }],
-          ['bold', 'italic', 'underline'],
-          [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-          ['link'],
-          ['clean']
-        ]
+        toolbar: {
+          container: [
+            [{ 'header': [1, 2, 3, false] }],
+            ['bold', 'italic', 'underline'],
+            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+            [{ 'align': [] }],
+            ['link', 'image'],
+            ['clean']
+          ],
+          handlers: {
+            image: function() {
+              const input = document.createElement('input');
+              input.setAttribute('type', 'file');
+              input.setAttribute('accept', 'image/*');
+              input.click();
+              input.onchange = async () => {
+                const file = input.files[0];
+                if (!file) return;
+                if (file.size > 5 * 1024 * 1024) { showToast('Ukuran gambar max 5MB', 'error'); return; }
+                const ext = file.name.split('.').pop().toLowerCase();
+                const fname = 'berita/' + Date.now() + '_' + Math.random().toString(36).substr(2,6) + '.' + ext;
+                showToast('Mengupload gambar...', 'info');
+                const { data, error } = await sbAdmin.storage.from('foto').upload(fname, file, { upsert: true });
+                if (error) { showToast('Gagal upload: ' + error.message, 'error'); return; }
+                const { data: urlData } = sbAdmin.storage.from('foto').getPublicUrl(fname);
+                const url = urlData.publicUrl;
+                const range = window._quillBerita.getSelection(true);
+                window._quillBerita.insertEmbed(range.index, 'image', url);
+                window._quillBerita.setSelection(range.index + 1);
+                showToast('Gambar berhasil ditambahkan ✅', 'success');
+              };
+            }
+          }
+        }
       }
     });
     if (data && data.isi) window._quillBerita.root.innerHTML = data.isi || '';
@@ -1959,12 +2147,13 @@ async function loadPubPengumumanRingkasan() {
   if (!el) return;
   el.innerHTML = '<div class="pub-loading">Memuat...</div>';
   try {
-    const { data } = await sb.from('pengumuman').select('id,judul,tanggal_mulai').eq('aktif', true).order('created_at', { ascending: false }).limit(4);
-    if (!data || !data.length) {
+    const { data } = await sb.from('pengumuman').select('id,judul,tanggal_mulai').eq('aktif', true).order('created_at', { ascending: false }).limit(10);
+    const filtered = data ? data.filter(p => !p.judul || !p.judul.startsWith('_')).slice(0, 4) : [];
+    if (!filtered.length) {
       el.innerHTML = '<div style="color:var(--text-muted);font-size:13px;padding:8px 0">Belum ada pengumuman</div>';
       return;
     }
-    el.innerHTML = data.map(p => `
+    el.innerHTML = filtered.map(p => `
       <div class="peng-ringkasan-card" onclick="goPengumumanFull()">
         <span class="pr-icon">📢</span>
         <span class="pr-title">${p.judul || 'Pengumuman'}</span>
@@ -2085,27 +2274,44 @@ async function hapusWarta(slot) {
 
 // ===== VISITOR COUNTER =====
 async function loadVisitorCounter() {
+  // Set defaults first
+  ['visitorHariIni','visitorMinggu','visitorTotal'].forEach(id => {
+    const el = document.getElementById(id); if(el) el.textContent = '0';
+  });
   try {
     const today = new Date().toISOString().split('T')[0];
     const weekAgo = new Date(Date.now()-7*24*60*60*1000).toISOString().split('T')[0];
 
-    // Catat kunjungan hari ini (pakai log_perubahan sebagai visitor log)
+    // Catat kunjungan hari ini (pakai localStorage agar persistent antar tab)
     const sessionKey = 'sid_visited_'+today;
-    if (!sessionStorage.getItem(sessionKey)) {
-      sessionStorage.setItem(sessionKey,'1');
-      await sb.from('log_perubahan').insert({
-        aksi:'visitor', detail:'kunjungan_publik', tanggal:today,
-        pengguna:'publik', entitas:'website'
-      }).catch(()=>{});
+    if (!localStorage.getItem(sessionKey)) {
+      localStorage.setItem(sessionKey, '1');
+      // Clean old keys
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && k.startsWith('sid_visited_') && k !== sessionKey) {
+          const d = k.replace('sid_visited_','');
+          if (d < weekAgo) localStorage.removeItem(k);
+        }
+      }
+      try {
+        await sb.from('log_perubahan').insert({
+          aksi:'visitor', detail:'kunjungan_publik', tanggal:today,
+          pengguna:'publik', entitas:'website'
+        });
+      } catch(e) { console.log('Visitor log insert skipped'); }
     }
 
-    // Hitung visitor
-    const {count:totalCount} = await sb.from('log_perubahan').select('*',{count:'exact',head:true})
-      .eq('aksi','visitor').catch(()=>({count:0}));
-    const {count:todayCount} = await sb.from('log_perubahan').select('*',{count:'exact',head:true})
-      .eq('aksi','visitor').eq('tanggal',today).catch(()=>({count:0}));
-    const {count:weekCount} = await sb.from('log_perubahan').select('*',{count:'exact',head:true})
-      .eq('aksi','visitor').gte('tanggal',weekAgo).catch(()=>({count:0}));
+    // Hitung visitor secara paralel
+    const [totalRes, todayRes, weekRes] = await Promise.all([
+      sb.from('log_perubahan').select('*',{count:'exact',head:true}).eq('aksi','visitor'),
+      sb.from('log_perubahan').select('*',{count:'exact',head:true}).eq('aksi','visitor').eq('tanggal',today),
+      sb.from('log_perubahan').select('*',{count:'exact',head:true}).eq('aksi','visitor').gte('tanggal',weekAgo)
+    ]);
+
+    const totalCount = totalRes.count || 0;
+    const todayCount = todayRes.count || 0;
+    const weekCount = weekRes.count || 0;
 
     const fmt = n => n>=1000?(n/1000).toFixed(1)+'K':String(n||0);
     const el1=document.getElementById('visitorHariIni');
@@ -2115,9 +2321,7 @@ async function loadVisitorCounter() {
     if(el2) el2.textContent=fmt(weekCount);
     if(el3) el3.textContent=fmt(totalCount);
   } catch(e) {
-    ['visitorHariIni','visitorMinggu','visitorTotal'].forEach(id=>{
-      const el=document.getElementById(id); if(el)el.textContent='-';
-    });
+    console.error('Visitor counter error:', e);
   }
 }
 

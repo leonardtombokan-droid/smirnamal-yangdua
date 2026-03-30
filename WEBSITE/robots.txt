@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://silly-biscuit-9c858e.netlify.app/sitemap.xml
+Sitemap: https://smirnamalalayangdua.org/sitemap.xml
