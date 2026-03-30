@@ -1490,12 +1490,13 @@ function openModalPengumuman(data = null) {
   document.getElementById('modalPengumuman').classList.add('open');
 }
 
-// Override loadPengumumanAdmin untuk tampilkan lampiran
+// loadPengumumanAdmin — filter entri sistem, tambah edit & delete
 async function loadPengumumanAdmin() {
-  const { data } = await sb.from('pengumuman').select('*').order('created_at', { ascending: false });
+  const { data } = await sbAdmin.from('pengumuman').select('*').order('created_at', { ascending: false });
   const el = document.getElementById('pengumumanAdminList');
-  if (!data || !data.length) { el.innerHTML = '<div style="color:var(--text-muted);padding:32px;text-align:center">Belum ada pengumuman</div>'; return; }
-  el.innerHTML = data.map(p => `
+  const list = (data || []).filter(p => !p.judul || !p.judul.startsWith('_'));
+  if (!list.length) { el.innerHTML = '<div style="color:var(--text-muted);padding:32px;text-align:center">Belum ada pengumuman. Klik "+ Tambah Pengumuman".</div>'; return; }
+  el.innerHTML = list.map(p => `
     <div class="peng-admin-card">
       <div class="peng-admin-title">${p.judul || ''}</div>
       <div class="peng-admin-isi">${p.isi || ''}</div>
@@ -1511,21 +1512,50 @@ async function loadPengumumanAdmin() {
     </div>`).join('');
 }
 
-// Override loadPubPengumuman untuk tampilkan lampiran
+async function editPengumuman(id) {
+  const { data, error } = await sbAdmin.from('pengumuman').select('*').eq('id', id).single();
+  if (error || !data) { showToast('Gagal memuat data pengumuman', 'error'); return; }
+  openModalPengumuman(data);
+}
+
+async function deletePengumuman(id) {
+  if (!confirm('Yakin ingin menghapus pengumuman ini?')) return;
+  const { error } = await sbAdmin.from('pengumuman').delete().eq('id', id);
+  if (error) { showToast('Gagal menghapus: ' + error.message, 'error'); return; }
+  showToast('Pengumuman berhasil dihapus 🗑️', 'success');
+  loadPengumumanAdmin();
+}
+
+// loadPubPengumuman — carousel style
 async function loadPubPengumuman() {
-  const { data } = await sb.from('pengumuman').select('*').eq('aktif', true).order('created_at', { ascending: false }).limit(10);
+  const { data } = await sb.from('pengumuman').select('*').eq('aktif', true).order('created_at', { ascending: false }).limit(20);
   const el = document.getElementById('pubPengumumanList');
   if (!el) return;
-  if (!data || !data.length) { el.innerHTML = '<div style="color:var(--text-muted)">Belum ada pengumuman</div>'; return; }
-  const filtered = data.filter(p => !p.judul || !p.judul.startsWith('_'));
-  if (!filtered.length) { el.innerHTML = '<div style="color:var(--text-muted)">Belum ada pengumuman</div>'; return; }
-  el.innerHTML = filtered.map(p => `
-    <div class="peng-card">
-      <div class="peng-title">${p.judul || ''}</div>
-      <div class="peng-isi">${p.isi || ''}</div>
-      ${p.lampiran_url ? `<div style="margin-top:10px"><a class="lampiran-link" href="${p.lampiran_url}" target="_blank" style="background:rgba(255,255,255,0.1);border-color:rgba(255,255,255,0.2);color:var(--accent-light)">📎 ${p.lampiran_nama || 'Lihat Lampiran'}</a></div>` : ''}
-      <div class="peng-tgl">${p.tanggal_mulai ? '📅 ' + formatTanggal(p.tanggal_mulai) : ''} ${p.tanggal_selesai ? ' s/d ' + formatTanggal(p.tanggal_selesai) : ''}</div>
-    </div>`).join('');
+  const filtered = (data || []).filter(p => !p.judul || !p.judul.startsWith('_'));
+  if (!filtered.length) { el.innerHTML = '<div style="color:var(--text-muted);padding:24px;text-align:center">Belum ada pengumuman aktif.</div>'; return; }
+  const id = 'pcr_' + Date.now();
+  el.innerHTML = `
+    <div class="pub-carousel" id="${id}">
+      <div class="pub-carousel-track">
+        ${filtered.map((p, i) => `
+          <div class="pub-carousel-slide ${i===0?'active':''}" data-idx="${i}">
+            <div class="peng-card">
+              <div class="peng-title">${p.judul || ''}</div>
+              <div class="peng-isi">${p.isi || ''}</div>
+              ${p.lampiran_url ? `<div style="margin-top:10px"><a class="lampiran-link" href="${p.lampiran_url}" target="_blank">📎 ${p.lampiran_nama||'Lihat Lampiran'}</a></div>` : ''}
+              <div class="peng-tgl">${p.tanggal_mulai ? '📅 '+formatTanggal(p.tanggal_mulai) : ''} ${p.tanggal_selesai ? ' s/d '+formatTanggal(p.tanggal_selesai) : ''}</div>
+            </div>
+          </div>`).join('')}
+      </div>
+      ${filtered.length > 1 ? `
+      <div class="pub-carousel-nav">
+        <button class="pcr-btn" onclick="pcrMove('${id}',-1)">‹</button>
+        <div class="pcr-dots">${filtered.map((_,i)=>`<span class="pcr-dot ${i===0?'active':''}" onclick="pcrGo('${id}',${i})"></span>`).join('')}</div>
+        <button class="pcr-btn" onclick="pcrMove('${id}',1)">›</button>
+      </div>
+      <div class="pcr-counter" id="${id}_ctr">1 / ${filtered.length}</div>` : ''}
+    </div>`;
+  if (filtered.length > 1) initCarouselAuto(id, filtered.length);
 }
 
 // ===== BERITA =====
@@ -1561,23 +1591,71 @@ async function loadPubBerita() {
   if (!el) return;
   const data = await sbFetch('berita', 'aktif=eq.true&order=created_at.desc&limit=20');
   if (!data.length) { el.innerHTML = '<div style="color:var(--text-muted);font-size:13px">Belum ada berita</div>'; return; }
-  const katIcon = { kegiatan:'⛪', sosial:'🤝', pengembangan:'🏗️', informasi:'ℹ️', lainnya:'📌' };
+  const katIcon  = { kegiatan:'⛪', sosial:'🤝', pengembangan:'🏗️', informasi:'ℹ️', lainnya:'📌' };
   const katLabel = { kegiatan:'Kegiatan Ibadah', sosial:'Kegiatan Sosial', pengembangan:'Pengembangan', informasi:'Informasi Umum', lainnya:'Lainnya' };
-  el.innerHTML = data.map(b => {
-    const stripped = (b.isi||'').replace(/<[^>]+>/g,'');
-    const preview = stripped.length > 120 ? stripped.substring(0,120)+'...' : stripped;
-    return `
-    <div class="berita-pub-card" onclick="openBeritaDetail(${b.id})">
-      ${b.foto_url ? `<img class="bp-foto" src="${b.foto_url}" alt="${b.judul}" onerror="this.style.display='none'">` : ''}
-      <div class="bp-body">
-        <div class="bp-kat">${katIcon[b.kategori]||'📌'} ${katLabel[b.kategori]||b.kategori||'-'}</div>
-        <div class="bp-judul">${b.judul||''}</div>
-        <div class="bp-isi">${preview}</div>
-        <span class="bp-baca">Baca selengkapnya →</span>
-        <div class="bp-tgl">✍️ ${b.ditulis_oleh||'-'} &nbsp;·&nbsp; 📅 ${new Date(b.created_at).toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'})}</div>
-      </div>
-    </div>`;
-  }).join('');
+  // Carousel (≤3 item) vs Grid (>3 item)
+  if (data.length <= 3) {
+    // Carousel slide
+    const id = 'bcr_' + Date.now();
+    el.innerHTML = `
+      <div class="pub-carousel" id="${id}">
+        <div class="pub-carousel-track">
+          ${data.map((b, i) => {
+            const stripped = (b.isi||'').replace(/<[^>]+>/g,'');
+            const preview = stripped.length>120 ? stripped.substring(0,120)+'...' : stripped;
+            const tgl = new Date(b.created_at).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});
+            return `<div class="pub-carousel-slide ${i===0?'active':''}" data-idx="${i}">
+              <div class="berita-pub-card" onclick="openBeritaDetail(${b.id})" style="cursor:pointer">
+                <div class="bp-foto-wrap">
+                  ${b.foto_url ? `<img class="bp-foto" src="${b.foto_url}" alt="${b.judul}" onerror="this.parentElement.innerHTML='<div class=\"bp-foto-placeholder\">📰</div>'">`
+                    : '<div class="bp-foto-placeholder">📰</div>'}
+                  <span class="bp-kat-badge">${katIcon[b.kategori]||'📌'} ${katLabel[b.kategori]||b.kategori||'Berita'}</span>
+                </div>
+                <div class="bp-body">
+                  <div class="bp-judul">${b.judul||''}</div>
+                  <div class="bp-isi">${preview}</div>
+                  <div class="bp-footer">
+                    <div class="bp-tgl">📅 ${tgl} · ✍️ ${b.ditulis_oleh||'-'}</div>
+                    <span class="bp-baca">Baca →</span>
+                  </div>
+                </div>
+              </div>
+            </div>`;
+          }).join('')}
+        </div>
+        ${data.length > 1 ? `
+        <div class="pub-carousel-nav">
+          <button class="pcr-btn" onclick="pcrMove('${id}',-1)">‹</button>
+          <div class="pcr-dots">${data.map((_,i)=>`<span class="pcr-dot ${i===0?'active':''}" onclick="pcrGo('${id}',${i})"></span>`).join('')}</div>
+          <button class="pcr-btn" onclick="pcrMove('${id}',1)">›</button>
+        </div>
+        <div class="pcr-counter" id="${id}_ctr">1 / ${data.length}</div>` : ''}
+      </div>`;
+    if (data.length > 1) initCarouselAuto(id, data.length);
+  } else {
+    // Grid biasa untuk banyak berita
+    el.innerHTML = data.map(b => {
+      const stripped = (b.isi||'').replace(/<[^>]+>/g,'');
+      const preview = stripped.length>120 ? stripped.substring(0,120)+'...' : stripped;
+      const tgl = new Date(b.created_at).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});
+      return `
+      <div class="berita-pub-card" onclick="openBeritaDetail(${b.id})" style="cursor:pointer">
+        <div class="bp-foto-wrap">
+          ${b.foto_url ? `<img class="bp-foto" src="${b.foto_url}" alt="${b.judul}" onerror="this.parentElement.innerHTML='<div class=\"bp-foto-placeholder\">📰</div>'">`
+            : '<div class="bp-foto-placeholder">📰</div>'}
+          <span class="bp-kat-badge">${katIcon[b.kategori]||'📌'} ${katLabel[b.kategori]||b.kategori||'Berita'}</span>
+        </div>
+        <div class="bp-body">
+          <div class="bp-judul">${b.judul||''}</div>
+          <div class="bp-isi">${preview}</div>
+          <div class="bp-footer">
+            <div class="bp-tgl">📅 ${tgl} · ✍️ ${b.ditulis_oleh||'-'}</div>
+            <span class="bp-baca">Baca →</span>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  }
 }
 
 // ===== BERITA DETAIL =====
@@ -2703,4 +2781,42 @@ if ('serviceWorker' in navigator) {
   window.addEventListener('load',()=>{navigator.serviceWorker.register('./sw.js').then(()=>console.log('✅ PWA aktif')).catch(()=>console.log('ℹ️ SW tidak tersedia'));});
 }
 
+// ===== CAROUSEL HELPER =====
+let _carouselTimers = {};
 
+function pcrGetState(id) {
+  const el = document.getElementById(id);
+  if (!el) return null;
+  const slides = el.querySelectorAll('.pub-carousel-slide');
+  const dots   = el.querySelectorAll('.pcr-dot');
+  const ctr    = document.getElementById(id + '_ctr');
+  let cur = 0;
+  slides.forEach((s,i) => { if(s.classList.contains('active')) cur = i; });
+  return { el, slides, dots, ctr, cur, total: slides.length };
+}
+
+function pcrGo(id, idx) {
+  const s = pcrGetState(id); if(!s) return;
+  s.slides[s.cur].classList.remove('active');
+  if(s.dots[s.cur]) s.dots[s.cur].classList.remove('active');
+  const next = (idx + s.total) % s.total;
+  s.slides[next].classList.add('active');
+  if(s.dots[next]) s.dots[next].classList.add('active');
+  if(s.ctr) s.ctr.textContent = (next+1) + ' / ' + s.total;
+}
+
+function pcrMove(id, dir) {
+  const s = pcrGetState(id); if(!s) return;
+  pcrGo(id, s.cur + dir);
+  // Reset auto timer
+  if(_carouselTimers[id]) { clearInterval(_carouselTimers[id]); initCarouselAuto(id, s.total); }
+}
+
+function initCarouselAuto(id, total) {
+  if(_carouselTimers[id]) clearInterval(_carouselTimers[id]);
+  _carouselTimers[id] = setInterval(() => {
+    const s = pcrGetState(id);
+    if(s) pcrGo(id, s.cur + 1);
+    else clearInterval(_carouselTimers[id]);
+  }, 5000);
+}
