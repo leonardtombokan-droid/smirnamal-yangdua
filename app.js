@@ -92,14 +92,25 @@ function switchPubTab(tabId) {
 async function sbFetch(table, params='') {
   try {
     let q = sb.from(table).select('*');
-    // Parse params sederhana
-    if (params.includes('aktif=eq.true')) q = q.eq('aktif', true);
-    if (params.includes('order=created_at.desc')) q = q.order('created_at', {ascending:false});
-    if (params.includes('order=urutan.asc')) q = q.order('urutan', {ascending:true});
-    if (params.includes('order=tanggal.desc')) q = q.order('tanggal', {ascending:false});
-    if (params.includes('limit=10')) q = q.limit(10);
-    if (params.includes('limit=20')) q = q.limit(20);
-    if (params.includes('limit=3')) q = q.limit(3);
+    if (params) {
+      // Dynamic eq filter: parse all field=eq.value pairs
+      const eqMatches = [...params.matchAll(/(\w+)=eq\.([^&]+)/g)];
+      for (const m of eqMatches) {
+        const field = m[1]; let val = decodeURIComponent(m[2]);
+        if (field === 'order' || field === 'limit') continue;
+        // Auto type conversion
+        if (val === 'true') val = true;
+        else if (val === 'false') val = false;
+        else if (/^\d+$/.test(val)) val = parseInt(val);
+        q = q.eq(field, val);
+      }
+      // Order
+      const orderMatch = params.match(/order=(\w+)\.(asc|desc)/);
+      if (orderMatch) q = q.order(orderMatch[1], {ascending: orderMatch[2] === 'asc'});
+      // Limit
+      const limitMatch = params.match(/limit=(\d+)/);
+      if (limitMatch) q = q.limit(parseInt(limitMatch[1]));
+    }
     const res = await q;
     return res.data || [];
   } catch(e) { console.error('sbFetch error:', e.message); return []; }
@@ -1506,7 +1517,9 @@ async function loadPubPengumuman() {
   const el = document.getElementById('pubPengumumanList');
   if (!el) return;
   if (!data || !data.length) { el.innerHTML = '<div style="color:var(--text-muted)">Belum ada pengumuman</div>'; return; }
-  el.innerHTML = data.map(p => `
+  const filtered = data.filter(p => !p.judul || !p.judul.startsWith('_'));
+  if (!filtered.length) { el.innerHTML = '<div style="color:var(--text-muted)">Belum ada pengumuman</div>'; return; }
+  el.innerHTML = filtered.map(p => `
     <div class="peng-card">
       <div class="peng-title">${p.judul || ''}</div>
       <div class="peng-isi">${p.isi || ''}</div>
@@ -1725,13 +1738,40 @@ function openModalBerita(data = null) {
       theme: 'snow',
       placeholder: 'Tulis isi berita di sini...',
       modules: {
-        toolbar: [
-          [{ 'header': [1, 2, 3, false] }],
-          ['bold', 'italic', 'underline'],
-          [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-          ['link'],
-          ['clean']
-        ]
+        toolbar: {
+          container: [
+            [{ 'header': [1, 2, 3, false] }],
+            ['bold', 'italic', 'underline'],
+            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+            [{ 'align': [] }],
+            ['link', 'image'],
+            ['clean']
+          ],
+          handlers: {
+            image: function() {
+              const input = document.createElement('input');
+              input.setAttribute('type', 'file');
+              input.setAttribute('accept', 'image/*');
+              input.click();
+              input.onchange = async () => {
+                const file = input.files[0];
+                if (!file) return;
+                if (file.size > 5 * 1024 * 1024) { showToast('Ukuran gambar max 5MB', 'error'); return; }
+                const ext = file.name.split('.').pop().toLowerCase();
+                const fname = 'berita/' + Date.now() + '_' + Math.random().toString(36).substr(2,6) + '.' + ext;
+                showToast('Mengupload gambar...', 'info');
+                const { data, error } = await sbAdmin.storage.from('foto').upload(fname, file, { upsert: true });
+                if (error) { showToast('Gagal upload: ' + error.message, 'error'); return; }
+                const { data: urlData } = sbAdmin.storage.from('foto').getPublicUrl(fname);
+                const url = urlData.publicUrl;
+                const range = window._quillBerita.getSelection(true);
+                window._quillBerita.insertEmbed(range.index, 'image', url);
+                window._quillBerita.setSelection(range.index + 1);
+                showToast('Gambar berhasil ditambahkan ✅', 'success');
+              };
+            }
+          }
+        }
       }
     });
     if (data && data.isi) window._quillBerita.root.innerHTML = data.isi || '';
@@ -2107,12 +2147,13 @@ async function loadPubPengumumanRingkasan() {
   if (!el) return;
   el.innerHTML = '<div class="pub-loading">Memuat...</div>';
   try {
-    const { data } = await sb.from('pengumuman').select('id,judul,tanggal_mulai').eq('aktif', true).order('created_at', { ascending: false }).limit(4);
-    if (!data || !data.length) {
+    const { data } = await sb.from('pengumuman').select('id,judul,tanggal_mulai').eq('aktif', true).order('created_at', { ascending: false }).limit(10);
+    const filtered = data ? data.filter(p => !p.judul || !p.judul.startsWith('_')).slice(0, 4) : [];
+    if (!filtered.length) {
       el.innerHTML = '<div style="color:var(--text-muted);font-size:13px;padding:8px 0">Belum ada pengumuman</div>';
       return;
     }
-    el.innerHTML = data.map(p => `
+    el.innerHTML = filtered.map(p => `
       <div class="peng-ringkasan-card" onclick="goPengumumanFull()">
         <span class="pr-icon">📢</span>
         <span class="pr-title">${p.judul || 'Pengumuman'}</span>
@@ -2233,27 +2274,44 @@ async function hapusWarta(slot) {
 
 // ===== VISITOR COUNTER =====
 async function loadVisitorCounter() {
+  // Set defaults first
+  ['visitorHariIni','visitorMinggu','visitorTotal'].forEach(id => {
+    const el = document.getElementById(id); if(el) el.textContent = '0';
+  });
   try {
     const today = new Date().toISOString().split('T')[0];
     const weekAgo = new Date(Date.now()-7*24*60*60*1000).toISOString().split('T')[0];
 
-    // Catat kunjungan hari ini (pakai log_perubahan sebagai visitor log)
+    // Catat kunjungan hari ini (pakai localStorage agar persistent antar tab)
     const sessionKey = 'sid_visited_'+today;
-    if (!sessionStorage.getItem(sessionKey)) {
-      sessionStorage.setItem(sessionKey,'1');
-      await sb.from('log_perubahan').insert({
-        aksi:'visitor', detail:'kunjungan_publik', tanggal:today,
-        pengguna:'publik', entitas:'website'
-      }).catch(()=>{});
+    if (!localStorage.getItem(sessionKey)) {
+      localStorage.setItem(sessionKey, '1');
+      // Clean old keys
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && k.startsWith('sid_visited_') && k !== sessionKey) {
+          const d = k.replace('sid_visited_','');
+          if (d < weekAgo) localStorage.removeItem(k);
+        }
+      }
+      try {
+        await sb.from('log_perubahan').insert({
+          aksi:'visitor', detail:'kunjungan_publik', tanggal:today,
+          pengguna:'publik', entitas:'website'
+        });
+      } catch(e) { console.log('Visitor log insert skipped'); }
     }
 
-    // Hitung visitor
-    const {count:totalCount} = await sb.from('log_perubahan').select('*',{count:'exact',head:true})
-      .eq('aksi','visitor').catch(()=>({count:0}));
-    const {count:todayCount} = await sb.from('log_perubahan').select('*',{count:'exact',head:true})
-      .eq('aksi','visitor').eq('tanggal',today).catch(()=>({count:0}));
-    const {count:weekCount} = await sb.from('log_perubahan').select('*',{count:'exact',head:true})
-      .eq('aksi','visitor').gte('tanggal',weekAgo).catch(()=>({count:0}));
+    // Hitung visitor secara paralel
+    const [totalRes, todayRes, weekRes] = await Promise.all([
+      sb.from('log_perubahan').select('*',{count:'exact',head:true}).eq('aksi','visitor'),
+      sb.from('log_perubahan').select('*',{count:'exact',head:true}).eq('aksi','visitor').eq('tanggal',today),
+      sb.from('log_perubahan').select('*',{count:'exact',head:true}).eq('aksi','visitor').gte('tanggal',weekAgo)
+    ]);
+
+    const totalCount = totalRes.count || 0;
+    const todayCount = todayRes.count || 0;
+    const weekCount = weekRes.count || 0;
 
     const fmt = n => n>=1000?(n/1000).toFixed(1)+'K':String(n||0);
     const el1=document.getElementById('visitorHariIni');
@@ -2263,9 +2321,7 @@ async function loadVisitorCounter() {
     if(el2) el2.textContent=fmt(weekCount);
     if(el3) el3.textContent=fmt(totalCount);
   } catch(e) {
-    ['visitorHariIni','visitorMinggu','visitorTotal'].forEach(id=>{
-      const el=document.getElementById(id); if(el)el.textContent='-';
-    });
+    console.error('Visitor counter error:', e);
   }
 }
 
