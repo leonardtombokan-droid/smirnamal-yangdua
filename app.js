@@ -2666,3 +2666,153 @@ if ('serviceWorker' in navigator) {
 }
 
 
+
+// ===== MODAL KELUARGA BARU (2 LANGKAH) =====
+let _mkbDataKeluarga = {};
+let _mkbAnggotaList = [];
+let _mkbAnggotaCount = 0;
+
+function openModalKeluargaBaru() {
+  _mkbDataKeluarga = {};
+  _mkbAnggotaList = [];
+  _mkbAnggotaCount = 0;
+  // Reset langkah 1
+  ['mkbNamaKeluarga','mkbKolom','mkbNoKK','mkbAlamat','mkbJemaat','mkbKolomWil'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  if(currentUser && currentUser.kolom) document.getElementById('mkbKolom').value=currentUser.kolom||'';
+  // Reset langkah 2
+  mkbResetFormAnggota();
+  document.getElementById('mkbDaftarAnggota').innerHTML='';
+  // Tampilkan langkah 1
+  mkbTampilLangkah(1);
+  document.getElementById('modalKeluargaBaru').classList.add('open');
+}
+
+function closeMKB() {
+  document.getElementById('modalKeluargaBaru').classList.remove('open');
+}
+
+function mkbTampilLangkah(n) {
+  document.getElementById('mkbLangkah1').style.display = n===1?'block':'none';
+  document.getElementById('mkbLangkah2').style.display = n===2?'block':'none';
+  document.getElementById('mkbSubtitle').textContent = n===1?'Langkah 1 dari 2 — Data Keluarga':'Langkah 2 dari 2 — Tambah Anggota';
+  // Tab styling
+  const t1=document.getElementById('mkbStep1Tab'), t2=document.getElementById('mkbStep2Tab');
+  t1.style.color = n===1?'var(--primary)':'var(--text-muted)';
+  t1.style.borderBottom = n===1?'2px solid var(--primary)':'2px solid transparent';
+  t1.style.fontWeight = n===1?'700':'400';
+  t2.style.color = n===2?'var(--primary)':'var(--text-muted)';
+  t2.style.borderBottom = n===2?'2px solid var(--primary)':'2px solid transparent';
+  t2.style.fontWeight = n===2?'700':'400';
+}
+
+function mkbLanjutLangkah2() {
+  const nama = document.getElementById('mkbNamaKeluarga').value.trim();
+  const kolom = document.getElementById('mkbKolom').value.trim();
+  if (!nama) { showToast('Nama Keluarga wajib diisi!','error'); document.getElementById('mkbNamaKeluarga').focus(); return; }
+  if (!kolom) { showToast('Kolom wajib diisi!','error'); document.getElementById('mkbKolom').focus(); return; }
+  _mkbDataKeluarga = {
+    nama_keluarga: nama,
+    kolom: parseInt(kolom),
+    no_kk: document.getElementById('mkbNoKK').value.trim(),
+    alamat_rumah: document.getElementById('mkbAlamat').value.trim(),
+    jemaat_asal: document.getElementById('mkbJemaat').value.trim(),
+    alamat_kolom: document.getElementById('mkbKolomWil').value.trim(),
+  };
+  _mkbAnggotaList = [];
+  _mkbAnggotaCount = 0;
+  document.getElementById('mkbInfoNama').textContent = '🏠 ' + nama;
+  document.getElementById('mkbInfoKolom').textContent = 'Kolom ' + kolom;
+  document.getElementById('mkbDaftarAnggota').innerHTML = '';
+  mkbResetFormAnggota();
+  mkbUpdateAnggotaLabel();
+  mkbTampilLangkah(2);
+}
+
+function mkbKembali() {
+  mkbTampilLangkah(1);
+}
+
+function mkbResetFormAnggota() {
+  ['mkbaNama','mkbaNik','mkbaTempat','mkbaPekerjaan','mkbaNo'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  ['mkbaLp','mkbaBaptis','mkbaSidi','mkbaRelasi','mkbaBipra','mkbaLansia'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.selectedIndex=0;
+  });
+  const tgl=document.getElementById('mkbaTgl'); if(tgl) tgl.value='';
+  // Relasi default: anggota pertama = Suami
+  if(_mkbAnggotaCount===0 && document.getElementById('mkbaRelasi')) {
+    document.getElementById('mkbaRelasi').value='Suami';
+    const lp=document.getElementById('mkbaLp'); if(lp) lp.value='L';
+  }
+}
+
+function mkbUpdateAnggotaLabel() {
+  const n = _mkbAnggotaCount + 1;
+  const label = n===1?'Anggota ke-1 (Kepala Keluarga / Suami)':'Anggota ke-'+n;
+  document.getElementById('mkbAnggotaLabel').textContent = label;
+  const btnSelesai = document.getElementById('mkbBtnSelesai');
+  if (btnSelesai) btnSelesai.style.display = _mkbAnggotaCount>0?'inline-flex':'none';
+}
+
+async function mkbSimpanAnggota() {
+  const nama = document.getElementById('mkbaNama').value.trim();
+  if (!nama) { showToast('Nama Lengkap anggota wajib diisi!','error'); document.getElementById('mkbaNama').focus(); return; }
+  const tgl = document.getElementById('mkbaTgl').value;
+  const payload = {
+    kolom: _mkbDataKeluarga.kolom,
+    no: document.getElementById('mkbaNo').value.trim(),
+    nama_lengkap: nama,
+    nik: document.getElementById('mkbaNik').value.trim(),
+    lp: document.getElementById('mkbaLp').value,
+    tempat_lahir: document.getElementById('mkbaTempat').value.trim(),
+    tanggal_lahir: tgl||null,
+    umur: tgl?hitungUmur(tgl):'',
+    pekerjaan: document.getElementById('mkbaPekerjaan').value.trim(),
+    baptis: document.getElementById('mkbaBaptis').value,
+    sidi: document.getElementById('mkbaSidi').value,
+    nama_keluarga: _mkbDataKeluarga.nama_keluarga,
+    no_kk: _mkbDataKeluarga.no_kk,
+    relasi: document.getElementById('mkbaRelasi').value,
+    bipra: document.getElementById('mkbaBipra').value,
+    lansia: document.getElementById('mkbaLansia').value,
+    alamat_rumah: _mkbDataKeluarga.alamat_rumah,
+    jemaat_asal: _mkbDataKeluarga.jemaat_asal,
+    alamat_kolom: _mkbDataKeluarga.alamat_kolom,
+    status_jemaat: 'baru',
+    diinput_oleh: currentUser?.username||'-',
+    waktu_input: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  };
+  try {
+    const {error} = await sbAdmin.from('jemaat').insert([payload]);
+    if (error) throw error;
+    _mkbAnggotaList.push(nama);
+    _mkbAnggotaCount++;
+    // Tampilkan daftar anggota yang sudah disimpan
+    const daftar = document.getElementById('mkbDaftarAnggota');
+    daftar.innerHTML = _mkbAnggotaList.map((n,i)=>
+      `<div style="display:flex;align-items:center;gap:8px;padding:7px 12px;background:rgba(22,163,74,0.08);border:1px solid rgba(22,163,74,0.25);border-radius:6px;font-size:13px;">
+        <span style="color:#15803d;font-weight:700;">✓</span>
+        <span style="color:var(--text);">${i===0?'👑 ':''}<strong>${n}</strong></span>
+      </div>`
+    ).join('');
+    showToast(`${nama} berhasil ditambahkan ✅`,'success');
+    mkbResetFormAnggota();
+    mkbUpdateAnggotaLabel();
+    document.getElementById('mkbaNama').focus();
+    logAktivitas('tambah', `Anggota keluarga ${_mkbDataKeluarga.nama_keluarga}: ${nama}`);
+  } catch(e) {
+    showToast('Gagal menyimpan: '+e.message,'error');
+  }
+}
+
+async function mkbSelesai() {
+  if (_mkbAnggotaList.length===0) { showToast('Tambahkan minimal 1 anggota dulu!','error'); return; }
+  closeMKB();
+  showToast(`Keluarga ${_mkbDataKeluarga.nama_keluarga} berhasil ditambahkan dengan ${_mkbAnggotaList.length} anggota! 🎉`,'success');
+  if (typeof loadJemaat==='function') loadJemaat();
+  if (typeof loadKeluarga==='function') loadKeluarga();
+}
