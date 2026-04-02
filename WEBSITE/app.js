@@ -109,6 +109,7 @@ async function loadPublicData() {
   loadPubPengumumanRingkasan();
   loadPubBerita();
   loadSidebarKehadiran();
+  loadVisitorCounter();
   // Load jemaat untuk ulang tahun + info sidebar
   try {
     const { data } = await sb.from('jemaat')
@@ -2266,10 +2267,10 @@ async function loadVisitorCounter() {
     const sessionKey = 'sid_visited_'+today;
     if (!sessionStorage.getItem(sessionKey)) {
       sessionStorage.setItem(sessionKey,'1');
-      await sb.from('log_perubahan').insert({
+      await sbAdmin.from('log_perubahan').insert({
         aksi:'visitor', detail:'kunjungan_publik', tanggal:today,
         pengguna:'publik', entitas:'website'
-      }).catch(()=>{});
+      }).catch((e) => { console.warn('Visitor insert gagal:', e.message); });
     }
 
     // Hitung visitor
