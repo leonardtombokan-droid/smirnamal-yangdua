@@ -267,12 +267,14 @@ async function doLogin() {
   document.getElementById('mainApp').style.display='block';
   loadDashboard();
   loadJemaat();
+  startDashAutoRefresh();
 }
 
 function showLoginError(msg) { const el=document.getElementById('loginError'); el.textContent=msg; el.style.display='block'; }
 
 function doLogout() {
   currentUser=null;
+  stopDashAutoRefresh();
   showPublicPage();
   document.getElementById('loginUsername').value='';
   document.getElementById('loginPassword').value='';
@@ -504,17 +506,22 @@ async function deleteJemaat(id,nama) {
 
 // ===== DASHBOARD =====
 async function loadDashboard() {
-  let q=sb.from('jemaat').select('*',{count:'exact',head:false});
+  let q=sb.from('jemaat').select('*');
   if (!isAdmin()) q=q.eq('kolom',currentUser.kolom);
-  const {data}=await q; if (!data) return;
-  document.getElementById('statTotal').textContent=data.length;
+  const {data,error}=await q;
+  if (error){console.error('Dashboard error:',error.message);showToast('Gagal memuat dashboard: '+error.message,'error');return;}
+  if (!data) return;
+  const total=data.length;
+  const jumlahBaru=data.filter(j=>j.status_jemaat==='baru').length;
+  const jumlahLama=data.filter(j=>j.status_jemaat==='lama'||(!j.status_jemaat&&j.id)).length;
+  document.getElementById('statTotal').textContent=total;
   document.getElementById('statL').textContent=data.filter(j=>j.lp==='L').length;
   document.getElementById('statP').textContent=data.filter(j=>j.lp==='P').length;
   document.getElementById('statLansia').textContent=data.filter(j=>j.lansia==='lansia').length;
   document.getElementById('statBaptis').textContent=data.filter(j=>j.baptis==='sudah-baptis').length;
   document.getElementById('statSidi').textContent=data.filter(j=>j.sidi==='sudah-sidi').length;
-  document.getElementById('statBaru').textContent=data.filter(j=>j.status_jemaat==='baru').length;
-  document.getElementById('statLama').textContent=data.filter(j=>j.status_jemaat!=='baru').length;
+  document.getElementById('statBaru').textContent=jumlahBaru;
+  document.getElementById('statLama').textContent=jumlahLama;
   const kategoriList=['bipra','pemuda','remaja','anak','bapak','ibu'];
   const katLabel={bipra:'Bipra',pemuda:'Pemuda',remaja:'Remaja',anak:'Anak',bapak:'Bapak',ibu:'Ibu'};
   const katIcon={bipra:'👩',pemuda:'🧑',remaja:'👦',anak:'👶',bapak:'👨',ibu:'👩‍🦱'};
@@ -1520,7 +1527,7 @@ async function loadPengumumanAdmin() {
 
 // Override loadPubPengumuman untuk tampilkan lampiran
 async function loadPubPengumuman() {
-  const { data } = await sb.from('pengumuman').select('*').eq('aktif', true).order('created_at', { ascending: false }).limit(10);
+  const { data } = await sb.from('pengumuman').select('*').eq('aktif', true).not('judul','like','_%').order('created_at', { ascending: false }).limit(10);
   const el = document.getElementById('pubPengumumanList');
   if (!el) return;
   if (!data || !data.length) { el.innerHTML = '<div style="color:var(--text-muted)">Belum ada pengumuman</div>'; return; }
@@ -2125,7 +2132,7 @@ async function loadPubPengumumanRingkasan() {
   if (!el) return;
   el.innerHTML = '<div class="pub-loading">Memuat...</div>';
   try {
-    const { data } = await sb.from('pengumuman').select('id,judul,tanggal_mulai').eq('aktif', true).order('created_at', { ascending: false }).limit(4);
+    const { data } = await sb.from('pengumuman').select('id,judul,tanggal_mulai').eq('aktif', true).not('judul','like','_%').order('created_at', { ascending: false }).limit(4);
     if (!data || !data.length) {
       el.innerHTML = '<div style="color:var(--text-muted);font-size:13px;padding:8px 0">Belum ada pengumuman</div>';
       return;
@@ -2266,12 +2273,10 @@ async function loadVisitorCounter() {
     }
 
     // Hitung visitor
-    const {count:totalCount} = await sb.from('log_perubahan').select('*',{count:'exact',head:true})
-      .eq('aksi','visitor').catch(()=>({count:0}));
-    const {count:todayCount} = await sb.from('log_perubahan').select('*',{count:'exact',head:true})
-      .eq('aksi','visitor').eq('tanggal',today).catch(()=>({count:0}));
-    const {count:weekCount} = await sb.from('log_perubahan').select('*',{count:'exact',head:true})
-      .eq('aksi','visitor').gte('tanggal',weekAgo).catch(()=>({count:0}));
+    let totalCount=0, todayCount=0, weekCount=0;
+    try { const r=await sb.from('log_perubahan').select('*',{count:'exact',head:true}).eq('aksi','visitor'); totalCount=r.count||0; } catch(e){}
+    try { const r=await sb.from('log_perubahan').select('*',{count:'exact',head:true}).eq('aksi','visitor').eq('tanggal',today); todayCount=r.count||0; } catch(e){}
+    try { const r=await sb.from('log_perubahan').select('*',{count:'exact',head:true}).eq('aksi','visitor').gte('tanggal',weekAgo); weekCount=r.count||0; } catch(e){}
 
     const fmt = n => n>=1000?(n/1000).toFixed(1)+'K':String(n||0);
     const el1=document.getElementById('visitorHariIni');
@@ -2281,8 +2286,9 @@ async function loadVisitorCounter() {
     if(el2) el2.textContent=fmt(weekCount);
     if(el3) el3.textContent=fmt(totalCount);
   } catch(e) {
+    console.error('Visitor counter error:', e);
     ['visitorHariIni','visitorMinggu','visitorTotal'].forEach(id=>{
-      const el=document.getElementById(id); if(el)el.textContent='-';
+      const el=document.getElementById(id); if(el)el.textContent='0';
     });
   }
 }
@@ -2636,6 +2642,21 @@ async function initHeroSlideshow() {
     current = (current + 1) % valid.length;
     valid[current].classList.add('slide-active');
   }, 4000);
+}
+
+// ===== AUTO REFRESH DASHBOARD =====
+let _dashRefreshTimer = null;
+function startDashAutoRefresh() {
+  stopDashAutoRefresh();
+  _dashRefreshTimer = setInterval(() => {
+    const dashPage = document.getElementById('page-dashboard');
+    if (dashPage && dashPage.classList.contains('active') && currentUser) {
+      loadDashboard();
+    }
+  }, 5 * 60 * 1000); // setiap 5 menit
+}
+function stopDashAutoRefresh() {
+  if (_dashRefreshTimer) { clearInterval(_dashRefreshTimer); _dashRefreshTimer = null; }
 }
 
 // ===== INIT =====
