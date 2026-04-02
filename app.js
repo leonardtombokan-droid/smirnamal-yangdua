@@ -397,11 +397,20 @@ function changeSubPerPage(v){subPerPage=parseInt(v);subCurrentPage=1;renderSubJe
 
 // ===== JEMAAT =====
 async function loadJemaat() {
-  let q=sb.from('jemaat').select('*').order('kolom').order('id');
-  if (!isAdmin()) q=q.eq('kolom',currentUser.kolom);
-  const {data,error}=await q;
-  if (error){showToast('Gagal memuat data','error');return;}
-  allJemaat=data||[]; filteredJemaat=[...allJemaat];
+  let allData = [];
+  let from = 0;
+  const batchSize = 1000;
+  while (true) {
+    let q = sb.from('jemaat').select('*').order('kolom').order('id').range(from, from + batchSize - 1);
+    if (!isAdmin()) q = q.eq('kolom', currentUser.kolom);
+    const { data, error } = await q;
+    if (error) { showToast('Gagal memuat data', 'error'); return; }
+    if (!data || data.length === 0) break;
+    allData = allData.concat(data);
+    if (data.length < batchSize) break;
+    from += batchSize;
+  }
+  allJemaat = allData; filteredJemaat = [...allJemaat];
   document.getElementById('jemaatSubtitle').textContent=!isAdmin()?`Kolom ${currentUser.kolom} — ${allJemaat.length} jemaat`:`Semua kolom — ${allJemaat.length} jemaat`;
   renderTable();
   renderPubUltah(allJemaat);
@@ -507,10 +516,20 @@ async function deleteJemaat(id,nama) {
 
 // ===== DASHBOARD =====
 async function loadDashboard() {
-  let q=sb.from('jemaat').select('*');
-  if (!isAdmin()) q=q.eq('kolom',currentUser.kolom);
-  const {data,error}=await q;
-  if (error){console.error('Dashboard error:',error.message);showToast('Gagal memuat dashboard: '+error.message,'error');return;}
+  let allData = [];
+  let from = 0;
+  const batchSize = 1000;
+  while (true) {
+    let q = sb.from('jemaat').select('*').range(from, from + batchSize - 1);
+    if (!isAdmin()) q = q.eq('kolom', currentUser.kolom);
+    const { data, error } = await q;
+    if (error) { console.error('Dashboard error:', error.message); showToast('Gagal memuat dashboard: ' + error.message, 'error'); return; }
+    if (!data || data.length === 0) break;
+    allData = allData.concat(data);
+    if (data.length < batchSize) break;
+    from += batchSize;
+  }
+  const data = allData;
   if (!data) return;
   const total=data.length;
   const jumlahBaru=data.filter(j=>j.status_jemaat==='baru').length;
