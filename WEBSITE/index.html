@@ -1458,7 +1458,7 @@ tr:hover td { background:rgba(26,58,92,0.03); }
   <div class="main-content">
     <!-- DASHBOARD -->
     <div class="page active" id="page-dashboard">
-      <div class="page-header"><h1>Dashboard</h1><p>Selamat datang di Sistem Informasi Data Jemaat</p></div>
+      <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px"><div><h1>Dashboard</h1><p>Selamat datang di Sistem Informasi Data Jemaat</p></div><button class="btn btn-outline" onclick="loadJemaat();loadDashboard();showToast('Data berhasil diperbarui ✅','success')" style="display:flex;align-items:center;gap:6px;font-size:13px;padding:8px 14px">🔄 Refresh Data</button></div>
       <div class="stats-grid" id="statsGrid">
         <div class="stat-card"><div class="label">Total Jemaat</div><div class="value" id="statTotal">-</div><div class="sub">seluruh kolom</div></div>
         <div class="stat-card"><div class="label">Laki-laki</div><div class="value" id="statL">-</div><div class="sub">jemaat pria</div></div>
