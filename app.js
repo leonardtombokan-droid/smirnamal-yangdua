@@ -113,7 +113,7 @@ async function loadPublicData() {
   // Load jemaat untuk ulang tahun + info sidebar
   try {
     const { data } = await sb.from('jemaat')
-      .select('nama_lengkap,tanggal_lahir,kolom,lp,lansia,bipra')
+      .select('nama_lengkap,tanggal_lahir,tanggal_nikah,kolom,lp,lansia,bipra,nama_keluarga,relasi')
       .order('kolom');
     if (data && data.length) {
       allJemaat = data;
@@ -172,12 +172,36 @@ function renderPubUltah(data) {
 
 function renderDashUltah(hari, minggu, bulan) {
   const mkRow = (j) => `<span style="display:inline-block;background:var(--accent-light);color:var(--primary);border-radius:20px;padding:2px 12px;font-size:13px;margin:2px;font-weight:600">${j.nama_lengkap} <span style="font-weight:400;color:var(--text-muted)">(Kol.${j.kolom})</span></span>`;
+  const mkRowNikah = (n) => `<span style="display:inline-block;background:#fff7ed;color:#c2410c;border-radius:20px;padding:2px 12px;font-size:13px;margin:2px;font-weight:600">💍 ${n.nama_keluarga} <span style="font-weight:400;color:var(--text-muted)">(${n.tahunKe} thn · Kol.${n.kolom})</span></span>`;
   const h = document.getElementById('dashUltahHari');
   const m = document.getElementById('dashUltahMinggu');
   const b = document.getElementById('dashUltahBulan');
   if (h) h.innerHTML = `<strong style="color:var(--primary);font-size:14px">🎉 Hari ini:</strong> ${hari.length?hari.map(mkRow).join(''):'<span style="color:var(--text-muted);font-size:13px">Tidak ada</span>'}`;
   if (m) m.innerHTML = `<strong style="color:var(--primary);font-size:14px">📅 Minggu ini:</strong> ${minggu.length?minggu.map(mkRow).join(''):'<span style="color:var(--text-muted);font-size:13px">Tidak ada</span>'}`;
   if (b) b.innerHTML = `<strong style="color:var(--primary);font-size:14px">🗓️ Bulan ini:</strong> ${bulan.length?bulan.map(mkRow).join(''):'<span style="color:var(--text-muted);font-size:13px">Tidak ada</span>'}`;
+  // Wedding anniversary dashboard
+  const today = new Date();
+  const todayM = today.getMonth(), todayD = today.getDate();
+  const weekEnd = new Date(today); weekEnd.setDate(weekEnd.getDate()+7);
+  const familyNikah = {};
+  allJemaat.forEach(j => {
+    if (!j.tanggal_nikah || !j.nama_keluarga) return;
+    if (familyNikah[j.nama_keluarga]) return;
+    const d = parseTanggal(j.tanggal_nikah); if (!d||isNaN(d)) return;
+    const bm=d.getMonth(), bd=d.getDate();
+    const thisYear = new Date(today.getFullYear(), bm, bd);
+    const diff = Math.ceil((thisYear-today)/(1000*60*60*24));
+    const tahunKe = today.getFullYear()-d.getFullYear()+(diff<=0?0:-1);
+    familyNikah[j.nama_keluarga] = {nama_keluarga:j.nama_keluarga,kolom:j.kolom,bm,bd,diff,tahunKe};
+  });
+  const nikahList = Object.values(familyNikah);
+  const nHari = nikahList.filter(n=>n.bm===todayM&&n.bd===todayD);
+  const nMinggu = nikahList.filter(n=>n.diff>0&&n.diff<=7);
+  const nBulan = nikahList.filter(n=>n.bm===todayM).sort((a,b)=>a.bd-b.bd);
+  const nh=document.getElementById('dashNikahHari'), nm=document.getElementById('dashNikahMinggu'), nb=document.getElementById('dashNikahBulan');
+  if (nh) nh.innerHTML=`<strong style="color:#c2410c;font-size:14px">💍 Hari ini:</strong> ${nHari.length?nHari.map(mkRowNikah).join(''):'<span style="color:var(--text-muted);font-size:13px">Tidak ada</span>'}`;
+  if (nm) nm.innerHTML=`<strong style="color:#c2410c;font-size:14px">📅 Minggu ini:</strong> ${nMinggu.length?nMinggu.map(mkRowNikah).join(''):'<span style="color:var(--text-muted);font-size:13px">Tidak ada</span>'}`;
+  if (nb) nb.innerHTML=`<strong style="color:#c2410c;font-size:14px">🗓️ Bulan ini:</strong> ${nBulan.length?nBulan.map(mkRowNikah).join(''):'<span style="color:var(--text-muted);font-size:13px">Tidak ada</span>'}`;
 }
 
 // loadPubPengumuman sudah di-override di bawah
@@ -459,12 +483,17 @@ function filterJemaat() {
 function openModal(data=null, mode=null) {
   document.getElementById('editId').value=data?data.id:'';
   const _titles={edit:'Edit Data Jemaat','keluarga-baru':'🏠 Tambah Keluarga Baru','tambah-anggota':'👤 Tambah Anggota Baru'}; document.getElementById('modalTitle').textContent=data?_titles.edit:(_titles[mode]||'Tambah Jemaat Baru');
-  ['fKolom','fNo','fNama','fNik','fLp','fTempat','fTgl','fPekerjaan','fBaptis','fSidi','fKeluarga','fNoKK','fRelasi','fBipra','fLansia','fAlamatRumah','fJemaat','fAlamatKolom'].forEach(id=>{
+  ['fKolom','fNo','fNama','fNik','fLp','fTempat','fTgl','fPekerjaan','fBaptis','fSidi','fKeluarga','fNoKK','fRelasi','fBipra','fLansia','fAlamatRumah','fJemaat','fAlamatKolom','fTglNikah'].forEach(id=>{
     const el=document.getElementById(id); if (!el) return;
     if (id==='fKolom') el.value=data?data.kolom:(currentUser.kolom||'');
     else if (id==='fTgl') el.value=data?toInputDate(data.tanggal_lahir):'';
+    else if (id==='fTglNikah') el.value=data?toInputDate(data.tanggal_nikah):'';
     else el.value=data?(data[{fNo:'no',fNama:'nama_lengkap',fNik:'nik',fLp:'lp',fTempat:'tempat_lahir',fPekerjaan:'pekerjaan',fBaptis:'baptis',fSidi:'sidi',fKeluarga:'nama_keluarga',fNoKK:'no_kk',fRelasi:'relasi',fBipra:'bipra',fLansia:'lansia',fAlamatRumah:'alamat_rumah',fJemaat:'jemaat_asal',fAlamatKolom:'alamat_kolom'}[id]]||''):'';
   });
+  // Toggle field tanggal nikah
+  const relasi = data?data.relasi||'':'';
+  const fieldNikah = document.getElementById('fieldTglNikah');
+  if (fieldNikah) fieldNikah.style.display=(relasi==='Suami'||relasi==='Istri')?'block':'none';
   const statusEl=document.getElementById('fStatusJemaat');
   statusEl.disabled=currentUser.kolom!==0;
   statusEl.value=data?data.status_jemaat||'lama':'baru';
@@ -490,7 +519,8 @@ async function saveJemaat() {
   } else {
     if (currentUser.kolom!==0){const ex=allJemaat.find(x=>x.id===parseInt(id));statusJemaat=ex?ex.status_jemaat||'lama':'lama';}
   }
-  const payload={kolom:parseInt(document.getElementById('fKolom').value)||null,no:document.getElementById('fNo').value,nama_lengkap:document.getElementById('fNama').value,nik:document.getElementById('fNik').value,lp:document.getElementById('fLp').value,tempat_lahir:document.getElementById('fTempat').value,tanggal_lahir:tgl,umur:tgl?hitungUmur(tgl):'',pekerjaan:document.getElementById('fPekerjaan').value,baptis:document.getElementById('fBaptis').value,sidi:document.getElementById('fSidi').value,nama_keluarga:namaKeluarga,no_kk:document.getElementById('fNoKK').value,relasi:document.getElementById('fRelasi').value,bipra:document.getElementById('fBipra').value,lansia:document.getElementById('fLansia').value,alamat_rumah:document.getElementById('fAlamatRumah').value,jemaat_asal:document.getElementById('fJemaat').value,alamat_kolom:document.getElementById('fAlamatKolom').value,status_jemaat:statusJemaat,updated_at:new Date().toISOString()};
+  const tglNikah=document.getElementById('fTglNikah')?.value||null;
+  const payload={kolom:parseInt(document.getElementById('fKolom').value)||null,no:document.getElementById('fNo').value,nama_lengkap:document.getElementById('fNama').value,nik:document.getElementById('fNik').value,lp:document.getElementById('fLp').value,tempat_lahir:document.getElementById('fTempat').value,tanggal_lahir:tgl,umur:tgl?hitungUmur(tgl):'',pekerjaan:document.getElementById('fPekerjaan').value,baptis:document.getElementById('fBaptis').value,sidi:document.getElementById('fSidi').value,nama_keluarga:namaKeluarga,no_kk:document.getElementById('fNoKK').value,relasi:document.getElementById('fRelasi').value,tanggal_nikah:tglNikah||null,bipra:document.getElementById('fBipra').value,lansia:document.getElementById('fLansia').value,alamat_rumah:document.getElementById('fAlamatRumah').value,jemaat_asal:document.getElementById('fJemaat').value,alamat_kolom:document.getElementById('fAlamatKolom').value,status_jemaat:statusJemaat,updated_at:new Date().toISOString()};
   if (!isAdmin()&&payload.kolom!==currentUser.kolom){alert('⛔ Anda hanya dapat mengedit data Kolom '+currentUser.kolom);return;}
   if (!id){payload.diinput_oleh=currentUser?.username||'-';payload.waktu_input=new Date().toISOString();}
   try {
@@ -914,6 +944,77 @@ function exportExcelUltah(){
   if (!rows.length){alert('Tidak ada data');return;}
   const ws=XLSX.utils.json_to_sheet(rows); const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'UlangTahun');
   XLSX.writeFile(wb,`UlangTahun_${new Date().toLocaleDateString('id-ID').replace(/\//g,'-')}.xlsx`);
+}
+
+// Toggle field tanggal nikah di modal (muncul saat relasi Suami/Istri)
+function toggleTglNikah() {
+  const v = document.getElementById('fRelasi').value;
+  const f = document.getElementById('fieldTglNikah');
+  if (f) f.style.display = (v==='Suami'||v==='Istri') ? 'block' : 'none';
+}
+
+// Switch tab Ulang Tahun / Perkawinan
+function switchUltahMainTab(tab) {
+  document.getElementById('sectionUltah').style.display = tab==='ultah'?'block':'none';
+  document.getElementById('sectionNikah').style.display = tab==='nikah'?'block':'none';
+  const btnU=document.getElementById('tabUltahBtn'), btnN=document.getElementById('tabNikahBtn');
+  btnU.style.borderBottomColor = tab==='ultah'?'var(--primary)':'transparent';
+  btnU.style.color = tab==='ultah'?'var(--primary)':'var(--text-muted)';
+  btnN.style.borderBottomColor = tab==='nikah'?'#c2410c':'transparent';
+  btnN.style.color = tab==='nikah'?'#c2410c':'var(--text-muted)';
+  if (tab==='nikah') loadUltahNikah();
+}
+
+// Load tabel ulang tahun perkawinan
+function loadUltahNikah() {
+  const bulanEl=document.getElementById('filterBulanNikah');
+  const kolomEl=document.getElementById('filterKolomNikah');
+  const today=new Date();
+  if (!bulanEl.options.length) {
+    const bln=today.getMonth();
+    bulanEl.innerHTML=namaBulan.map((b,i)=>`<option value="${i+1}" ${i===bln?'selected':''}>${b}</option>`).join('');
+    const koloms=[...new Set(allJemaat.map(j=>j.kolom).filter(Boolean))].sort((a,b)=>a-b);
+    kolomEl.innerHTML='<option value="">Semua Kolom</option>'+koloms.map(k=>`<option value="${k}">Kolom ${k}</option>`).join('');
+  }
+  const bulan=parseInt(bulanEl.value), kolom=kolomEl.value;
+  const familyNikah={};
+  allJemaat.forEach(j=>{
+    if(!j.tanggal_nikah||!j.nama_keluarga)return;
+    if(familyNikah[j.nama_keluarga])return;
+    const d=parseTanggal(j.tanggal_nikah);if(!d||isNaN(d))return;
+    if((d.getMonth()+1)!==bulan)return;
+    if(kolom&&String(j.kolom)!==kolom)return;
+    const thisYear=new Date(today.getFullYear(),d.getMonth(),d.getDate());
+    const diff=Math.ceil((thisYear-today)/(1000*60*60*24));
+    const tahunKe=today.getFullYear()-d.getFullYear()+(diff<=0?0:-1);
+    const suami=allJemaat.find(x=>x.nama_keluarga===j.nama_keluarga&&x.relasi==='Suami');
+    const istri=allJemaat.find(x=>x.nama_keluarga===j.nama_keluarga&&x.relasi==='Istri');
+    familyNikah[j.nama_keluarga]={nama_keluarga:j.nama_keluarga,kolom:j.kolom,tanggal_nikah:j.tanggal_nikah,diff,bd:d.getDate(),tahunKe,suami:suami?.nama_lengkap||'-',istri:istri?.nama_lengkap||'-'};
+  });
+  const list=Object.values(familyNikah).sort((a,b)=>a.bd-b.bd);
+  const sub=document.getElementById('nikahSubtitle');
+  if(sub) sub.textContent=`${list.length} keluarga berulang tahun perkawinan bulan ini`;
+  document.getElementById('nikahBody').innerHTML=!list.length
+    ?'<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text-muted)">Tidak ada data perkawinan bulan ini</td></tr>'
+    :list.map((n,i)=>{
+      const isH=n.diff===0;
+      const d=parseTanggal(n.tanggal_nikah);
+      const tgl=d?`${d.getDate()} ${namaBulan[d.getMonth()]} ${d.getFullYear()}`:'-';
+      const ket=isH?'<span style="color:#dc2626;font-weight:700">💍 Hari ini!</span>':n.diff>0?`${n.diff} hari lagi`:`${Math.abs(n.diff)} hari lalu`;
+      return `<tr ${isH?'style="background:#fff7ed"':''}><td>${i+1}</td><td><strong>${n.nama_keluarga||'-'}</strong></td><td>${n.suami}</td><td>${n.istri}</td><td>${tgl}</td><td><strong>${n.tahunKe}</strong> tahun</td><td>Kolom ${n.kolom||'-'}</td><td>${ket}</td></tr>`;
+    }).join('');
+}
+
+// Export Excel Perkawinan
+function exportExcelNikah(){
+  const rows=[];
+  document.querySelectorAll('#nikahBody tr').forEach(tr=>{
+    const tds=tr.querySelectorAll('td');
+    if(tds.length>1)rows.push({'No':tds[0].textContent,'Keluarga':tds[1].textContent,'Suami':tds[2].textContent,'Istri':tds[3].textContent,'Tgl Nikah':tds[4].textContent,'Usia Pernikahan':tds[5].textContent,'Kolom':tds[6].textContent,'Hari':tds[7].textContent});
+  });
+  if(!rows.length){alert('Tidak ada data');return;}
+  const ws=XLSX.utils.json_to_sheet(rows);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'UltahPerkawinan');
+  XLSX.writeFile(wb,`UltahPerkawinan_${new Date().toLocaleDateString('id-ID').replace(/\//g,'-')}.xlsx`);
 }
 
 // ===== LANSIA =====
