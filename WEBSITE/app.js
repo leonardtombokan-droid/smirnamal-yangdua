@@ -444,9 +444,9 @@ function filterJemaat() {
   currentPage=1; renderTable();
 }
 
-function openModal(data=null) {
+function openModal(data=null, mode=null) {
   document.getElementById('editId').value=data?data.id:'';
-  document.getElementById('modalTitle').textContent=data?'Edit Data Jemaat':'Tambah Jemaat Baru';
+  const _titles={edit:'Edit Data Jemaat','keluarga-baru':'🏠 Tambah Keluarga Baru','tambah-anggota':'👤 Tambah Anggota Baru'}; document.getElementById('modalTitle').textContent=data?_titles.edit:(_titles[mode]||'Tambah Jemaat Baru');
   ['fKolom','fNo','fNama','fNik','fLp','fTempat','fTgl','fPekerjaan','fBaptis','fSidi','fKeluarga','fNoKK','fRelasi','fBipra','fLansia','fAlamatRumah','fJemaat','fAlamatKolom'].forEach(id=>{
     const el=document.getElementById(id); if (!el) return;
     if (id==='fKolom') el.value=data?data.kolom:(currentUser.kolom||'');
@@ -457,7 +457,7 @@ function openModal(data=null) {
   statusEl.disabled=currentUser.kolom!==0;
   statusEl.value=data?data.status_jemaat||'lama':'baru';
   document.getElementById('statusJemaatInfo').textContent=currentUser.kolom===0?'Anda dapat mengubah status ini.':'Status ditentukan otomatis.';
-  document.getElementById('modalJemaat').classList.add('open');
+  const _fKel=document.getElementById('fKeluarga'); if(mode==='tambah-anggota'){_fKel.readOnly=true;_fKel.style.background='#f1f5f9';_fKel.style.fontWeight='700';}else{_fKel.readOnly=false;_fKel.style.background='';_fKel.style.fontWeight='';} document.getElementById('modalJemaat').classList.add('open');
 }
 
 function closeModal(){document.getElementById('modalJemaat').classList.remove('open');}
@@ -974,19 +974,15 @@ function renderKeluarga(data) {
 function tambahAnggotaKeluarga(btn) {
   const card = btn.closest('.keluarga-card');
   const namaKeluarga = card.dataset.fam;
-  // Ambil salah satu anggota untuk prefill kolom & no_kk
   const anggota = allKeluargaData.find(j => j.nama_keluarga === namaKeluarga);
-  // Buka modal tambah jemaat baru (kosong) lalu isi nama keluarga & kolom otomatis
-  openModal(null);
+  openModal(null, 'tambah-anggota');
+  document.getElementById('fKeluarga').value = namaKeluarga;
   if (anggota) {
-    document.getElementById('fKeluarga').value = namaKeluarga;
     document.getElementById('fKolom').value = anggota.kolom || '';
     document.getElementById('fNoKK').value = anggota.no_kk || '';
     document.getElementById('fAlamatRumah').value = anggota.alamat_rumah || '';
     document.getElementById('fJemaat').value = anggota.jemaat_asal || '';
     document.getElementById('fAlamatKolom').value = anggota.alamat_kolom || '';
-  } else {
-    document.getElementById('fKeluarga').value = namaKeluarga;
   }
   document.getElementById('modalTitle').textContent = '👤 Tambah Anggota — ' + namaKeluarga;
 }
