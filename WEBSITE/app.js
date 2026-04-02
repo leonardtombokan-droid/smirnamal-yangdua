@@ -92,25 +92,14 @@ function switchPubTab(tabId) {
 async function sbFetch(table, params='') {
   try {
     let q = sb.from(table).select('*');
-    if (params) {
-      // Dynamic eq filter: parse all field=eq.value pairs
-      const eqMatches = [...params.matchAll(/(\w+)=eq\.([^&]+)/g)];
-      for (const m of eqMatches) {
-        const field = m[1]; let val = decodeURIComponent(m[2]);
-        if (field === 'order' || field === 'limit') continue;
-        // Auto type conversion
-        if (val === 'true') val = true;
-        else if (val === 'false') val = false;
-        else if (/^\d+$/.test(val)) val = parseInt(val);
-        q = q.eq(field, val);
-      }
-      // Order
-      const orderMatch = params.match(/order=(\w+)\.(asc|desc)/);
-      if (orderMatch) q = q.order(orderMatch[1], {ascending: orderMatch[2] === 'asc'});
-      // Limit
-      const limitMatch = params.match(/limit=(\d+)/);
-      if (limitMatch) q = q.limit(parseInt(limitMatch[1]));
-    }
+    // Parse params sederhana
+    if (params.includes('aktif=eq.true')) q = q.eq('aktif', true);
+    if (params.includes('order=created_at.desc')) q = q.order('created_at', {ascending:false});
+    if (params.includes('order=urutan.asc')) q = q.order('urutan', {ascending:true});
+    if (params.includes('order=tanggal.desc')) q = q.order('tanggal', {ascending:false});
+    if (params.includes('limit=10')) q = q.limit(10);
+    if (params.includes('limit=20')) q = q.limit(20);
+    if (params.includes('limit=3')) q = q.limit(3);
     const res = await q;
     return res.data || [];
   } catch(e) { console.error('sbFetch error:', e.message); return []; }
@@ -971,7 +960,8 @@ function renderKeluarga(data) {
         +'<div class="keluarga-anggota">'+_anggota+'</div>'
         +'<div style="margin:8px 16px;padding:8px 10px;background:rgba(26,58,92,0.04);border-radius:6px;border:1px solid var(--border);font-size:12px;color:var(--text-muted)">'+_info+'</div>'
         +'<div class="keluarga-footer">'+members.length+' anggota &nbsp;|&nbsp; Kolom '+kolom+' &nbsp;|&nbsp;'
-        +'<button class="btn btn-outline btn-sm" style="padding:3px 10px;font-size:12px" onclick="cetakKartuKeluarga(this)">🖨️ Cetak KK</button>'
+        +'<button class="btn btn-primary btn-sm" style="padding:3px 10px;font-size:12px" onclick="tambahAnggotaKeluarga(this)">👤 + Anggota</button>'
+        +'<button class="btn btn-outline btn-sm" style="padding:3px 10px;font-size:12px;margin-left:4px" onclick="cetakKartuKeluarga(this)">🖨️ Cetak KK</button>'
         +'<button class="btn btn-outline btn-sm" style="padding:3px 10px;font-size:12px;margin-left:4px" onclick="bukaModalPetaCard(this)">📍 Peta</button>'
         +'<button class="btn btn-outline btn-sm" style="padding:3px 10px;font-size:12px;margin-left:4px;color:var(--primary);border-color:var(--primary)" onclick="bukaModalAlamatCard(this)">✏️ Edit Alamat</button>'
         +'</div></div>';
@@ -979,6 +969,27 @@ function renderKeluarga(data) {
   }).join('');
 }
 
+
+// ===== TAMBAH ANGGOTA KE KELUARGA YANG ADA =====
+function tambahAnggotaKeluarga(btn) {
+  const card = btn.closest('.keluarga-card');
+  const namaKeluarga = card.dataset.fam;
+  // Ambil salah satu anggota untuk prefill kolom & no_kk
+  const anggota = allKeluargaData.find(j => j.nama_keluarga === namaKeluarga);
+  // Buka modal tambah jemaat baru (kosong) lalu isi nama keluarga & kolom otomatis
+  openModal(null);
+  if (anggota) {
+    document.getElementById('fKeluarga').value = namaKeluarga;
+    document.getElementById('fKolom').value = anggota.kolom || '';
+    document.getElementById('fNoKK').value = anggota.no_kk || '';
+    document.getElementById('fAlamatRumah').value = anggota.alamat_rumah || '';
+    document.getElementById('fJemaat').value = anggota.jemaat_asal || '';
+    document.getElementById('fAlamatKolom').value = anggota.alamat_kolom || '';
+  } else {
+    document.getElementById('fKeluarga').value = namaKeluarga;
+  }
+  document.getElementById('modalTitle').textContent = '👤 Tambah Anggota — ' + namaKeluarga;
+}
 
 // ===== EDIT ALAMAT KELUARGA =====
 function bukaModalAlamatCard(btn) {
@@ -1490,13 +1501,12 @@ function openModalPengumuman(data = null) {
   document.getElementById('modalPengumuman').classList.add('open');
 }
 
-// loadPengumumanAdmin — filter entri sistem, tambah edit & delete
+// Override loadPengumumanAdmin untuk tampilkan lampiran
 async function loadPengumumanAdmin() {
-  const { data } = await sbAdmin.from('pengumuman').select('*').order('created_at', { ascending: false });
+  const { data } = await sb.from('pengumuman').select('*').order('created_at', { ascending: false });
   const el = document.getElementById('pengumumanAdminList');
-  const list = (data || []).filter(p => !p.judul || !p.judul.startsWith('_'));
-  if (!list.length) { el.innerHTML = '<div style="color:var(--text-muted);padding:32px;text-align:center">Belum ada pengumuman. Klik "+ Tambah Pengumuman".</div>'; return; }
-  el.innerHTML = list.map(p => `
+  if (!data || !data.length) { el.innerHTML = '<div style="color:var(--text-muted);padding:32px;text-align:center">Belum ada pengumuman</div>'; return; }
+  el.innerHTML = data.map(p => `
     <div class="peng-admin-card">
       <div class="peng-admin-title">${p.judul || ''}</div>
       <div class="peng-admin-isi">${p.isi || ''}</div>
@@ -1512,50 +1522,19 @@ async function loadPengumumanAdmin() {
     </div>`).join('');
 }
 
-async function editPengumuman(id) {
-  const { data, error } = await sbAdmin.from('pengumuman').select('*').eq('id', id).single();
-  if (error || !data) { showToast('Gagal memuat data pengumuman', 'error'); return; }
-  openModalPengumuman(data);
-}
-
-async function deletePengumuman(id) {
-  if (!confirm('Yakin ingin menghapus pengumuman ini?')) return;
-  const { error } = await sbAdmin.from('pengumuman').delete().eq('id', id);
-  if (error) { showToast('Gagal menghapus: ' + error.message, 'error'); return; }
-  showToast('Pengumuman berhasil dihapus 🗑️', 'success');
-  loadPengumumanAdmin();
-}
-
-// loadPubPengumuman — carousel style
+// Override loadPubPengumuman untuk tampilkan lampiran
 async function loadPubPengumuman() {
-  const { data } = await sb.from('pengumuman').select('*').eq('aktif', true).order('created_at', { ascending: false }).limit(20);
+  const { data } = await sb.from('pengumuman').select('*').eq('aktif', true).order('created_at', { ascending: false }).limit(10);
   const el = document.getElementById('pubPengumumanList');
   if (!el) return;
-  const filtered = (data || []).filter(p => !p.judul || !p.judul.startsWith('_'));
-  if (!filtered.length) { el.innerHTML = '<div style="color:var(--text-muted);padding:24px;text-align:center">Belum ada pengumuman aktif.</div>'; return; }
-  const id = 'pcr_' + Date.now();
-  el.innerHTML = `
-    <div class="pub-carousel" id="${id}">
-      <div class="pub-carousel-track">
-        ${filtered.map((p, i) => `
-          <div class="pub-carousel-slide ${i===0?'active':''}" data-idx="${i}">
-            <div class="peng-card">
-              <div class="peng-title">${p.judul || ''}</div>
-              <div class="peng-isi">${p.isi || ''}</div>
-              ${p.lampiran_url ? `<div style="margin-top:10px"><a class="lampiran-link" href="${p.lampiran_url}" target="_blank">📎 ${p.lampiran_nama||'Lihat Lampiran'}</a></div>` : ''}
-              <div class="peng-tgl">${p.tanggal_mulai ? '📅 '+formatTanggal(p.tanggal_mulai) : ''} ${p.tanggal_selesai ? ' s/d '+formatTanggal(p.tanggal_selesai) : ''}</div>
-            </div>
-          </div>`).join('')}
-      </div>
-      ${filtered.length > 1 ? `
-      <div class="pub-carousel-nav">
-        <button class="pcr-btn" onclick="pcrMove('${id}',-1)">‹</button>
-        <div class="pcr-dots">${filtered.map((_,i)=>`<span class="pcr-dot ${i===0?'active':''}" onclick="pcrGo('${id}',${i})"></span>`).join('')}</div>
-        <button class="pcr-btn" onclick="pcrMove('${id}',1)">›</button>
-      </div>
-      <div class="pcr-counter" id="${id}_ctr">1 / ${filtered.length}</div>` : ''}
-    </div>`;
-  if (filtered.length > 1) initCarouselAuto(id, filtered.length);
+  if (!data || !data.length) { el.innerHTML = '<div style="color:var(--text-muted)">Belum ada pengumuman</div>'; return; }
+  el.innerHTML = data.map(p => `
+    <div class="peng-card">
+      <div class="peng-title">${p.judul || ''}</div>
+      <div class="peng-isi">${p.isi || ''}</div>
+      ${p.lampiran_url ? `<div style="margin-top:10px"><a class="lampiran-link" href="${p.lampiran_url}" target="_blank" style="background:rgba(255,255,255,0.1);border-color:rgba(255,255,255,0.2);color:var(--accent-light)">📎 ${p.lampiran_nama || 'Lihat Lampiran'}</a></div>` : ''}
+      <div class="peng-tgl">${p.tanggal_mulai ? '📅 ' + formatTanggal(p.tanggal_mulai) : ''} ${p.tanggal_selesai ? ' s/d ' + formatTanggal(p.tanggal_selesai) : ''}</div>
+    </div>`).join('');
 }
 
 // ===== BERITA =====
@@ -1591,71 +1570,23 @@ async function loadPubBerita() {
   if (!el) return;
   const data = await sbFetch('berita', 'aktif=eq.true&order=created_at.desc&limit=20');
   if (!data.length) { el.innerHTML = '<div style="color:var(--text-muted);font-size:13px">Belum ada berita</div>'; return; }
-  const katIcon  = { kegiatan:'⛪', sosial:'🤝', pengembangan:'🏗️', informasi:'ℹ️', lainnya:'📌' };
+  const katIcon = { kegiatan:'⛪', sosial:'🤝', pengembangan:'🏗️', informasi:'ℹ️', lainnya:'📌' };
   const katLabel = { kegiatan:'Kegiatan Ibadah', sosial:'Kegiatan Sosial', pengembangan:'Pengembangan', informasi:'Informasi Umum', lainnya:'Lainnya' };
-  // Carousel (≤3 item) vs Grid (>3 item)
-  if (data.length <= 3) {
-    // Carousel slide
-    const id = 'bcr_' + Date.now();
-    el.innerHTML = `
-      <div class="pub-carousel" id="${id}">
-        <div class="pub-carousel-track">
-          ${data.map((b, i) => {
-            const stripped = (b.isi||'').replace(/<[^>]+>/g,'');
-            const preview = stripped.length>120 ? stripped.substring(0,120)+'...' : stripped;
-            const tgl = new Date(b.created_at).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});
-            return `<div class="pub-carousel-slide ${i===0?'active':''}" data-idx="${i}">
-              <div class="berita-pub-card" onclick="openBeritaDetail(${b.id})" style="cursor:pointer">
-                <div class="bp-foto-wrap">
-                  ${b.foto_url ? `<img class="bp-foto" src="${b.foto_url}" alt="${b.judul}" onerror="this.parentElement.innerHTML='<div class=\"bp-foto-placeholder\">📰</div>'">`
-                    : '<div class="bp-foto-placeholder">📰</div>'}
-                  <span class="bp-kat-badge">${katIcon[b.kategori]||'📌'} ${katLabel[b.kategori]||b.kategori||'Berita'}</span>
-                </div>
-                <div class="bp-body">
-                  <div class="bp-judul">${b.judul||''}</div>
-                  <div class="bp-isi">${preview}</div>
-                  <div class="bp-footer">
-                    <div class="bp-tgl">📅 ${tgl} · ✍️ ${b.ditulis_oleh||'-'}</div>
-                    <span class="bp-baca">Baca →</span>
-                  </div>
-                </div>
-              </div>
-            </div>`;
-          }).join('')}
-        </div>
-        ${data.length > 1 ? `
-        <div class="pub-carousel-nav">
-          <button class="pcr-btn" onclick="pcrMove('${id}',-1)">‹</button>
-          <div class="pcr-dots">${data.map((_,i)=>`<span class="pcr-dot ${i===0?'active':''}" onclick="pcrGo('${id}',${i})"></span>`).join('')}</div>
-          <button class="pcr-btn" onclick="pcrMove('${id}',1)">›</button>
-        </div>
-        <div class="pcr-counter" id="${id}_ctr">1 / ${data.length}</div>` : ''}
-      </div>`;
-    if (data.length > 1) initCarouselAuto(id, data.length);
-  } else {
-    // Grid biasa untuk banyak berita
-    el.innerHTML = data.map(b => {
-      const stripped = (b.isi||'').replace(/<[^>]+>/g,'');
-      const preview = stripped.length>120 ? stripped.substring(0,120)+'...' : stripped;
-      const tgl = new Date(b.created_at).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});
-      return `
-      <div class="berita-pub-card" onclick="openBeritaDetail(${b.id})" style="cursor:pointer">
-        <div class="bp-foto-wrap">
-          ${b.foto_url ? `<img class="bp-foto" src="${b.foto_url}" alt="${b.judul}" onerror="this.parentElement.innerHTML='<div class=\"bp-foto-placeholder\">📰</div>'">`
-            : '<div class="bp-foto-placeholder">📰</div>'}
-          <span class="bp-kat-badge">${katIcon[b.kategori]||'📌'} ${katLabel[b.kategori]||b.kategori||'Berita'}</span>
-        </div>
-        <div class="bp-body">
-          <div class="bp-judul">${b.judul||''}</div>
-          <div class="bp-isi">${preview}</div>
-          <div class="bp-footer">
-            <div class="bp-tgl">📅 ${tgl} · ✍️ ${b.ditulis_oleh||'-'}</div>
-            <span class="bp-baca">Baca →</span>
-          </div>
-        </div>
-      </div>`;
-    }).join('');
-  }
+  el.innerHTML = data.map(b => {
+    const stripped = (b.isi||'').replace(/<[^>]+>/g,'');
+    const preview = stripped.length > 120 ? stripped.substring(0,120)+'...' : stripped;
+    return `
+    <div class="berita-pub-card" onclick="openBeritaDetail(${b.id})">
+      ${b.foto_url ? `<img class="bp-foto" src="${b.foto_url}" alt="${b.judul}" onerror="this.style.display='none'">` : ''}
+      <div class="bp-body">
+        <div class="bp-kat">${katIcon[b.kategori]||'📌'} ${katLabel[b.kategori]||b.kategori||'-'}</div>
+        <div class="bp-judul">${b.judul||''}</div>
+        <div class="bp-isi">${preview}</div>
+        <span class="bp-baca">Baca selengkapnya →</span>
+        <div class="bp-tgl">✍️ ${b.ditulis_oleh||'-'} &nbsp;·&nbsp; 📅 ${new Date(b.created_at).toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'})}</div>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 // ===== BERITA DETAIL =====
@@ -1816,40 +1747,13 @@ function openModalBerita(data = null) {
       theme: 'snow',
       placeholder: 'Tulis isi berita di sini...',
       modules: {
-        toolbar: {
-          container: [
-            [{ 'header': [1, 2, 3, false] }],
-            ['bold', 'italic', 'underline'],
-            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-            [{ 'align': [] }],
-            ['link', 'image'],
-            ['clean']
-          ],
-          handlers: {
-            image: function() {
-              const input = document.createElement('input');
-              input.setAttribute('type', 'file');
-              input.setAttribute('accept', 'image/*');
-              input.click();
-              input.onchange = async () => {
-                const file = input.files[0];
-                if (!file) return;
-                if (file.size > 5 * 1024 * 1024) { showToast('Ukuran gambar max 5MB', 'error'); return; }
-                const ext = file.name.split('.').pop().toLowerCase();
-                const fname = 'berita/' + Date.now() + '_' + Math.random().toString(36).substr(2,6) + '.' + ext;
-                showToast('Mengupload gambar...', 'info');
-                const { data, error } = await sbAdmin.storage.from('foto').upload(fname, file, { upsert: true });
-                if (error) { showToast('Gagal upload: ' + error.message, 'error'); return; }
-                const { data: urlData } = sbAdmin.storage.from('foto').getPublicUrl(fname);
-                const url = urlData.publicUrl;
-                const range = window._quillBerita.getSelection(true);
-                window._quillBerita.insertEmbed(range.index, 'image', url);
-                window._quillBerita.setSelection(range.index + 1);
-                showToast('Gambar berhasil ditambahkan ✅', 'success');
-              };
-            }
-          }
-        }
+        toolbar: [
+          [{ 'header': [1, 2, 3, false] }],
+          ['bold', 'italic', 'underline'],
+          [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+          ['link'],
+          ['clean']
+        ]
       }
     });
     if (data && data.isi) window._quillBerita.root.innerHTML = data.isi || '';
@@ -2225,13 +2129,12 @@ async function loadPubPengumumanRingkasan() {
   if (!el) return;
   el.innerHTML = '<div class="pub-loading">Memuat...</div>';
   try {
-    const { data } = await sb.from('pengumuman').select('id,judul,tanggal_mulai').eq('aktif', true).order('created_at', { ascending: false }).limit(10);
-    const filtered = data ? data.filter(p => !p.judul || !p.judul.startsWith('_')).slice(0, 4) : [];
-    if (!filtered.length) {
+    const { data } = await sb.from('pengumuman').select('id,judul,tanggal_mulai').eq('aktif', true).order('created_at', { ascending: false }).limit(4);
+    if (!data || !data.length) {
       el.innerHTML = '<div style="color:var(--text-muted);font-size:13px;padding:8px 0">Belum ada pengumuman</div>';
       return;
     }
-    el.innerHTML = filtered.map(p => `
+    el.innerHTML = data.map(p => `
       <div class="peng-ringkasan-card" onclick="goPengumumanFull()">
         <span class="pr-icon">📢</span>
         <span class="pr-title">${p.judul || 'Pengumuman'}</span>
@@ -2352,44 +2255,27 @@ async function hapusWarta(slot) {
 
 // ===== VISITOR COUNTER =====
 async function loadVisitorCounter() {
-  // Set defaults first
-  ['visitorHariIni','visitorMinggu','visitorTotal'].forEach(id => {
-    const el = document.getElementById(id); if(el) el.textContent = '0';
-  });
   try {
     const today = new Date().toISOString().split('T')[0];
     const weekAgo = new Date(Date.now()-7*24*60*60*1000).toISOString().split('T')[0];
 
-    // Catat kunjungan hari ini (pakai localStorage agar persistent antar tab)
+    // Catat kunjungan hari ini (pakai log_perubahan sebagai visitor log)
     const sessionKey = 'sid_visited_'+today;
-    if (!localStorage.getItem(sessionKey)) {
-      localStorage.setItem(sessionKey, '1');
-      // Clean old keys
-      for (let i = 0; i < localStorage.length; i++) {
-        const k = localStorage.key(i);
-        if (k && k.startsWith('sid_visited_') && k !== sessionKey) {
-          const d = k.replace('sid_visited_','');
-          if (d < weekAgo) localStorage.removeItem(k);
-        }
-      }
-      try {
-        await sb.from('log_perubahan').insert({
-          aksi:'visitor', detail:'kunjungan_publik', tanggal:today,
-          pengguna:'publik', entitas:'website'
-        });
-      } catch(e) { console.log('Visitor log insert skipped'); }
+    if (!sessionStorage.getItem(sessionKey)) {
+      sessionStorage.setItem(sessionKey,'1');
+      await sb.from('log_perubahan').insert({
+        aksi:'visitor', detail:'kunjungan_publik', tanggal:today,
+        pengguna:'publik', entitas:'website'
+      }).catch(()=>{});
     }
 
-    // Hitung visitor secara paralel
-    const [totalRes, todayRes, weekRes] = await Promise.all([
-      sb.from('log_perubahan').select('*',{count:'exact',head:true}).eq('aksi','visitor'),
-      sb.from('log_perubahan').select('*',{count:'exact',head:true}).eq('aksi','visitor').eq('tanggal',today),
-      sb.from('log_perubahan').select('*',{count:'exact',head:true}).eq('aksi','visitor').gte('tanggal',weekAgo)
-    ]);
-
-    const totalCount = totalRes.count || 0;
-    const todayCount = todayRes.count || 0;
-    const weekCount = weekRes.count || 0;
+    // Hitung visitor
+    const {count:totalCount} = await sb.from('log_perubahan').select('*',{count:'exact',head:true})
+      .eq('aksi','visitor').catch(()=>({count:0}));
+    const {count:todayCount} = await sb.from('log_perubahan').select('*',{count:'exact',head:true})
+      .eq('aksi','visitor').eq('tanggal',today).catch(()=>({count:0}));
+    const {count:weekCount} = await sb.from('log_perubahan').select('*',{count:'exact',head:true})
+      .eq('aksi','visitor').gte('tanggal',weekAgo).catch(()=>({count:0}));
 
     const fmt = n => n>=1000?(n/1000).toFixed(1)+'K':String(n||0);
     const el1=document.getElementById('visitorHariIni');
@@ -2399,7 +2285,9 @@ async function loadVisitorCounter() {
     if(el2) el2.textContent=fmt(weekCount);
     if(el3) el3.textContent=fmt(totalCount);
   } catch(e) {
-    console.error('Visitor counter error:', e);
+    ['visitorHariIni','visitorMinggu','visitorTotal'].forEach(id=>{
+      const el=document.getElementById(id); if(el)el.textContent='-';
+    });
   }
 }
 
@@ -2781,42 +2669,4 @@ if ('serviceWorker' in navigator) {
   window.addEventListener('load',()=>{navigator.serviceWorker.register('./sw.js').then(()=>console.log('✅ PWA aktif')).catch(()=>console.log('ℹ️ SW tidak tersedia'));});
 }
 
-// ===== CAROUSEL HELPER =====
-let _carouselTimers = {};
 
-function pcrGetState(id) {
-  const el = document.getElementById(id);
-  if (!el) return null;
-  const slides = el.querySelectorAll('.pub-carousel-slide');
-  const dots   = el.querySelectorAll('.pcr-dot');
-  const ctr    = document.getElementById(id + '_ctr');
-  let cur = 0;
-  slides.forEach((s,i) => { if(s.classList.contains('active')) cur = i; });
-  return { el, slides, dots, ctr, cur, total: slides.length };
-}
-
-function pcrGo(id, idx) {
-  const s = pcrGetState(id); if(!s) return;
-  s.slides[s.cur].classList.remove('active');
-  if(s.dots[s.cur]) s.dots[s.cur].classList.remove('active');
-  const next = (idx + s.total) % s.total;
-  s.slides[next].classList.add('active');
-  if(s.dots[next]) s.dots[next].classList.add('active');
-  if(s.ctr) s.ctr.textContent = (next+1) + ' / ' + s.total;
-}
-
-function pcrMove(id, dir) {
-  const s = pcrGetState(id); if(!s) return;
-  pcrGo(id, s.cur + dir);
-  // Reset auto timer
-  if(_carouselTimers[id]) { clearInterval(_carouselTimers[id]); initCarouselAuto(id, s.total); }
-}
-
-function initCarouselAuto(id, total) {
-  if(_carouselTimers[id]) clearInterval(_carouselTimers[id]);
-  _carouselTimers[id] = setInterval(() => {
-    const s = pcrGetState(id);
-    if(s) pcrGo(id, s.cur + 1);
-    else clearInterval(_carouselTimers[id]);
-  }, 5000);
-}
