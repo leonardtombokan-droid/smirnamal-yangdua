@@ -1458,7 +1458,7 @@ tr:hover td { background:rgba(26,58,92,0.03); }
   <div class="main-content">
     <!-- DASHBOARD -->
     <div class="page active" id="page-dashboard">
-      <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px"><div><h1>Dashboard</h1><p>Selamat datang di Sistem Informasi Data Jemaat</p></div><button class="btn btn-outline" onclick="loadJemaat();loadDashboard();showToast('Data berhasil diperbarui ✅','success')" style="display:flex;align-items:center;gap:6px;font-size:13px;padding:8px 14px">🔄 Refresh Data</button></div>
+      <div class="page-header"><h1>Dashboard</h1><p>Selamat datang di Sistem Informasi Data Jemaat</p></div>
       <div class="stats-grid" id="statsGrid">
         <div class="stat-card"><div class="label">Total Jemaat</div><div class="value" id="statTotal">-</div><div class="sub">seluruh kolom</div></div>
         <div class="stat-card"><div class="label">Laki-laki</div><div class="value" id="statL">-</div><div class="sub">jemaat pria</div></div>
@@ -1472,11 +1472,18 @@ tr:hover td { background:rgba(26,58,92,0.03); }
       <div class="page-header" style="margin-top:8px;margin-bottom:16px"><h1 style="font-size:20px">Statistik per Kategori</h1></div>
       <div class="stats-grid" id="statsKategori"></div>
       <!-- Ulang Tahun di Dashboard -->
-      <div style="background:var(--bg-card);border-radius:12px;border:1px solid var(--border);padding:20px;margin-top:20px;margin-bottom:20px">
+      <div style="background:var(--bg-card);border-radius:12px;border:1px solid var(--border);padding:20px;margin-top:20px;margin-bottom:12px">
         <h2 style="font-family:'Playfair Display',serif;font-size:18px;color:var(--primary);margin-bottom:14px">🎂 Ulang Tahun</h2>
         <div id="dashUltahHari" style="margin-bottom:12px"></div>
         <div id="dashUltahMinggu" style="margin-bottom:12px"></div>
         <div id="dashUltahBulan"></div>
+      </div>
+      <!-- Ulang Tahun Perkawinan di Dashboard -->
+      <div style="background:var(--bg-card);border-radius:12px;border:1px solid var(--border);padding:20px;margin-bottom:20px">
+        <h2 style="font-family:'Playfair Display',serif;font-size:18px;color:#c2410c;margin-bottom:14px">💍 Ulang Tahun Perkawinan</h2>
+        <div id="dashNikahHari" style="margin-bottom:12px"></div>
+        <div id="dashNikahMinggu" style="margin-bottom:12px"></div>
+        <div id="dashNikahBulan"></div>
       </div>
       <div id="kolom-dash"></div>
     </div>
@@ -1550,7 +1557,7 @@ tr:hover td { background:rgba(26,58,92,0.03); }
       <div class="table-controls">
         <input class="search-box" type="text" id="searchKeluarga" placeholder="🔍 Cari nama keluarga..." oninput="filterKeluarga()">
         <select class="filter-select" id="filterKolomKeluarga" onchange="filterKeluarga()"><option value="">Semua Kolom</option></select>
-        <button class="btn btn-primary" onclick="openModalKeluargaBaru()">🏠 + Keluarga Baru</button>
+        <button class="btn btn-primary" onclick="openModal(null,'keluarga-baru')">🏠 + Keluarga Baru</button>
         <button class="btn btn-outline" onclick="window.print()">🖨️ Cetak</button>
       </div>
       <div id="keluargaList"></div>
@@ -1569,14 +1576,33 @@ tr:hover td { background:rgba(26,58,92,0.03); }
 
     <!-- ULANG TAHUN (ADMIN) -->
     <div class="page" id="page-ultah">
-      <div class="page-header"><h1>🎂 Ulang Tahun</h1><p id="ultahSubtitle">Jemaat yang berulang tahun</p></div>
-      <div class="table-controls">
-        <select class="filter-select" id="filterBulanUltah" onchange="loadUltah()"></select>
-        <select class="filter-select" id="filterKolomUltah" onchange="loadUltah()"><option value="">Semua Kolom</option></select>
-        <button class="btn btn-excel" onclick="exportExcelUltah()">📥 Excel</button>
-        <button class="btn btn-outline" onclick="printTable()">🖨️ Cetak</button>
+      <div class="page-header"><h1>🎂 Ulang Tahun & Perkawinan</h1><p id="ultahSubtitle">Jemaat yang berulang tahun</p></div>
+      <!-- Tab switcher -->
+      <div style="display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:18px">
+        <button id="tabUltahBtn" onclick="switchUltahMainTab('ultah')" style="padding:10px 24px;border:none;background:none;cursor:pointer;font-size:15px;font-weight:700;color:var(--primary);border-bottom:3px solid var(--primary);margin-bottom:-2px;transition:all .2s">🎂 Ulang Tahun</button>
+        <button id="tabNikahBtn" onclick="switchUltahMainTab('nikah')" style="padding:10px 24px;border:none;background:none;cursor:pointer;font-size:15px;font-weight:600;color:var(--text-muted);border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .2s">💍 Perkawinan</button>
       </div>
-      <div class="table-wrapper"><table id="ultahTable"><thead><tr><th>No</th><th>Nama Lengkap</th><th>L/P</th><th>Tgl Lahir</th><th>Umur</th><th>Kolom</th><th>Keluarga</th><th>Hari</th></tr></thead><tbody id="ultahBody"></tbody></table></div>
+      <!-- Section Ulang Tahun -->
+      <div id="sectionUltah">
+        <div class="table-controls">
+          <select class="filter-select" id="filterBulanUltah" onchange="loadUltah()"></select>
+          <select class="filter-select" id="filterKolomUltah" onchange="loadUltah()"><option value="">Semua Kolom</option></select>
+          <button class="btn btn-excel" onclick="exportExcelUltah()">📥 Excel</button>
+          <button class="btn btn-outline" onclick="printTable()">🖨️ Cetak</button>
+        </div>
+        <div class="table-wrapper"><table id="ultahTable"><thead><tr><th>No</th><th>Nama Lengkap</th><th>L/P</th><th>Tgl Lahir</th><th>Umur</th><th>Kolom</th><th>Keluarga</th><th>Hari</th></tr></thead><tbody id="ultahBody"></tbody></table></div>
+      </div>
+      <!-- Section Perkawinan -->
+      <div id="sectionNikah" style="display:none">
+        <div class="table-controls">
+          <select class="filter-select" id="filterBulanNikah" onchange="loadUltahNikah()"></select>
+          <select class="filter-select" id="filterKolomNikah" onchange="loadUltahNikah()"><option value="">Semua Kolom</option></select>
+          <button class="btn btn-excel" onclick="exportExcelNikah()">📥 Excel</button>
+          <button class="btn btn-outline" onclick="printTable()">🖨️ Cetak</button>
+        </div>
+        <p id="nikahSubtitle" style="color:var(--text-muted);font-size:13px;margin-bottom:10px"></p>
+        <div class="table-wrapper"><table id="nikahTable"><thead><tr><th>No</th><th>Keluarga</th><th>Suami</th><th>Istri</th><th>Tgl Nikah</th><th>Usia Pernikahan</th><th>Kolom</th><th>Hari</th></tr></thead><tbody id="nikahBody"></tbody></table></div>
+      </div>
     </div>
 
     <!-- LANSIA -->
@@ -1935,7 +1961,8 @@ tr:hover td { background:rgba(26,58,92,0.03); }
       <div class="form-group-modal"><label>Status Sidi</label><select id="fSidi"><option value="">Pilih</option><option value="sudah-sidi">Sudah Sidi</option><option value="belum-sidi">Belum Sidi</option></select></div>
       <div class="form-group-modal"><label>Nama Keluarga</label><input type="text" id="fKeluarga"></div>
       <div class="form-group-modal"><label>No KK</label><input type="text" id="fNoKK"></div>
-      <div class="form-group-modal"><label>Relasi</label><select id="fRelasi"><option value="">Pilih</option><option value="Suami">Suami</option><option value="Istri">Istri</option><option value="Anak">Anak</option><option value="Lainnya">Lainnya</option></select></div>
+      <div class="form-group-modal"><label>Relasi</label><select id="fRelasi" onchange="toggleTglNikah()"><option value="">Pilih</option><option value="Suami">Suami</option><option value="Istri">Istri</option><option value="Anak">Anak</option><option value="Lainnya">Lainnya</option></select></div>
+      <div class="form-group-modal" id="fieldTglNikah" style="display:none"><label>💍 Tanggal Nikah</label><input type="date" id="fTglNikah"></div>
       <div class="form-group-modal"><label>Kategori</label><select id="fBipra"><option value="">Pilih</option><option value="bipra">Bipra</option><option value="pemuda">Pemuda</option><option value="remaja">Remaja</option><option value="anak">Anak</option><option value="bapak">Bapak</option><option value="ibu">Ibu</option></select></div>
       <div class="form-group-modal"><label>Lansia</label><select id="fLansia"><option value="">Tidak</option><option value="lansia">Lansia</option></select></div>
       <div class="form-group-modal full"><label>Alamat Rumah</label><input type="text" id="fAlamatRumah" placeholder="Alamat tempat tinggal..."></div>
@@ -1948,105 +1975,6 @@ tr:hover td { background:rgba(26,58,92,0.03); }
       </div>
     </div>
     <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal()">Batal</button><button class="btn btn-primary" onclick="saveJemaat()">💾 Simpan</button></div>
-  </div>
-</div>
-
-<!-- MODAL KELUARGA BARU (2 LANGKAH) -->
-<div class="modal-overlay" id="modalKeluargaBaru">
-  <div class="modal" style="max-width:580px;padding:0;overflow:hidden;">
-
-    <!-- Header -->
-    <div style="background:var(--primary);padding:16px 24px;display:flex;align-items:center;justify-content:space-between;">
-      <div>
-        <h2 style="font-family:'Playfair Display',serif;font-size:18px;color:white;margin:0;" id="mkbTitle">🏠 Tambah Keluarga Baru</h2>
-        <p style="font-size:12px;color:rgba(255,255,255,0.65);margin:2px 0 0;" id="mkbSubtitle">Langkah 1 dari 2 — Data Keluarga</p>
-      </div>
-      <button class="modal-close" style="color:rgba(255,255,255,0.7);" onclick="closeMKB()">×</button>
-    </div>
-
-    <!-- Step Indicator -->
-    <div style="display:flex;border-bottom:1px solid var(--border);">
-      <div id="mkbStep1Tab" style="flex:1;padding:10px;text-align:center;font-size:13px;font-weight:600;color:var(--primary);border-bottom:2px solid var(--primary);transition:all 0.2s;">1. Data Keluarga</div>
-      <div id="mkbStep2Tab" style="flex:1;padding:10px;text-align:center;font-size:13px;color:var(--text-muted);border-bottom:2px solid transparent;transition:all 0.2s;">2. Tambah Anggota</div>
-    </div>
-
-    <!-- LANGKAH 1: Data Keluarga -->
-    <div id="mkbLangkah1" style="padding:24px;">
-      <div class="form-grid">
-        <div class="form-group-modal full">
-          <label>Nama Keluarga <span style="color:#c0392b;">*</span></label>
-          <input type="text" id="mkbNamaKeluarga" placeholder="Cth: Lahopang-Kalitow">
-          <small style="color:var(--text-muted);margin-top:4px;display:block;">Biasanya gabungan nama suami dan istri</small>
-        </div>
-        <div class="form-group-modal">
-          <label>Kolom <span style="color:#c0392b;">*</span></label>
-          <input type="number" id="mkbKolom" min="1" max="14" placeholder="1–14">
-        </div>
-        <div class="form-group-modal">
-          <label>No KK</label>
-          <input type="text" id="mkbNoKK" placeholder="Nomor Kartu Keluarga">
-        </div>
-        <div class="form-group-modal full">
-          <label>Alamat Rumah</label>
-          <input type="text" id="mkbAlamat" placeholder="Alamat tempat tinggal keluarga...">
-        </div>
-        <div class="form-group-modal">
-          <label>Jemaat Asal</label>
-          <input type="text" id="mkbJemaat" placeholder="Nama jemaat...">
-        </div>
-        <div class="form-group-modal">
-          <label>Kolom Wilayah</label>
-          <input type="text" id="mkbKolomWil" placeholder="Wilayah...">
-        </div>
-      </div>
-      <div style="background:rgba(26,58,92,0.06);border-left:3px solid var(--primary);padding:10px 14px;font-size:13px;color:var(--text-muted);margin-top:8px;">
-        Setelah ini, Anda akan langsung mengisi data anggota pertama (Kepala Keluarga / Suami).
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-outline" onclick="closeMKB()">Batal</button>
-        <button class="btn btn-primary" onclick="mkbLanjutLangkah2()">Lanjut: Tambah Anggota →</button>
-      </div>
-    </div>
-
-    <!-- LANGKAH 2: Tambah Anggota -->
-    <div id="mkbLangkah2" style="padding:24px;display:none;">
-      <!-- Info keluarga -->
-      <div style="background:rgba(26,58,92,0.06);border-radius:8px;padding:10px 16px;margin-bottom:16px;display:flex;align-items:center;gap:10px;">
-        <span style="font-size:20px;">🏠</span>
-        <div>
-          <div style="font-weight:700;color:var(--primary);font-size:14px;" id="mkbInfoNama">—</div>
-          <div style="font-size:12px;color:var(--text-muted);" id="mkbInfoKolom">Kolom —</div>
-        </div>
-      </div>
-      <!-- Daftar anggota sudah ditambahkan -->
-      <div id="mkbDaftarAnggota" style="margin-bottom:14px;display:flex;flex-direction:column;gap:6px;"></div>
-      <!-- Form anggota -->
-      <div style="border:1.5px solid var(--border);border-radius:10px;padding:16px;background:var(--bg-card);">
-        <div style="font-size:13px;font-weight:600;color:var(--primary);margin-bottom:12px;" id="mkbAnggotaLabel">Anggota ke-1 (Kepala Keluarga)</div>
-        <div class="form-grid">
-          <div class="form-group-modal full"><label>Nama Lengkap <span style="color:#c0392b;">*</span></label><input type="text" id="mkbaNama" placeholder="Nama lengkap anggota"></div>
-          <div class="form-group-modal"><label>NIK</label><input type="text" id="mkbaNik" placeholder="Nomor Induk Kependudukan"></div>
-          <div class="form-group-modal"><label>L/P</label><select id="mkbaLp"><option value="">Pilih</option><option value="L">Laki-laki</option><option value="P">Perempuan</option></select></div>
-          <div class="form-group-modal"><label>Tempat Lahir</label><input type="text" id="mkbaTempat" placeholder="Kota..."></div>
-          <div class="form-group-modal"><label>Tanggal Lahir</label><input type="date" id="mkbaTgl"></div>
-          <div class="form-group-modal"><label>Pekerjaan</label><input type="text" id="mkbaPekerjaan" placeholder="Pekerjaan..."></div>
-          <div class="form-group-modal"><label>Status Baptis</label><select id="mkbaBaptis"><option value="">Pilih</option><option value="sudah-baptis">Sudah Baptis</option><option value="belum-baptis">Belum Baptis</option></select></div>
-          <div class="form-group-modal"><label>Status Sidi</label><select id="mkbaSidi"><option value="">Pilih</option><option value="sudah-sidi">Sudah Sidi</option><option value="belum-sidi">Belum Sidi</option></select></div>
-          <div class="form-group-modal"><label>Relasi</label><select id="mkbaRelasi"><option value="">Pilih</option><option value="Suami">Suami</option><option value="Istri">Istri</option><option value="Anak">Anak</option><option value="Lainnya">Lainnya</option></select></div>
-          <div class="form-group-modal"><label>Kategori</label><select id="mkbaBipra"><option value="">Pilih</option><option value="bipra">Bipra</option><option value="pemuda">Pemuda</option><option value="remaja">Remaja</option><option value="anak">Anak</option><option value="bapak">Bapak</option><option value="ibu">Ibu</option></select></div>
-          <div class="form-group-modal"><label>Lansia</label><select id="mkbaLansia"><option value="">Tidak</option><option value="lansia">Lansia</option></select></div>
-          <div class="form-group-modal"><label>No Urut</label><input type="text" id="mkbaNo" placeholder="No urut..."></div>
-        </div>
-      </div>
-      <div class="modal-footer" style="flex-wrap:wrap;gap:8px;">
-        <button class="btn btn-outline" onclick="mkbKembali()">← Kembali</button>
-        <div style="display:flex;gap:8px;margin-left:auto;">
-          <button class="btn btn-outline" id="mkbBtnSelesai" onclick="mkbSelesai()" style="display:none;">✅ Selesai</button>
-          <button class="btn btn-primary" onclick="mkbSimpanAnggota()">💾 Simpan & Tambah Anggota Lagi</button>
-        </div>
-      </div>
-    </div>
-
   </div>
 </div>
 
