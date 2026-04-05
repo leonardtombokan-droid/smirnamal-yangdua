@@ -350,7 +350,6 @@ function showPage(name) {
   if (name==='akun') loadAkun();
   if (name==='peta') setTimeout(loadPeta,200);
   if (name==='ultah') loadUltah();
-  if (name==='lansia') loadLansia();
   if (name==='log') loadLog();
   if (name==='kehadiran') loadKehadiran();
   if (name==='pengumuman') loadPengumumanAdmin();
@@ -383,13 +382,91 @@ function showSubJemaat(sub) {
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item,.nav-sub-item').forEach(n=>n.classList.remove('active'));
   document.getElementById('page-'+sub).classList.add('active');
-  const subMap={'per-kolom':'subPerKolom','sidi':'subSidi','belum-sidi':'subBelumSidi','per-keluarga':'subPerKeluarga'};
+  const subMap={'per-kolom':'subPerKolom','sidi':'subSidi','belum-sidi':'subBelumSidi','per-keluarga':'subPerKeluarga','pemuda':'subPemuda','remaja':'subRemaja','anak-sm':'subASM','lansia-jemaat':'subLansiaJemaat'};
   document.getElementById(subMap[sub]).classList.add('active');
   document.getElementById('navGroupJemaat').classList.add('open');
   currentSubPage=sub; subCurrentPage=1;
   if (sub==='per-keluarga') { renderSubKeluarga(); }
+  else if (['pemuda','remaja','anak-sm','lansia-jemaat'].includes(sub)) { renderKategoriPage(sub); }
   else { populateKolomDropdowns(); renderSubJemaat(); }
   if (window.innerWidth<768) { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebarBackdrop').classList.remove('open'); }
+}
+
+// ===== KATEGORI JEMAAT (Pemuda, Remaja, ASM, Lansia) =====
+let kategoriCurrentPage = {};
+
+function renderKategoriPage(sub, page) {
+  const cfg = {
+    'pemuda':       {bipra:'pemuda',  search:'searchPemuda',      kolom:'filterKolomPemuda',      lp:'filterLPPemuda',      body:'pemudaBody',      pag:'pemudaPagination',      subtitle:'pemudaSubtitle',      label:'Pemuda',          filterFn: j=>j.bipra==='pemuda'},
+    'remaja':       {bipra:'remaja',  search:'searchRemaja',      kolom:'filterKolomRemaja',      lp:'filterLPRemaja',      body:'remajaBody',      pag:'remajaPagination',      subtitle:'remajaSubtitle',      label:'Remaja',          filterFn: j=>j.bipra==='remaja'},
+    'anak-sm':      {bipra:'anak',    search:'searchASM',         kolom:'filterKolomASM',         lp:'filterLPASM',         body:'asmBody',         pag:'asmPagination',         subtitle:'asmSubtitle',         label:'Anak SM',         filterFn: j=>j.bipra==='anak'},
+    'lansia-jemaat':{bipra:'lansia',  search:'searchLansiaJemaat',kolom:'filterKolomLansiaJemaat',lp:'filterLPLansiaJemaat',body:'lansiaJemaatBody',pag:'lansiaJemaatPagination',subtitle:'lansiaJemaatSubtitle',label:'Lansia',          filterFn: j=>j.lansia==='lansia'||(()=>{if(!j.tanggal_lahir)return false;const d=parseTanggal(j.tanggal_lahir);if(!d||isNaN(d))return false;return new Date().getFullYear()-d.getFullYear()>=60;})()},
+  };
+  const c = cfg[sub]; if (!c) return;
+
+  // Populate kolom dropdown
+  const kEl = document.getElementById(c.kolom);
+  if (kEl) {
+    const koloms=[...new Set(allJemaat.map(j=>j.kolom).filter(Boolean))].sort((a,b)=>a-b);
+    const cur=kEl.value;
+    kEl.innerHTML='<option value="">Semua Kolom</option>'+koloms.map(k=>`<option value="${k}"${k==cur?' selected':''}>Kolom ${k}</option>`).join('');
+  }
+
+  const q=(document.getElementById(c.search)?.value||'').toLowerCase();
+  const kolom=document.getElementById(c.kolom)?.value||'';
+  const lp=document.getElementById(c.lp)?.value||'';
+  const perPage=25;
+  if (!kategoriCurrentPage[sub]||page!==undefined) kategoriCurrentPage[sub]=page||1;
+  const pg=kategoriCurrentPage[sub];
+
+  let data = allJemaat.filter(c.filterFn)
+    .filter(j=>(!q||(j.nama_lengkap||'').toLowerCase().includes(q))&&(!kolom||String(j.kolom)===String(kolom))&&(!lp||j.lp===lp))
+    .sort((a,b)=>(a.kolom||0)-(b.kolom||0)||(a.nama_lengkap||'').localeCompare(b.nama_lengkap||''));
+
+  document.getElementById(c.subtitle).textContent=`${data.length} ${c.label} ditemukan`;
+  const pages=Math.ceil(data.length/perPage)||1;
+  if (pg>pages) kategoriCurrentPage[sub]=1;
+  const start=(kategoriCurrentPage[sub]-1)*perPage;
+  const tbody=document.getElementById(c.body);
+  if (!data.slice(start,start+perPage).length) {
+    tbody.innerHTML=`<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--text-muted)">Tidak ada data</td></tr>`;
+    document.getElementById(c.pag).innerHTML=''; return;
+  }
+  tbody.innerHTML=data.slice(start,start+perPage).map((j,i)=>`<tr>
+    <td>${start+i+1}</td>
+    <td><span class="badge badge-l" style="background:#e8f4f0;color:#2d6a4f">Kol ${j.kolom||'-'}</span></td>
+    <td><strong>${j.nama_lengkap||'-'}</strong></td>
+    <td><span class="badge ${j.lp==='L'?'badge-l':'badge-p'}">${j.lp||'-'}</span></td>
+    <td>${formatTanggal(j.tanggal_lahir)}</td>
+    <td>${hitungUmur(j.tanggal_lahir)}</td>
+    <td>${j.pekerjaan||'-'}</td>
+    <td>${j.nama_keluarga||'-'}</td>
+    <td>${j.alamat_rumah||'-'}</td>
+  </tr>`).join('');
+
+  const pagEl=document.getElementById(c.pag);
+  if (pages<=1){pagEl.innerHTML=`<span class="page-info">${data.length} data</span>`;return;}
+  let html=`<button class="page-btn" onclick="kategoriChangePage('${sub}',${kategoriCurrentPage[sub]-1})" ${kategoriCurrentPage[sub]===1?'disabled':''}>‹</button>`;
+  for(let i=1;i<=pages;i++){if(i===1||i===pages||Math.abs(i-kategoriCurrentPage[sub])<=2)html+=`<button class="page-btn ${i===kategoriCurrentPage[sub]?'active':''}" onclick="kategoriChangePage('${sub}',${i})">${i}</button>`;else if(Math.abs(i-kategoriCurrentPage[sub])===3)html+=`<span style="padding:8px">...</span>`;}
+  html+=`<button class="page-btn" onclick="kategoriChangePage('${sub}',${kategoriCurrentPage[sub]+1})" ${kategoriCurrentPage[sub]===pages?'disabled':''}>›</button><span class="page-info">${data.length} data</span>`;
+  pagEl.innerHTML=html;
+}
+
+function kategoriChangePage(sub,p){kategoriCurrentPage[sub]=p;renderKategoriPage(sub);}
+
+function exportExcelKategori(sub, namaFile) {
+  const cfgBody={'pemuda':'pemudaBody','remaja':'remajaBody','anak-sm':'asmBody','lansia-jemaat':'lansiaJemaatBody'};
+  const bodyId=cfgBody[sub]; if(!bodyId) return;
+  const rows=[];
+  document.querySelectorAll('#'+bodyId+' tr').forEach(tr=>{
+    const tds=tr.querySelectorAll('td');
+    if(tds.length>1) rows.push({'No':tds[0].textContent,'Kolom':tds[1].textContent,'Nama':tds[2].textContent,'L/P':tds[3].textContent,'Tgl Lahir':tds[4].textContent,'Umur':tds[5].textContent,'Pekerjaan':tds[6].textContent,'Keluarga':tds[7].textContent,'Alamat':tds[8].textContent});
+  });
+  if(!rows.length){showToast('Tidak ada data','warning');return;}
+  const ws=XLSX.utils.json_to_sheet(rows);
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,namaFile.replace(/_/g,' '));
+  XLSX.writeFile(wb,namaFile+'.xlsx');
 }
 
 function populateKolomDropdowns() {
@@ -654,7 +731,6 @@ function _applyRealtimeChange(payload) {
   else if (pageId === 'page-keluarga') { allKeluargaData = [...allJemaat]; renderKeluarga(allKeluargaData); }
   else if (pageId === 'page-dashboard') { loadDashboard(); }
   else if (pageId === 'page-ultah') { loadUltah(); }
-  else if (pageId === 'page-lansia') { loadLansia(); }
 
   // Selalu update data ultah publik
   renderPubUltah(allJemaat);
@@ -1282,29 +1358,6 @@ function exportExcelNikah(){
 }
 
 // ===== LANSIA =====
-async function loadLansia() {
-  const q=(document.getElementById('searchLansia')?.value||'').toLowerCase();
-  const kolom=document.getElementById('filterKolomLansia')?.value||'';
-  const lp=document.getElementById('filterLPLansia')?.value||'';
-  const koloms=[...new Set(allJemaat.map(j=>j.kolom).filter(Boolean))].sort((a,b)=>a-b);
-  const kEl=document.getElementById('filterKolomLansia'); const cur=kEl.value;
-  kEl.innerHTML='<option value="">Semua Kolom</option>'+koloms.map(k=>`<option value="${k}" ${String(k)===cur?'selected':''}>${'Kolom '+k}</option>`).join('');
-  const filtered=allJemaat.filter(j=>{
-    const isL=j.lansia==='lansia'||(()=>{if(!j.tanggal_lahir)return false;const d=parseTanggal(j.tanggal_lahir);if(!d||isNaN(d))return false;return new Date().getFullYear()-d.getFullYear()>=60;})();
-    return isL&&(!q||(j.nama_lengkap||'').toLowerCase().includes(q))&&(!kolom||String(j.kolom)===kolom)&&(!lp||j.lp===lp);
-  }).sort((a,b)=>(a.kolom||0)-(b.kolom||0)||(a.nama_lengkap||'').localeCompare(b.nama_lengkap||''));
-  document.getElementById('lansiaSubtitle').textContent=`${filtered.length} jemaat lansia`;
-  document.getElementById('lansiaBody').innerHTML=!filtered.length?'<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text-muted)">Tidak ada data</td></tr>':filtered.map((j,i)=>`<tr><td>${i+1}</td><td><strong>${j.nama_lengkap||'-'}</strong></td><td><span class="badge ${j.lp==='L'?'badge-l':'badge-p'}">${j.lp||'-'}</span></td><td>${formatTanggal(j.tanggal_lahir)}</td><td>${hitungUmur(j.tanggal_lahir)}</td><td>Kolom ${j.kolom||'-'}</td><td>${j.nama_keluarga||'-'}</td><td>${j.alamat_rumah||'-'}</td></tr>`).join('');
-}
-
-function exportExcelLansia(){
-  const rows=[];
-  document.querySelectorAll('#lansiaBody tr').forEach(tr=>{const tds=tr.querySelectorAll('td');if(tds.length>1)rows.push({'No':tds[0].textContent,'Nama':tds[1].textContent,'L/P':tds[2].textContent,'Tgl Lahir':tds[3].textContent,'Umur':tds[4].textContent,'Kolom':tds[5].textContent,'Keluarga':tds[6].textContent,'Alamat':tds[7].textContent});});
-  if (!rows.length){alert('Tidak ada data');return;}
-  const ws=XLSX.utils.json_to_sheet(rows); const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Lansia');
-  XLSX.writeFile(wb,`Lansia_${new Date().toLocaleDateString('id-ID').replace(/\//g,'-')}.xlsx`);
-}
-
 // ===== KELUARGA =====
 let allKeluargaData=[];
 async function loadKeluarga() {
