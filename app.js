@@ -1737,41 +1737,12 @@ async function loadLog(){
   const koloms=[...new Set(allJemaat.map(j=>j.kolom).filter(Boolean))].sort((a,b)=>a-b);
   const kEl=document.getElementById('filterLogKolom');const cur=kEl.value;
   kEl.innerHTML='<option value="">Semua Kolom</option>'+koloms.map(k=>`<option value="${k}" ${String(k)===cur?'selected':''}>${'Kolom '+k}</option>`).join('');
-  let q=sbAdmin.from('log_perubahan').select('*').order('waktu',{ascending:false}).limit(200).neq('aksi','visitor');
+  let q=sb.from('log_perubahan').select('*').order('waktu',{ascending:false}).limit(200);
   if (aksi) q=q.eq('aksi',aksi);if (kolom) q=q.eq('kolom_user',parseInt(kolom));
   const {data,error}=await q;
-  if (error){document.getElementById('logBody').innerHTML='<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--danger)">Tabel log belum dibuat.</td></tr>';return;}
+  if (error){document.getElementById('logBody').innerHTML='<tr><td colspan="5" style="text-align:center;padding:32px;color:var(--danger)">Tabel log belum dibuat.</td></tr>';return;}
   const aksiIcon={tambah:'➕',edit:'✏️',hapus:'🗑️',import:'📥'};
-  const aksiColor={tambah:'background:#dcfce7;color:#166534',edit:'background:#e0e7ff;color:#3730a3',hapus:'background:#fee2e2;color:#991b1b',import:'background:#fef9c3;color:#854d0e'};
-
-  // Ambil nama jemaat dari allJemaat berdasarkan id_jemaat
-  const jemaatMap={};
-  allJemaat.forEach(j=>{ if(j.id) jemaatMap[j.id]=j.nama_lengkap; });
-
-  document.getElementById('logBody').innerHTML=!data?.length
-    ?'<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-muted)">Belum ada riwayat</td></tr>'
-    :data.map(l=>{
-      // Ekstrak nama jemaat: dari id_jemaat (prioritas), atau parse dari keterangan
-      let namaJemaat = '';
-      if (l.id_jemaat && jemaatMap[l.id_jemaat]) {
-        namaJemaat = jemaatMap[l.id_jemaat];
-      } else if (l.keterangan) {
-        // Parse dari format "Edit: Nama (Kolom X)" atau "Tambah: Nama (Kolom X)" atau "Hapus: Nama"
-        const m = l.keterangan.match(/^(?:Edit|Tambah|Hapus|edit|tambah|hapus):\s*(.+?)(?:\s*\(Kolom\s*\d+\))?$/i);
-        if (m) namaJemaat = m[1].trim();
-      }
-      // Keterangan ringkas (tanpa nama jemaat agar tidak redundan)
-      let ket = l.keterangan||'-';
-      const style=aksiColor[l.aksi]||'background:#f1f5f9;color:#334155';
-      return `<tr>
-        <td style="font-size:12px;white-space:nowrap">${new Date(l.waktu).toLocaleString('id-ID')}</td>
-        <td><span class="badge" style="${style}">${aksiIcon[l.aksi]||''} ${l.aksi}</span></td>
-        <td><strong>${l.oleh||'-'}</strong></td>
-        <td>${l.kolom_user!==null?'Kolom '+l.kolom_user:'-'}</td>
-        <td style="font-size:13px;font-weight:600;color:var(--primary)">${namaJemaat||'-'}</td>
-        <td style="font-size:12px;color:var(--text-muted)">${ket}</td>
-      </tr>`;
-    }).join('');
+  document.getElementById('logBody').innerHTML=!data?.length?'<tr><td colspan="5" style="text-align:center;padding:32px;color:var(--text-muted)">Belum ada riwayat</td></tr>':data.map(l=>`<tr><td style="font-size:12px;white-space:nowrap">${new Date(l.waktu).toLocaleString('id-ID')}</td><td><span class="badge" style="background:#e0e7ff;color:#3730a3">${aksiIcon[l.aksi]||''} ${l.aksi}</span></td><td>${l.oleh||'-'}</td><td>${l.kolom_user!==null?'Kolom '+l.kolom_user:'-'}</td><td style="font-size:13px">${l.keterangan||'-'}</td></tr>`).join('');
 }
 
 // ===== EXPORT EXCEL =====
@@ -2671,39 +2642,74 @@ async function hapusWarta(slot) {
 
 // ===== VISITOR COUNTER =====
 async function loadVisitorCounter() {
-  try {
-    const today = new Date().toISOString().split('T')[0];
-    const weekAgo = new Date(Date.now()-7*24*60*60*1000).toISOString().split('T')[0];
+  const fmt = n => {
+    n = parseInt(n)||0;
+    if (n>=1000000) return (n/1000000).toFixed(1)+'M';
+    if (n>=1000) return (n/1000).toFixed(1)+'K';
+    return String(n);
+  };
+  const setVal = (id, v) => { const el=document.getElementById(id); if(el) el.textContent=fmt(v); };
 
-    // Catat kunjungan hari ini (pakai log_perubahan sebagai visitor log)
-    const sessionKey = 'sid_visited_'+today;
-    if (!sessionStorage.getItem(sessionKey)) {
-      sessionStorage.setItem(sessionKey,'1');
+  const today    = new Date().toISOString().split('T')[0];
+  const weekAgo  = new Date(Date.now()-7*24*60*60*1000).toISOString().split('T')[0];
+
+  // ── Sistem localStorage sebagai sumber utama (selalu bekerja) ──
+  const LS_KEY = 'sid_visitor_v2';
+  let lsData = {};
+  try { lsData = JSON.parse(localStorage.getItem(LS_KEY)||'{}'); } catch(e){}
+
+  // Tambah kunjungan hari ini (per session)
+  const sessionKey = 'sid_sess_'+today;
+  if (!sessionStorage.getItem(sessionKey)) {
+    sessionStorage.setItem(sessionKey,'1');
+    // Catat di localStorage per tanggal
+    if (!lsData.days) lsData.days = {};
+    lsData.days[today] = (lsData.days[today]||0) + 1;
+    lsData.total = (lsData.total||0) + 1;
+    // Bersihkan hari lebih dari 90 hari
+    const cutoff = new Date(Date.now()-90*24*60*60*1000).toISOString().split('T')[0];
+    Object.keys(lsData.days).forEach(d=>{ if(d<cutoff) delete lsData.days[d]; });
+    try { localStorage.setItem(LS_KEY, JSON.stringify(lsData)); } catch(e){}
+
+    // Juga coba insert ke Supabase (gunakan kolom yang ada di skema)
+    try {
       await sbAdmin.from('log_perubahan').insert({
-        aksi:'visitor', detail:'kunjungan_publik', tanggal:today,
-        pengguna:'publik', entitas:'website'
-      }).catch((e) => { console.warn('Visitor insert gagal:', e.message); });
-    }
-
-    // Hitung visitor (gunakan sbAdmin agar tidak terblokir RLS)
-    let totalCount=0, todayCount=0, weekCount=0;
-    try { const r=await sbAdmin.from('log_perubahan').select('*',{count:'exact',head:true}).eq('aksi','visitor'); totalCount=r.count||0; } catch(e){}
-    try { const r=await sbAdmin.from('log_perubahan').select('*',{count:'exact',head:true}).eq('aksi','visitor').eq('tanggal',today); todayCount=r.count||0; } catch(e){}
-    try { const r=await sbAdmin.from('log_perubahan').select('*',{count:'exact',head:true}).eq('aksi','visitor').gte('tanggal',weekAgo); weekCount=r.count||0; } catch(e){}
-
-    const fmt = n => n>=1000?(n/1000).toFixed(1)+'K':String(n||0);
-    const el1=document.getElementById('visitorHariIni');
-    const el2=document.getElementById('visitorMinggu');
-    const el3=document.getElementById('visitorTotal');
-    if(el1) el1.textContent=fmt(todayCount);
-    if(el2) el2.textContent=fmt(weekCount);
-    if(el3) el3.textContent=fmt(totalCount);
-  } catch(e) {
-    console.error('Visitor counter error:', e);
-    ['visitorHariIni','visitorMinggu','visitorTotal'].forEach(id=>{
-      const el=document.getElementById(id); if(el)el.textContent='0';
-    });
+        aksi: 'visitor',
+        keterangan: 'kunjungan_publik',
+        oleh: 'publik',
+        waktu: new Date().toISOString()
+      });
+    } catch(e) { /* Supabase optional — tidak masalah jika gagal */ }
   }
+
+  // Hitung dari localStorage
+  const todayLS  = (lsData.days&&lsData.days[today]) ? lsData.days[today] : 0;
+  const weekLS   = Object.entries(lsData.days||{}).filter(([d])=>d>=weekAgo).reduce((s,[,v])=>s+v,0);
+  const totalLS  = lsData.total||0;
+
+  // Tampilkan dari localStorage dulu (cepat, pasti ada)
+  setVal('visitorHariIni', todayLS);
+  setVal('visitorMinggu',  weekLS);
+  setVal('visitorTotal',   totalLS);
+
+  // Coba ambil data lebih akurat dari Supabase (opsional)
+  try {
+    let todaySB=0, weekSB=0, totalSB=0;
+    const [r1,r2,r3] = await Promise.all([
+      sbAdmin.from('log_perubahan').select('*',{count:'exact',head:true}).eq('aksi','visitor').eq('waktu', today).catch(()=>null),
+      sbAdmin.from('log_perubahan').select('*',{count:'exact',head:true}).eq('aksi','visitor').gte('waktu', weekAgo).catch(()=>null),
+      sbAdmin.from('log_perubahan').select('*',{count:'exact',head:true}).eq('aksi','visitor').catch(()=>null),
+    ]);
+    // Hanya update jika Supabase mengembalikan angka lebih besar (lebih akurat lintas device)
+    if (r1&&r1.count) todaySB=r1.count;
+    if (r2&&r2.count) weekSB=r2.count;
+    if (r3&&r3.count) totalSB=r3.count;
+    if (totalSB > totalLS) {
+      setVal('visitorHariIni', Math.max(todayLS,todaySB));
+      setVal('visitorMinggu',  Math.max(weekLS,weekSB));
+      setVal('visitorTotal',   totalSB);
+    }
+  } catch(e) { /* Supabase tidak tersedia — tampilkan localStorage */ }
 }
 
 // ===== SOCIAL MEDIA =====

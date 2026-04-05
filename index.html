@@ -996,14 +996,32 @@ tr:hover td { background:rgba(26,58,92,0.03); }
 
 /* VISITOR COUNTER */
 .visitor-counter-bar {
-  background:linear-gradient(135deg,var(--primary),#2e5fa0);
-  color:white; padding:10px 20px;
-  display:flex; align-items:center; justify-content:center; gap:20px;
+  background:linear-gradient(135deg,#0f2748 0%,#1a3a5c 50%,#1e4976 100%);
+  color:white; padding:12px 24px;
+  display:flex; align-items:center; justify-content:center; gap:0;
   font-size:13px; flex-wrap:wrap;
+  border-bottom:2px solid rgba(200,169,110,0.3);
 }
-.visitor-stat { display:flex; align-items:center; gap:6px; }
-.visitor-stat-num { font-weight:800; font-size:16px; color:var(--accent-light); }
-.visitor-stat-label { opacity:0.8; }
+.visitor-stat {
+  display:flex; align-items:center; gap:10px;
+  padding:6px 24px;
+  border-right:1px solid rgba(255,255,255,0.15);
+}
+.visitor-stat:last-child { border-right:none; }
+.visitor-stat-icon {
+  width:34px; height:34px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:15px; flex-shrink:0;
+}
+.vs-icon-today  { background:rgba(34,197,94,0.2);  border:1px solid rgba(34,197,94,0.4); }
+.vs-icon-week   { background:rgba(59,130,246,0.2); border:1px solid rgba(59,130,246,0.4); }
+.vs-icon-total  { background:rgba(200,169,110,0.2);border:1px solid rgba(200,169,110,0.4); }
+.visitor-stat-info { display:flex; flex-direction:column; line-height:1.2; }
+.visitor-stat-num  { font-weight:800; font-size:18px; letter-spacing:-0.5px; }
+.vs-num-today  { color:#4ade80; }
+.vs-num-week   { color:#60a5fa; }
+.vs-num-total  { color:#c8a96e; }
+.visitor-stat-label { font-size:11px; opacity:0.65; text-transform:uppercase; letter-spacing:0.5px; margin-top:1px; }
 
 /* SOCIAL MEDIA BAR */
 .sosmed-bar {
@@ -1114,9 +1132,27 @@ tr:hover td { background:rgba(26,58,92,0.03); }
 
   <!-- VISITOR COUNTER BAR -->
   <div class="visitor-counter-bar">
-    <div class="visitor-stat">👁️ <span class="visitor-stat-num" id="visitorHariIni">...</span> <span class="visitor-stat-label">pengunjung hari ini</span></div>
-    <div class="visitor-stat">📅 <span class="visitor-stat-num" id="visitorMinggu">...</span> <span class="visitor-stat-label">minggu ini</span></div>
-    <div class="visitor-stat">📊 <span class="visitor-stat-num" id="visitorTotal">...</span> <span class="visitor-stat-label">total kunjungan</span></div>
+    <div class="visitor-stat">
+      <div class="visitor-stat-icon vs-icon-today">👁️</div>
+      <div class="visitor-stat-info">
+        <span class="visitor-stat-num vs-num-today" id="visitorHariIni">—</span>
+        <span class="visitor-stat-label">Pengunjung Hari Ini</span>
+      </div>
+    </div>
+    <div class="visitor-stat">
+      <div class="visitor-stat-icon vs-icon-week">📅</div>
+      <div class="visitor-stat-info">
+        <span class="visitor-stat-num vs-num-week" id="visitorMinggu">—</span>
+        <span class="visitor-stat-label">Minggu Ini</span>
+      </div>
+    </div>
+    <div class="visitor-stat">
+      <div class="visitor-stat-icon vs-icon-total">📊</div>
+      <div class="visitor-stat-info">
+        <span class="visitor-stat-num vs-num-total" id="visitorTotal">—</span>
+        <span class="visitor-stat-label">Total Kunjungan</span>
+      </div>
+    </div>
   </div>
 
   <!-- SOCIAL MEDIA BAR -->
@@ -1754,7 +1790,7 @@ tr:hover td { background:rgba(26,58,92,0.03); }
         <select class="filter-select" id="filterLogKolom" onchange="loadLog()"><option value="">Semua Kolom</option></select>
         <button class="btn btn-outline" onclick="loadLog()">🔄 Refresh</button>
       </div>
-      <div class="table-wrapper"><table><thead><tr><th>Waktu</th><th>Aksi</th><th>Oleh</th><th>Kolom</th><th>Nama Jemaat</th><th>Keterangan</th></tr></thead><tbody id="logBody"><tr><td colspan="6" class="loading"><div class="spinner"></div></td></tr></tbody></table></div>
+      <div class="table-wrapper"><table><thead><tr><th>Waktu</th><th>Aksi</th><th>Oleh</th><th>Kolom</th><th>Data</th></tr></thead><tbody id="logBody"><tr><td colspan="5" class="loading"><div class="spinner"></div></td></tr></tbody></table></div>
     </div>
 
     <!-- PENATUA DIAKEN -->
