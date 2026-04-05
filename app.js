@@ -18,16 +18,24 @@ const namaBulan = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agu
 // ===== URUTAN ANGGOTA KELUARGA =====
 // Suami(1) → Istri(2) → Anak(3, tertua→termuda) → Orang Tua/Tanggungan(4) → Lainnya(5)
 function sortAnggotaKeluarga(members) {
-  const relasiOrder = {'Suami':1,'Istri':2,'Anak':3,'Orang Tua':4,'Tanggungan':4,'Lainnya':5};
+  // Normalisasi relasi (case-insensitive, trim)
+  function getRelasiOrder(relasi) {
+    const r = (relasi||'').trim().toLowerCase();
+    if (r === 'suami') return 1;
+    if (r === 'istri') return 2;
+    if (r === 'anak') return 3;
+    if (r === 'orang tua' || r === 'tanggungan') return 4;
+    return 5;
+  }
   return [...members].sort((a, b) => {
-    const ra = relasiOrder[a.relasi] || 5;
-    const rb = relasiOrder[b.relasi] || 5;
+    const ra = getRelasiOrder(a.relasi);
+    const rb = getRelasiOrder(b.relasi);
     if (ra !== rb) return ra - rb;
-    // Sesama Anak: urutkan tertua → termuda (tanggal lahir terkecil = lebih tua)
+    // Sesama Anak: tertua → termuda (tanggal lahir lebih kecil = lebih tua)
     if (ra === 3) {
       const da = parseTanggal(a.tanggal_lahir);
       const db = parseTanggal(b.tanggal_lahir);
-      if (da && db && !isNaN(da) && !isNaN(db)) return da - db;
+      if (da && db && !isNaN(da) && !isNaN(db)) return da.getTime() - db.getTime();
     }
     return 0;
   });
@@ -496,7 +504,7 @@ function renderSubKeluarga() {
         <table style="width:100%;border-collapse:collapse;font-size:13px">
           <thead>
             <tr style="background:#f1f5f9;color:var(--text-muted);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px">
-              <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border)">No</th>
+              <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);min-width:130px">Keluarga</th>
               <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border)">Nama Lengkap</th>
               <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border)">L/P</th>
               <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border)">Tgl Lahir</th>
