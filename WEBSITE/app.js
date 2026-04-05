@@ -15,6 +15,24 @@ let perPage = 25;
 
 const namaBulan = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
 
+// ===== URUTAN ANGGOTA KELUARGA =====
+// Suami(1) → Istri(2) → Anak(3, tertua→termuda) → Orang Tua/Tanggungan(4) → Lainnya(5)
+function sortAnggotaKeluarga(members) {
+  const relasiOrder = {'Suami':1,'Istri':2,'Anak':3,'Orang Tua':4,'Tanggungan':4,'Lainnya':5};
+  return [...members].sort((a, b) => {
+    const ra = relasiOrder[a.relasi] || 5;
+    const rb = relasiOrder[b.relasi] || 5;
+    if (ra !== rb) return ra - rb;
+    // Sesama Anak: urutkan tertua → termuda (tanggal lahir terkecil = lebih tua)
+    if (ra === 3) {
+      const da = parseTanggal(a.tanggal_lahir);
+      const db = parseTanggal(b.tanggal_lahir);
+      if (da && db && !isNaN(da) && !isNaN(db)) return da - db;
+    }
+    return 0;
+  });
+}
+
 function parseTanggal(tglLahir) {
   if (!tglLahir) return null;
   const str = String(tglLahir).trim();
@@ -446,7 +464,6 @@ function renderSubKeluarga() {
   });
 
   // Group by kolom → nama_keluarga
-  const relasiOrder={'Suami':1,'Istri':2,'Anak':3,'Lainnya':4};
   const byKolom={};
   data.forEach(j=>{
     const k=j.kolom||0;
@@ -493,7 +510,7 @@ function renderSubKeluarga() {
           </thead>
           <tbody>
             ${famKeys.map(fam=>{
-              const members=[...byKolom[kolom][fam]].sort((a,b)=>(relasiOrder[a.relasi]||5)-(relasiOrder[b.relasi]||5));
+              const members=sortAnggotaKeluarga(byKolom[kolom][fam]);
               const rep=members[0]||{};
               const _noKK=(rep.no_kk||'').replace(/'/g,"\\'");
               const _alamat=(members.find(m=>m.alamat_rumah)||{}).alamat_rumah||'';
@@ -562,7 +579,7 @@ function exportExcelPerKeluarga() {
     const matchQ=!q||(j.nama_lengkap||'').toLowerCase().includes(q)||(j.nama_keluarga||'').toLowerCase().includes(q);
     const matchKol=!kolom||String(j.kolom)===String(kolom);
     return matchQ&&matchKol;
-  }).sort((a,b)=>(a.kolom||0)-(b.kolom||0)||(a.nama_keluarga||'').localeCompare(b.nama_keluarga||'')||(relasiOrder[a.relasi]||5)-(relasiOrder[b.relasi]||5));
+  }).sort((a,b)=>(a.kolom||0)-(b.kolom||0)||(a.nama_keluarga||'').localeCompare(b.nama_keluarga||''));
   if(!data.length){alert('Tidak ada data');return;}
   const rows=data.map((j,i)=>({'No':i+1,'Kolom':j.kolom||'','Nama Keluarga':j.nama_keluarga||'','Nama Lengkap':j.nama_lengkap||'','Relasi':j.relasi||'','L/P':j.lp||'','Tgl Lahir':formatTanggal(j.tanggal_lahir),'Umur':hitungUmur(j.tanggal_lahir),'Pekerjaan':j.pekerjaan||'','Baptis':j.baptis==='sudah-baptis'?'Sudah':'Belum','Sidi':j.sidi==='sudah-sidi'?'Sudah':'Belum','Alamat':j.alamat_rumah||''}));
   const ws=XLSX.utils.json_to_sheet(rows);
@@ -1304,11 +1321,10 @@ function renderKeluarga(data) {
   const byKolom={};
   data.forEach(j=>{const k=j.kolom||0,fam=j.nama_keluarga||'(Tanpa Nama Keluarga)';if(!byKolom[k])byKolom[k]={};if(!byKolom[k][fam])byKolom[k][fam]=[];byKolom[k][fam].push(j);});
   if (!Object.keys(byKolom).length){list.innerHTML='<p style="text-align:center;padding:32px;color:var(--text-muted)">Tidak ada data</p>';return;}
-  const relasiOrder={'Suami':1,'Istri':2,'Anak':3,'Lainnya':4};
   list.innerHTML=Object.keys(byKolom).sort((a,b)=>a-b).map(kolom=>{
     const famKeys=Object.keys(byKolom[kolom]).sort();
     return `<div class="keluarga-kolom"><div class="keluarga-kolom-title"><span>⛪ Kolom ${kolom}</span><span style="font-size:13px;opacity:0.8">${famKeys.length} keluarga</span></div><div class="keluarga-cards">${famKeys.map(fam=>{
-      const members=byKolom[kolom][fam].sort((a,b)=>(relasiOrder[a.relasi]||5)-(relasiOrder[b.relasi]||5));
+      const members=sortAnggotaKeluarga(byKolom[kolom][fam]);
       const noKK=members.find(m=>m.no_kk)?.no_kk||'';
       const alamatRumah=members.find(m=>m.alamat_rumah)?.alamat_rumah||'';
       const statusJemaat=members.find(m=>m.status_jemaat)?.status_jemaat||'lama';
@@ -1512,8 +1528,8 @@ async function simpanKoordinat(){
 // ===== CETAK KK =====
 function cetakKartuKeluarga(arg){const namaKeluarga=(typeof arg==='string')?arg:arg.closest('.keluarga-card').dataset.fam;
   const members=allKeluargaData.filter(j=>j.nama_keluarga===namaKeluarga);if(!members.length)return;
-  const rep=members[0];const relasiOrder={'Suami':1,'Istri':2,'Anak':3,'Lainnya':4};
-  const sorted=[...members].sort((a,b)=>(relasiOrder[a.relasi]||5)-(relasiOrder[b.relasi]||5));
+  const rep=members[0];
+  const sorted=sortAnggotaKeluarga(members);
   document.getElementById('kkNamaKeluarga').textContent=namaKeluarga;
   document.getElementById('kkNoKK').textContent=rep.no_kk||'-';
   document.getElementById('kkKolom').textContent='Kolom '+(rep.kolom||'-');
