@@ -494,10 +494,25 @@ function renderSubKeluarga() {
           <tbody>
             ${famKeys.map(fam=>{
               const members=[...byKolom[kolom][fam]].sort((a,b)=>(relasiOrder[a.relasi]||5)-(relasiOrder[b.relasi]||5));
+              const rep=members[0]||{};
+              const _noKK=(rep.no_kk||'').replace(/'/g,"\\'");
+              const _alamat=(members.find(m=>m.alamat_rumah)||{}).alamat_rumah||'';
+              const _alamatE=_alamat.replace(/'/g,"\\'");
+              const _jemaat=(members.find(m=>m.jemaat_asal)||{}).jemaat_asal||'';
+              const _jemaatE=_jemaat.replace(/'/g,"\\'");
+              const _alamatKol=(members.find(m=>m.alamat_kolom)||{}).alamat_kolom||'';
+              const _alamatKolE=_alamatKol.replace(/'/g,"\\'");
+              const _kolomFam=rep.kolom||'';
+              const _famEsc=(fam||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+              const canEdit=isAdmin()||currentUser.kolom===rep.kolom;
               return members.map((j,idx)=>{
                 const isFirst=idx===0;
                 const rowspan=members.length;
-                const famCell=isFirst?`<td style="padding:10px 12px;font-weight:700;color:var(--primary);background:rgba(26,58,92,0.04);border-right:3px solid var(--accent);white-space:nowrap;vertical-align:top" rowspan="${rowspan}">🏠 ${fam}<br><small style="font-weight:400;color:var(--text-muted);font-size:11px">${rowspan} anggota</small></td>`:'';
+                const famCell=isFirst?`<td style="padding:10px 12px;font-weight:700;color:var(--primary);background:rgba(26,58,92,0.04);border-right:3px solid var(--accent);white-space:nowrap;vertical-align:top" rowspan="${rowspan}">
+                  🏠 ${fam}
+                  <br><small style="font-weight:400;color:var(--text-muted);font-size:11px">${rowspan} anggota</small>
+                  ${canEdit?`<br><button class="btn btn-primary btn-sm" style="margin-top:7px;padding:3px 9px;font-size:11px" onclick="tambahAnggotaDariPerKeluarga('${_famEsc}',${_kolomFam},'${_noKK}','${_alamatE}','${_jemaatE}','${_alamatKolE}')">👤 + Anggota</button>`:''}
+                </td>`:'';
                 const borderTop=isFirst?'border-top:2px solid var(--accent-light)':'';
                 return `<tr style="${borderTop}">
                   ${famCell}
@@ -512,7 +527,7 @@ function renderSubKeluarga() {
                     <span style="padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;${j.relasi==='Suami'?'background:#dbeafe;color:#1e40af':j.relasi==='Istri'?'background:#fce7f3;color:#9d174d':j.relasi==='Anak'?'background:#fef9c3;color:#854d0e':'background:#e5e7eb;color:#374151'}">${j.relasi||'-'}</span>
                   </td>
                   <td style="padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowrap">
-                    ${(isAdmin()||currentUser.kolom===j.kolom)?`<button class="btn btn-outline btn-sm" onclick="editJemaat(${j.id})">✏️</button> <button class="btn btn-danger btn-sm" onclick="deleteJemaat(${j.id},'${(j.nama_lengkap||'').replace(/'/g,"\\'")}')">🗑️</button>`:'—'}
+                    ${canEdit?`<button class="btn btn-outline btn-sm" onclick="editJemaat(${j.id})">✏️</button> <button class="btn btn-danger btn-sm" onclick="deleteJemaat(${j.id},'${(j.nama_lengkap||'').replace(/'/g,"\\'")}')">🗑️</button>`:'—'}
                   </td>
                 </tr>`;
               }).join('');
@@ -522,6 +537,21 @@ function renderSubKeluarga() {
       </div>
     </div>`;
   }).join('');
+}
+
+function tambahAnggotaDariPerKeluarga(namaKeluarga, kolom, noKK, alamatRumah, jemaatAsal, alamatKolom) {
+  openModal(null, 'tambah-anggota');
+  // Isi otomatis data keluarga ke form modal
+  setTimeout(() => {
+    const fKel = document.getElementById('fKeluarga');
+    if (fKel) { fKel.value = namaKeluarga; fKel.readOnly = true; fKel.style.background='#f1f5f9'; fKel.style.fontWeight='700'; }
+    const fKol = document.getElementById('fKolom'); if (fKol) fKol.value = kolom;
+    const fKK  = document.getElementById('fNoKK');  if (fKK)  fKK.value  = noKK;
+    const fAl  = document.getElementById('fAlamatRumah'); if (fAl)  fAl.value  = alamatRumah;
+    const fJm  = document.getElementById('fJemaat'); if (fJm)  fJm.value  = jemaatAsal;
+    const fAK  = document.getElementById('fAlamatKolom'); if (fAK)  fAK.value  = alamatKolom;
+    document.getElementById('modalTitle').textContent = '👤 Tambah Anggota — ' + namaKeluarga;
+  }, 50);
 }
 
 function exportExcelPerKeluarga() {
@@ -732,7 +762,11 @@ async function saveJemaat() {
       else { allJemaat.push(saved); }
       filteredJemaat=[...allJemaat];
     }
-    loadJemaat(); loadDashboard();
+    await loadJemaat();
+    loadDashboard();
+    // Jika halaman Per Keluarga sedang aktif, refresh langsung
+    const _actPg = document.querySelector('.page.active');
+    if (_actPg && _actPg.id === 'page-per-keluarga') renderSubKeluarga();
   } catch(e){alert('❌ Error: '+e.message);}
 }
 
@@ -742,7 +776,11 @@ async function deleteJemaat(id,nama) {
   if (!confirm(`Hapus data "${nama}"?`)) return;
   const {error}=await sbAdmin.from('jemaat').delete().eq('id',id);
   if (error){showToast('Gagal menghapus','error');return;}
-  showToast('Data berhasil dihapus','success'); await catatLog('hapus',`Hapus: ${nama}`,id); loadJemaat(); loadDashboard();
+  allJemaat=allJemaat.filter(j=>j.id!==id); filteredJemaat=[...allJemaat];
+  showToast('Data berhasil dihapus','success'); await catatLog('hapus',`Hapus: ${nama}`,id);
+  loadJemaat(); loadDashboard();
+  const _actPg2 = document.querySelector('.page.active');
+  if (_actPg2 && _actPg2.id === 'page-per-keluarga') renderSubKeluarga();
 }
 
 // ===== DASHBOARD =====
@@ -3005,7 +3043,14 @@ window.addEventListener('appinstalled',()=>{const btn=document.getElementById('b
 function installPWA(){if(!deferredPrompt){alert('Aplikasi sudah terinstall atau gunakan Chrome.');return;}deferredPrompt.prompt();deferredPrompt.userChoice.then(choice=>{if(choice.outcome==='accepted')showToast('Aplikasi berhasil diinstall! 🎉','success');deferredPrompt=null;document.getElementById('btnInstallPWA').style.display='none';});}
 
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load',()=>{navigator.serviceWorker.register('./sw.js').then(()=>console.log('✅ PWA aktif')).catch(()=>console.log('ℹ️ SW tidak tersedia'));});
+  window.addEventListener('load',()=>{
+    // Unregister SW lama agar tidak cache file usang, lalu register ulang
+    navigator.serviceWorker.getRegistrations().then(regs => {
+      regs.forEach(r => r.unregister());
+    }).finally(() => {
+      navigator.serviceWorker.register('./sw.js').then(()=>console.log('✅ PWA aktif')).catch(()=>console.log('ℹ️ SW tidak tersedia'));
+    });
+  });
 }
 
 
