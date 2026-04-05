@@ -1482,7 +1482,11 @@ let petaMap=null,petaModalMap=null,allMarkers=[],currentPetaKeluarga=null;
 async function loadPeta() {
   if (!petaMap) {
     petaMap=L.map('petaMap').setView([1.4748,124.8421],13);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(petaMap);
+    const _osm=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'});
+    const _gSat=L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',{attribution:'© Google Satelit',maxZoom:21});
+    const _gMap=L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',{attribution:'© Google Maps',maxZoom:21});
+    _osm.addTo(petaMap);
+    L.control.layers({'🗺️ OpenStreetMap':_osm,'🛰️ Google Satelit':_gSat,'🗾 Google Maps':_gMap},{},{position:'topright',collapsed:false}).addTo(petaMap);
   } else petaMap.eachLayer(l=>{if(l instanceof L.Marker)petaMap.removeLayer(l);});
   const kolomFilter=document.getElementById('filterKolomPeta').value;
   const statusFilter=document.getElementById('filterStatusPeta').value;
@@ -1512,7 +1516,7 @@ function bukaModalPeta(namaKeluarga){
   document.getElementById('petaLat').value=j?.lat||'';document.getElementById('petaLng').value=j?.lng||'';
   document.getElementById('modalPeta').classList.add('open');
   setTimeout(()=>{
-    if (!petaModalMapObj){petaModalMapObj=L.map('petaModalMap').setView([j?.lat||1.4748,j?.lng||124.8421],15);L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(petaModalMapObj);petaModalMapObj.on('click',e=>{petaMarker&&petaModalMapObj.removeLayer(petaMarker);petaMarker=L.marker(e.latlng).addTo(petaModalMapObj);document.getElementById('petaLat').value=e.latlng.lat.toFixed(6);document.getElementById('petaLng').value=e.latlng.lng.toFixed(6);});}
+    if (!petaModalMapObj){petaModalMapObj=L.map('petaModalMap').setView([j?.lat||1.4748,j?.lng||124.8421],15);const _mOsm=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'});const _mGSat=L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',{attribution:'© Google Satelit',maxZoom:21});const _mGMap=L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',{attribution:'© Google Maps',maxZoom:21});_mOsm.addTo(petaModalMapObj);L.control.layers({'🗺️ OpenStreetMap':_mOsm,'🛰️ Google Satelit':_mGSat,'🗾 Google Maps':_mGMap},{},{position:'topright',collapsed:false}).addTo(petaModalMapObj);petaModalMapObj.on('click',e=>{petaMarker&&petaModalMapObj.removeLayer(petaMarker);petaMarker=L.marker(e.latlng).addTo(petaModalMapObj);document.getElementById('petaLat').value=e.latlng.lat.toFixed(6);document.getElementById('petaLng').value=e.latlng.lng.toFixed(6);});}
     else {petaModalMapObj.setView([j?.lat||1.4748,j?.lng||124.8421],15);}
     if (j?.lat&&j?.lng){petaMarker&&petaModalMapObj.removeLayer(petaMarker);petaMarker=L.marker([j.lat,j.lng]).addTo(petaModalMapObj);}
     petaModalMapObj.invalidateSize();
