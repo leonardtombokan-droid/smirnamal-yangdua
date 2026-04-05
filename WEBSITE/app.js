@@ -397,10 +397,10 @@ let kategoriCurrentPage = {};
 
 function renderKategoriPage(sub, page) {
   const cfg = {
-    'pemuda':       {bipra:'pemuda',  search:'searchPemuda',      kolom:'filterKolomPemuda',      lp:'filterLPPemuda',      body:'pemudaBody',      pag:'pemudaPagination',      subtitle:'pemudaSubtitle',      label:'Pemuda',          filterFn: j=>j.bipra==='pemuda'},
-    'remaja':       {bipra:'remaja',  search:'searchRemaja',      kolom:'filterKolomRemaja',      lp:'filterLPRemaja',      body:'remajaBody',      pag:'remajaPagination',      subtitle:'remajaSubtitle',      label:'Remaja',          filterFn: j=>j.bipra==='remaja'},
-    'anak-sm':      {bipra:'anak',    search:'searchASM',         kolom:'filterKolomASM',         lp:'filterLPASM',         body:'asmBody',         pag:'asmPagination',         subtitle:'asmSubtitle',         label:'Anak SM',         filterFn: j=>j.bipra==='anak'},
-    'lansia-jemaat':{bipra:'lansia',  search:'searchLansiaJemaat',kolom:'filterKolomLansiaJemaat',lp:'filterLPLansiaJemaat',body:'lansiaJemaatBody',pag:'lansiaJemaatPagination',subtitle:'lansiaJemaatSubtitle',label:'Lansia',          filterFn: j=>j.lansia==='lansia'||(()=>{if(!j.tanggal_lahir)return false;const d=parseTanggal(j.tanggal_lahir);if(!d||isNaN(d))return false;return new Date().getFullYear()-d.getFullYear()>=60;})()},
+    'pemuda':       {bipra:'pemuda',  search:'searchPemuda',      kolom:'filterKolomPemuda',      lp:'filterLPPemuda',      body:'pemudaBody',      pag:'pemudaPagination',      subtitle:'pemudaSubtitle',      label:'Pemuda',    perpage:'perpagePemuda',   filterFn: j=>j.bipra==='pemuda'},
+    'remaja':       {bipra:'remaja',  search:'searchRemaja',      kolom:'filterKolomRemaja',      lp:'filterLPRemaja',      body:'remajaBody',      pag:'remajaPagination',      subtitle:'remajaSubtitle',      label:'Remaja',    perpage:'perpageRemaja',   filterFn: j=>j.bipra==='remaja'},
+    'anak-sm':      {bipra:'anak',    search:'searchASM',         kolom:'filterKolomASM',         lp:'filterLPASM',         body:'asmBody',         pag:'asmPagination',         subtitle:'asmSubtitle',         label:'Anak SM',   perpage:'perpageASM',      filterFn: j=>j.bipra==='anak'},
+    'lansia-jemaat':{bipra:'lansia',  search:'searchLansiaJemaat',kolom:'filterKolomLansiaJemaat',lp:'filterLPLansiaJemaat',body:'lansiaJemaatBody',pag:'lansiaJemaatPagination',subtitle:'lansiaJemaatSubtitle',label:'Lansia',    perpage:'perpageLansia',   filterFn: j=>j.lansia==='lansia'||(()=>{if(!j.tanggal_lahir)return false;const d=parseTanggal(j.tanggal_lahir);if(!d||isNaN(d))return false;return new Date().getFullYear()-d.getFullYear()>=60;})()},
   };
   const c = cfg[sub]; if (!c) return;
 
@@ -415,7 +415,7 @@ function renderKategoriPage(sub, page) {
   const q=(document.getElementById(c.search)?.value||'').toLowerCase();
   const kolom=document.getElementById(c.kolom)?.value||'';
   const lp=document.getElementById(c.lp)?.value||'';
-  const perPage=25;
+  const perPage=parseInt(document.getElementById(c.perpage)?.value||'25');
   if (!kategoriCurrentPage[sub]||page!==undefined) kategoriCurrentPage[sub]=page||1;
   const pg=kategoriCurrentPage[sub];
 

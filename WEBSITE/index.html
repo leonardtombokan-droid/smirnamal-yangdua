@@ -1631,6 +1631,7 @@ tr:hover td { background:rgba(26,58,92,0.03); }
         <select class="filter-select" id="filterLPPemuda" onchange="renderKategoriPage('pemuda')"><option value="">Semua L/P</option><option value="L">Laki-laki</option><option value="P">Perempuan</option></select>
         <button class="btn btn-excel" onclick="exportExcelKategori('pemuda','Data_Pemuda')">📥 Excel</button>
         <button class="btn btn-outline" onclick="printTable()">🖨️ Cetak</button>
+        <select class="perpage-select" id="perpagePemuda" onchange="renderKategoriPage('pemuda')"><option value="25">25 data</option><option value="50">50 data</option><option value="99999">Semua</option></select>
       </div>
       <div class="table-wrapper"><table><thead><tr><th>No</th><th>Kolom</th><th>Nama Lengkap</th><th>L/P</th><th>Tgl Lahir</th><th>Umur</th><th>Pekerjaan</th><th>Keluarga</th><th>Alamat</th></tr></thead><tbody id="pemudaBody"></tbody></table></div>
       <div id="pemudaPagination" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:12px"></div>
@@ -1645,6 +1646,7 @@ tr:hover td { background:rgba(26,58,92,0.03); }
         <select class="filter-select" id="filterLPRemaja" onchange="renderKategoriPage('remaja')"><option value="">Semua L/P</option><option value="L">Laki-laki</option><option value="P">Perempuan</option></select>
         <button class="btn btn-excel" onclick="exportExcelKategori('remaja','Data_Remaja')">📥 Excel</button>
         <button class="btn btn-outline" onclick="printTable()">🖨️ Cetak</button>
+        <select class="perpage-select" id="perpageRemaja" onchange="renderKategoriPage('remaja')"><option value="25">25 data</option><option value="50">50 data</option><option value="99999">Semua</option></select>
       </div>
       <div class="table-wrapper"><table><thead><tr><th>No</th><th>Kolom</th><th>Nama Lengkap</th><th>L/P</th><th>Tgl Lahir</th><th>Umur</th><th>Pekerjaan</th><th>Keluarga</th><th>Alamat</th></tr></thead><tbody id="remajaBody"></tbody></table></div>
       <div id="remajaPagination" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:12px"></div>
@@ -1659,6 +1661,7 @@ tr:hover td { background:rgba(26,58,92,0.03); }
         <select class="filter-select" id="filterLPASM" onchange="renderKategoriPage('anak-sm')"><option value="">Semua L/P</option><option value="L">Laki-laki</option><option value="P">Perempuan</option></select>
         <button class="btn btn-excel" onclick="exportExcelKategori('anak-sm','Data_Anak_SM')">📥 Excel</button>
         <button class="btn btn-outline" onclick="printTable()">🖨️ Cetak</button>
+        <select class="perpage-select" id="perpageASM" onchange="renderKategoriPage('anak-sm')"><option value="25">25 data</option><option value="50">50 data</option><option value="99999">Semua</option></select>
       </div>
       <div class="table-wrapper"><table><thead><tr><th>No</th><th>Kolom</th><th>Nama Lengkap</th><th>L/P</th><th>Tgl Lahir</th><th>Umur</th><th>Pekerjaan</th><th>Keluarga</th><th>Alamat</th></tr></thead><tbody id="asmBody"></tbody></table></div>
       <div id="asmPagination" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:12px"></div>
@@ -1673,6 +1676,7 @@ tr:hover td { background:rgba(26,58,92,0.03); }
         <select class="filter-select" id="filterLPLansiaJemaat" onchange="renderKategoriPage('lansia-jemaat')"><option value="">Semua L/P</option><option value="L">Laki-laki</option><option value="P">Perempuan</option></select>
         <button class="btn btn-excel" onclick="exportExcelKategori('lansia-jemaat','Data_Lansia')">📥 Excel</button>
         <button class="btn btn-outline" onclick="printTable()">🖨️ Cetak</button>
+        <select class="perpage-select" id="perpageLansia" onchange="renderKategoriPage('lansia-jemaat')"><option value="25">25 data</option><option value="50">50 data</option><option value="99999">Semua</option></select>
       </div>
       <div class="table-wrapper"><table><thead><tr><th>No</th><th>Kolom</th><th>Nama Lengkap</th><th>L/P</th><th>Tgl Lahir</th><th>Umur</th><th>Pekerjaan</th><th>Keluarga</th><th>Alamat</th></tr></thead><tbody id="lansiaJemaatBody"></tbody></table></div>
       <div id="lansiaJemaatPagination" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:12px"></div>
