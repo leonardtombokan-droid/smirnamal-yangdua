@@ -293,6 +293,7 @@ async function doLogin() {
   loadDashboard();
   loadJemaat();
   startDashAutoRefresh();
+  startRealtimeSync();
 }
 
 function showLoginError(msg) { const el=document.getElementById('loginError'); el.textContent=msg; el.style.display='block'; }
@@ -300,6 +301,7 @@ function showLoginError(msg) { const el=document.getElementById('loginError'); e
 function doLogout() {
   currentUser=null;
   stopDashAutoRefresh();
+  stopRealtimeSync();
   showPublicPage();
   document.getElementById('loginUsername').value='';
   document.getElementById('loginPassword').value='';
@@ -355,11 +357,12 @@ function showSubJemaat(sub) {
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item,.nav-sub-item').forEach(n=>n.classList.remove('active'));
   document.getElementById('page-'+sub).classList.add('active');
-  const subMap={'per-kolom':'subPerKolom','sidi':'subSidi','belum-sidi':'subBelumSidi'};
+  const subMap={'per-kolom':'subPerKolom','sidi':'subSidi','belum-sidi':'subBelumSidi','per-keluarga':'subPerKeluarga'};
   document.getElementById(subMap[sub]).classList.add('active');
   document.getElementById('navGroupJemaat').classList.add('open');
   currentSubPage=sub; subCurrentPage=1;
-  populateKolomDropdowns(); renderSubJemaat();
+  if (sub==='per-keluarga') { renderSubKeluarga(); }
+  else { populateKolomDropdowns(); renderSubJemaat(); }
   if (window.innerWidth<768) { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebarBackdrop').classList.remove('open'); }
 }
 
@@ -418,6 +421,197 @@ function renderSubJemaat() {
 function subChangePage(p){subCurrentPage=p;renderSubJemaat();}
 function changePerPage(v){perPage=parseInt(v);currentPage=1;renderTable();}
 function changeSubPerPage(v){subPerPage=parseInt(v);subCurrentPage=1;renderSubJemaat();}
+
+// ===== PER KELUARGA =====
+function renderSubKeluarga() {
+  const q=(document.getElementById('searchPerKeluarga')?.value||'').toLowerCase();
+  const kolom=document.getElementById('filterKolomPerKeluarga')?.value||'';
+
+  // Populate kolom dropdown
+  const koloms=[...new Set(allJemaat.map(j=>j.kolom).filter(Boolean))].sort((a,b)=>a-b);
+  const kEl=document.getElementById('filterKolomPerKeluarga');
+  if (kEl) {
+    const cur=kEl.value;
+    kEl.innerHTML='<option value="">Semua Kolom</option>'+koloms.map(k=>`<option value="${k}"${String(k)===cur?' selected':''}>Kolom ${k}</option>`).join('');
+  }
+
+  // Filter data
+  let data=allJemaat.filter(j=>{
+    const matchQ=!q||
+      (j.nama_lengkap||'').toLowerCase().includes(q)||
+      (j.nama_keluarga||'').toLowerCase().includes(q)||
+      (j.nik||'').includes(q);
+    const matchKol=!kolom||String(j.kolom)===String(kolom);
+    return matchQ && matchKol;
+  });
+
+  // Group by kolom → nama_keluarga
+  const relasiOrder={'Suami':1,'Istri':2,'Anak':3,'Lainnya':4};
+  const byKolom={};
+  data.forEach(j=>{
+    const k=j.kolom||0;
+    const fam=j.nama_keluarga||'(Tanpa Nama Keluarga)';
+    if(!byKolom[k])byKolom[k]={};
+    if(!byKolom[k][fam])byKolom[k][fam]=[];
+    byKolom[k][fam].push(j);
+  });
+
+  const totalKeluarga=[...new Set(data.map(j=>j.nama_keluarga).filter(Boolean))].length;
+  const el=document.getElementById('subtitlePerKeluarga');
+  if(el) el.textContent=`${totalKeluarga} keluarga — ${data.length} jemaat`;
+
+  const container=document.getElementById('perKeluargaList');
+  if(!container) return;
+  if(!Object.keys(byKolom).length){
+    container.innerHTML='<p style="text-align:center;padding:40px;color:var(--text-muted)">Tidak ada data ditemukan</p>';
+    return;
+  }
+
+  container.innerHTML=Object.keys(byKolom).sort((a,b)=>Number(a)-Number(b)).map(kolom=>{
+    const famKeys=Object.keys(byKolom[kolom]).sort();
+    return `
+    <div style="margin-bottom:24px">
+      <div style="display:flex;align-items:center;justify-content:space-between;background:var(--primary);color:white;padding:10px 16px;border-radius:10px 10px 0 0;font-weight:700;font-size:14px">
+        <span>⛪ Kolom ${kolom}</span>
+        <span style="font-size:12px;opacity:0.8;font-weight:400">${famKeys.length} keluarga</span>
+      </div>
+      <div style="border:1px solid var(--border);border-top:none;border-radius:0 0 10px 10px;overflow:hidden">
+        <table style="width:100%;border-collapse:collapse;font-size:13px">
+          <thead>
+            <tr style="background:#f1f5f9;color:var(--text-muted);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px">
+              <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border)">No</th>
+              <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border)">Nama Lengkap</th>
+              <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border)">L/P</th>
+              <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border)">Tgl Lahir</th>
+              <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border)">Umur</th>
+              <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border)">Pekerjaan</th>
+              <th style="padding:8px 12px;text-align:center;border-bottom:1px solid var(--border)">Baptis</th>
+              <th style="padding:8px 12px;text-align:center;border-bottom:1px solid var(--border)">Sidi</th>
+              <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border)">Relasi</th>
+              <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border)">Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${famKeys.map(fam=>{
+              const members=[...byKolom[kolom][fam]].sort((a,b)=>(relasiOrder[a.relasi]||5)-(relasiOrder[b.relasi]||5));
+              return members.map((j,idx)=>{
+                const isFirst=idx===0;
+                const rowspan=members.length;
+                const famCell=isFirst?`<td style="padding:10px 12px;font-weight:700;color:var(--primary);background:rgba(26,58,92,0.04);border-right:3px solid var(--accent);white-space:nowrap;vertical-align:top" rowspan="${rowspan}">🏠 ${fam}<br><small style="font-weight:400;color:var(--text-muted);font-size:11px">${rowspan} anggota</small></td>`:'';
+                const borderTop=isFirst?'border-top:2px solid var(--accent-light)':'';
+                return `<tr style="${borderTop}">
+                  ${famCell}
+                  <td style="padding:8px 12px;border-bottom:1px solid var(--border);font-weight:${isFirst?'700':'400'}">${j.nama_lengkap||'-'}</td>
+                  <td style="padding:8px 12px;border-bottom:1px solid var(--border)"><span class="badge ${j.lp==='L'?'badge-l':'badge-p'}">${j.lp||'-'}</span></td>
+                  <td style="padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowrap">${formatTanggal(j.tanggal_lahir)}</td>
+                  <td style="padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowrap;font-size:12px;color:var(--text-muted)">${hitungUmur(j.tanggal_lahir)}</td>
+                  <td style="padding:8px 12px;border-bottom:1px solid var(--border)">${j.pekerjaan||'-'}</td>
+                  <td style="padding:8px 12px;border-bottom:1px solid var(--border);text-align:center"><span class="badge ${j.baptis==='sudah-baptis'?'badge-baptis':'badge-belum'}">${j.baptis==='sudah-baptis'?'✓':'✗'}</span></td>
+                  <td style="padding:8px 12px;border-bottom:1px solid var(--border);text-align:center"><span class="badge ${j.sidi==='sudah-sidi'?'badge-baptis':'badge-belum'}">${j.sidi==='sudah-sidi'?'✓':'✗'}</span></td>
+                  <td style="padding:8px 12px;border-bottom:1px solid var(--border)">
+                    <span style="padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;${j.relasi==='Suami'?'background:#dbeafe;color:#1e40af':j.relasi==='Istri'?'background:#fce7f3;color:#9d174d':j.relasi==='Anak'?'background:#fef9c3;color:#854d0e':'background:#e5e7eb;color:#374151'}">${j.relasi||'-'}</span>
+                  </td>
+                  <td style="padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowrap">
+                    ${(isAdmin()||currentUser.kolom===j.kolom)?`<button class="btn btn-outline btn-sm" onclick="editJemaat(${j.id})">✏️</button> <button class="btn btn-danger btn-sm" onclick="deleteJemaat(${j.id},'${(j.nama_lengkap||'').replace(/'/g,"\\'")}')">🗑️</button>`:'—'}
+                  </td>
+                </tr>`;
+              }).join('');
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function exportExcelPerKeluarga() {
+  const relasiOrder={'Suami':1,'Istri':2,'Anak':3,'Lainnya':4};
+  const kolom=document.getElementById('filterKolomPerKeluarga')?.value||'';
+  const q=(document.getElementById('searchPerKeluarga')?.value||'').toLowerCase();
+  let data=[...allJemaat].filter(j=>{
+    const matchQ=!q||(j.nama_lengkap||'').toLowerCase().includes(q)||(j.nama_keluarga||'').toLowerCase().includes(q);
+    const matchKol=!kolom||String(j.kolom)===String(kolom);
+    return matchQ&&matchKol;
+  }).sort((a,b)=>(a.kolom||0)-(b.kolom||0)||(a.nama_keluarga||'').localeCompare(b.nama_keluarga||'')||(relasiOrder[a.relasi]||5)-(relasiOrder[b.relasi]||5));
+  if(!data.length){alert('Tidak ada data');return;}
+  const rows=data.map((j,i)=>({'No':i+1,'Kolom':j.kolom||'','Nama Keluarga':j.nama_keluarga||'','Nama Lengkap':j.nama_lengkap||'','Relasi':j.relasi||'','L/P':j.lp||'','Tgl Lahir':formatTanggal(j.tanggal_lahir),'Umur':hitungUmur(j.tanggal_lahir),'Pekerjaan':j.pekerjaan||'','Baptis':j.baptis==='sudah-baptis'?'Sudah':'Belum','Sidi':j.sidi==='sudah-sidi'?'Sudah':'Belum','Alamat':j.alamat_rumah||''}));
+  const ws=XLSX.utils.json_to_sheet(rows);
+  ws['!cols']=Object.keys(rows[0]).map(k=>({wch:Math.max(k.length,...rows.map(r=>String(r[k]||'').length))+2}));
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Per Keluarga');
+  XLSX.writeFile(wb,`Jemaat_Per_Keluarga_${new Date().toLocaleDateString('id-ID').replace(/\//g,'-')}.xlsx`);
+}
+
+// ===== SUPABASE REALTIME — auto-refresh tanpa keluar/masuk =====
+let _realtimeChannel = null;
+
+function startRealtimeSync() {
+  stopRealtimeSync();
+  _realtimeChannel = sb.channel('jemaat-changes')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'jemaat' }, payload => {
+      console.log('🔄 Realtime update:', payload.eventType);
+      _applyRealtimeChange(payload);
+    })
+    .subscribe(status => {
+      if (status === 'SUBSCRIBED') console.log('✅ Realtime aktif');
+    });
+}
+
+function stopRealtimeSync() {
+  if (_realtimeChannel) {
+    sb.removeChannel(_realtimeChannel);
+    _realtimeChannel = null;
+  }
+}
+
+function _applyRealtimeChange(payload) {
+  const { eventType, new: newRow, old: oldRow } = payload;
+
+  if (eventType === 'INSERT' && newRow) {
+    // Tambah ke allJemaat jika belum ada
+    if (!allJemaat.find(j => j.id === newRow.id)) {
+      allJemaat.push(newRow);
+    }
+  } else if (eventType === 'UPDATE' && newRow) {
+    const idx = allJemaat.findIndex(j => j.id === newRow.id);
+    if (idx !== -1) allJemaat[idx] = newRow;
+    else allJemaat.push(newRow);
+  } else if (eventType === 'DELETE' && oldRow) {
+    allJemaat = allJemaat.filter(j => j.id !== oldRow.id);
+  }
+
+  // Filter non-admin: hanya tampilkan kolom sendiri
+  if (!isAdmin()) {
+    allJemaat = allJemaat.filter(j => j.kolom === currentUser.kolom);
+  }
+
+  filteredJemaat = [...allJemaat];
+
+  // Refresh tampilan halaman yang sedang aktif
+  const activePage = document.querySelector('.page.active');
+  if (!activePage) return;
+  const pageId = activePage.id;
+
+  if (pageId === 'page-jemaat') { filterJemaat(); }
+  else if (pageId === 'page-per-kolom') { populateKolomDropdowns(); renderSubJemaat(); }
+  else if (pageId === 'page-sidi') { currentSubPage='sidi'; populateKolomDropdowns(); renderSubJemaat(); }
+  else if (pageId === 'page-belum-sidi') { currentSubPage='belum-sidi'; populateKolomDropdowns(); renderSubJemaat(); }
+  else if (pageId === 'page-per-keluarga') { renderSubKeluarga(); }
+  else if (pageId === 'page-keluarga') { allKeluargaData = [...allJemaat]; renderKeluarga(allKeluargaData); }
+  else if (pageId === 'page-dashboard') { loadDashboard(); }
+  else if (pageId === 'page-ultah') { loadUltah(); }
+  else if (pageId === 'page-lansia') { loadLansia(); }
+
+  // Selalu update data ultah publik
+  renderPubUltah(allJemaat);
+
+  // Toast indikator realtime (hanya untuk perubahan dari user lain)
+  const oleh = newRow?.diinput_oleh || '-';
+  if (oleh && oleh !== (currentUser?.username || '-')) {
+    const aksiLabel = eventType==='INSERT'?'ditambahkan':eventType==='UPDATE'?'diperbarui':'dihapus';
+    const nama = newRow?.nama_lengkap || oldRow?.nama_lengkap || 'data';
+    showToast(`🔄 ${nama} ${aksiLabel} oleh ${oleh}`, 'success');
+  }
+}
 
 // ===== JEMAAT =====
 async function loadJemaat() {
@@ -531,6 +725,13 @@ async function saveJemaat() {
     const detailJemaat = `${aksiJemaat==='edit'?'Edit':'Tambah'}: ${payload.nama_lengkap} (Kolom ${payload.kolom})`;
     closeModal(); await catatLog(aksiJemaat, detailJemaat, id||null);
     await kirimNotifikasiEmail(aksiJemaat, 'Data Jemaat', detailJemaat);
+    // Update local cache langsung (tidak perlu tunggu Realtime)
+    if (result.data && result.data[0]) {
+      const saved = result.data[0];
+      if (id) { const idx=allJemaat.findIndex(x=>x.id===saved.id); if(idx!==-1) allJemaat[idx]=saved; else allJemaat.push(saved); }
+      else { allJemaat.push(saved); }
+      filteredJemaat=[...allJemaat];
+    }
     loadJemaat(); loadDashboard();
   } catch(e){alert('❌ Error: '+e.message);}
 }
