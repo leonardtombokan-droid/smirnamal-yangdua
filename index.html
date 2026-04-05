@@ -30,6 +30,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
 :root {
   --primary: #1a3a5c;
@@ -994,34 +995,25 @@ tr:hover td { background:rgba(26,58,92,0.03); }
 .komentar-isi { font-size:13px; margin-top:4px; color:#444; line-height:1.6; }
 .komentar-empty { font-size:13px; color:var(--text-muted); text-align:center; padding:12px 0; }
 
-/* VISITOR COUNTER */
-.visitor-counter-bar {
-  background:linear-gradient(135deg,#0f2748 0%,#1a3a5c 50%,#1e4976 100%);
-  color:white; padding:12px 24px;
-  display:flex; align-items:center; justify-content:center; gap:0;
-  font-size:13px; flex-wrap:wrap;
-  border-bottom:2px solid rgba(200,169,110,0.3);
+/* VISITOR COUNTER WIDGET */
+.visitor-stats-row {
+  display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:14px;
 }
-.visitor-stat {
-  display:flex; align-items:center; gap:10px;
-  padding:6px 24px;
-  border-right:1px solid rgba(255,255,255,0.15);
+.visitor-stat-box {
+  border-radius:10px; padding:10px 8px; text-align:center;
 }
-.visitor-stat:last-child { border-right:none; }
-.visitor-stat-icon {
-  width:34px; height:34px; border-radius:50%;
-  display:flex; align-items:center; justify-content:center;
-  font-size:15px; flex-shrink:0;
+.vsb-today { background:#f0fdf4; border:1px solid #bbf7d0; }
+.vsb-week  { background:#eff6ff; border:1px solid #bfdbfe; }
+.vsb-total { background:#fffbeb; border:1px solid #fde68a; }
+.vsb-num {
+  font-weight:800; font-size:19px; font-family:'Playfair Display',serif;
+  line-height:1.1; color:var(--primary);
 }
-.vs-icon-today  { background:rgba(34,197,94,0.2);  border:1px solid rgba(34,197,94,0.4); }
-.vs-icon-week   { background:rgba(59,130,246,0.2); border:1px solid rgba(59,130,246,0.4); }
-.vs-icon-total  { background:rgba(200,169,110,0.2);border:1px solid rgba(200,169,110,0.4); }
-.visitor-stat-info { display:flex; flex-direction:column; line-height:1.2; }
-.visitor-stat-num  { font-weight:800; font-size:18px; letter-spacing:-0.5px; }
-.vs-num-today  { color:#4ade80; }
-.vs-num-week   { color:#60a5fa; }
-.vs-num-total  { color:#c8a96e; }
-.visitor-stat-label { font-size:11px; opacity:0.65; text-transform:uppercase; letter-spacing:0.5px; margin-top:1px; }
+.vsb-today .vsb-num { color:#16a34a; }
+.vsb-week  .vsb-num { color:#2563eb; }
+.vsb-total .vsb-num { color:#b45309; }
+.vsb-label { font-size:10px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.4px; margin-top:3px; }
+.visitor-chart-wrap { position:relative; height:100px; }
 
 /* SOCIAL MEDIA BAR */
 .sosmed-bar {
@@ -1129,31 +1121,6 @@ tr:hover td { background:rgba(26,58,92,0.03); }
 
 <!-- ===== PUBLIC PAGE ===== -->
 <div id="publicPage">
-
-  <!-- VISITOR COUNTER BAR -->
-  <div class="visitor-counter-bar">
-    <div class="visitor-stat">
-      <div class="visitor-stat-icon vs-icon-today">👁️</div>
-      <div class="visitor-stat-info">
-        <span class="visitor-stat-num vs-num-today" id="visitorHariIni">—</span>
-        <span class="visitor-stat-label">Pengunjung Hari Ini</span>
-      </div>
-    </div>
-    <div class="visitor-stat">
-      <div class="visitor-stat-icon vs-icon-week">📅</div>
-      <div class="visitor-stat-info">
-        <span class="visitor-stat-num vs-num-week" id="visitorMinggu">—</span>
-        <span class="visitor-stat-label">Minggu Ini</span>
-      </div>
-    </div>
-    <div class="visitor-stat">
-      <div class="visitor-stat-icon vs-icon-total">📊</div>
-      <div class="visitor-stat-info">
-        <span class="visitor-stat-num vs-num-total" id="visitorTotal">—</span>
-        <span class="visitor-stat-label">Total Kunjungan</span>
-      </div>
-    </div>
-  </div>
 
   <!-- SOCIAL MEDIA BAR -->
   <div class="sosmed-bar" id="sosmedBar" style="display:none">
@@ -1309,6 +1276,29 @@ tr:hover td { background:rgba(26,58,92,0.03); }
 
     <!-- KOLOM KANAN: Sidebar Info -->
     <div class="pub-sidebar">
+
+      <!-- VISITOR WIDGET -->
+      <div class="pub-widget">
+        <div class="pub-widget-title">📈 Statistik Kunjungan</div>
+        <div class="visitor-stats-row">
+          <div class="visitor-stat-box vsb-today">
+            <div class="vsb-num" id="visitorHariIni">—</div>
+            <div class="vsb-label">Hari Ini</div>
+          </div>
+          <div class="visitor-stat-box vsb-week">
+            <div class="vsb-num" id="visitorMinggu">—</div>
+            <div class="vsb-label">7 Hari</div>
+          </div>
+          <div class="visitor-stat-box vsb-total">
+            <div class="vsb-num" id="visitorTotal">—</div>
+            <div class="vsb-label">Total</div>
+          </div>
+        </div>
+        <div class="visitor-chart-wrap">
+          <canvas id="visitorChart"></canvas>
+        </div>
+        <div style="font-size:10px;color:var(--text-muted);text-align:center;margin-top:6px">Grafik kunjungan 7 hari terakhir</div>
+      </div>
 
       <!-- Ulang Tahun -->
       <div class="pub-widget">

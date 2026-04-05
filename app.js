@@ -2641,75 +2641,103 @@ async function hapusWarta(slot) {
 }
 
 // ===== VISITOR COUNTER =====
+let _visitorChartInstance = null;
+
 async function loadVisitorCounter() {
-  const fmt = n => {
-    n = parseInt(n)||0;
-    if (n>=1000000) return (n/1000000).toFixed(1)+'M';
-    if (n>=1000) return (n/1000).toFixed(1)+'K';
-    return String(n);
-  };
-  const setVal = (id, v) => { const el=document.getElementById(id); if(el) el.textContent=fmt(v); };
+  const fmt = n => { n=parseInt(n)||0; return n>=1000?(n/1000).toFixed(1)+'K':String(n); };
+  const set = (id,v) => { const el=document.getElementById(id); if(el) el.textContent=fmt(v); };
 
-  const today    = new Date().toISOString().split('T')[0];
-  const weekAgo  = new Date(Date.now()-7*24*60*60*1000).toISOString().split('T')[0];
+  const today   = new Date().toISOString().split('T')[0];
+  const LS_KEY  = 'sid_visitor_v3';
 
-  // ── Sistem localStorage sebagai sumber utama (selalu bekerja) ──
-  const LS_KEY = 'sid_visitor_v2';
-  let lsData = {};
-  try { lsData = JSON.parse(localStorage.getItem(LS_KEY)||'{}'); } catch(e){}
+  // ── Baca / inisialisasi data localStorage ──
+  let ls = {};
+  try { ls = JSON.parse(localStorage.getItem(LS_KEY)||'{}'); } catch(e){}
+  if (!ls.days) ls.days = {};
+  if (!ls.total) ls.total = 0;
 
-  // Tambah kunjungan hari ini (per session)
-  const sessionKey = 'sid_sess_'+today;
-  if (!sessionStorage.getItem(sessionKey)) {
-    sessionStorage.setItem(sessionKey,'1');
-    // Catat di localStorage per tanggal
-    if (!lsData.days) lsData.days = {};
-    lsData.days[today] = (lsData.days[today]||0) + 1;
-    lsData.total = (lsData.total||0) + 1;
-    // Bersihkan hari lebih dari 90 hari
-    const cutoff = new Date(Date.now()-90*24*60*60*1000).toISOString().split('T')[0];
-    Object.keys(lsData.days).forEach(d=>{ if(d<cutoff) delete lsData.days[d]; });
-    try { localStorage.setItem(LS_KEY, JSON.stringify(lsData)); } catch(e){}
-
-    // Juga coba insert ke Supabase (gunakan kolom yang ada di skema)
+  // Catat kunjungan sesi ini (1x per hari per browser)
+  const sessKey = 'sid_sess_'+today;
+  if (!sessionStorage.getItem(sessKey)) {
+    sessionStorage.setItem(sessKey,'1');
+    ls.days[today] = (ls.days[today]||0) + 1;
+    ls.total = (ls.total||0) + 1;
+    // Bersihkan data > 90 hari
+    const cut = new Date(Date.now()-90*24*60*60*1000).toISOString().split('T')[0];
+    Object.keys(ls.days).forEach(d=>{ if(d<cut) delete ls.days[d]; });
+    try { localStorage.setItem(LS_KEY, JSON.stringify(ls)); } catch(e){}
+    // Simpan ke Supabase (opsional)
     try {
       await sbAdmin.from('log_perubahan').insert({
-        aksi: 'visitor',
-        keterangan: 'kunjungan_publik',
-        oleh: 'publik',
-        waktu: new Date().toISOString()
+        aksi:'visitor', keterangan:'kunjungan_publik',
+        oleh:'publik', waktu:new Date().toISOString()
       });
-    } catch(e) { /* Supabase optional — tidak masalah jika gagal */ }
+    } catch(e){}
   }
 
-  // Hitung dari localStorage
-  const todayLS  = (lsData.days&&lsData.days[today]) ? lsData.days[today] : 0;
-  const weekLS   = Object.entries(lsData.days||{}).filter(([d])=>d>=weekAgo).reduce((s,[,v])=>s+v,0);
-  const totalLS  = lsData.total||0;
+  // ── Hitung stats dari localStorage ──
+  const todayCount = ls.days[today] || 0;
+  const week7 = new Date(Date.now()-7*24*60*60*1000).toISOString().split('T')[0];
+  const weekCount = Object.entries(ls.days)
+    .filter(([d])=>d>=week7).reduce((s,[,v])=>s+v,0);
+  const totalCount = ls.total || 0;
 
-  // Tampilkan dari localStorage dulu (cepat, pasti ada)
-  setVal('visitorHariIni', todayLS);
-  setVal('visitorMinggu',  weekLS);
-  setVal('visitorTotal',   totalLS);
+  set('visitorHariIni', todayCount);
+  set('visitorMinggu',  weekCount);
+  set('visitorTotal',   totalCount);
 
-  // Coba ambil data lebih akurat dari Supabase (opsional)
-  try {
-    let todaySB=0, weekSB=0, totalSB=0;
-    const [r1,r2,r3] = await Promise.all([
-      sbAdmin.from('log_perubahan').select('*',{count:'exact',head:true}).eq('aksi','visitor').eq('waktu', today).catch(()=>null),
-      sbAdmin.from('log_perubahan').select('*',{count:'exact',head:true}).eq('aksi','visitor').gte('waktu', weekAgo).catch(()=>null),
-      sbAdmin.from('log_perubahan').select('*',{count:'exact',head:true}).eq('aksi','visitor').catch(()=>null),
-    ]);
-    // Hanya update jika Supabase mengembalikan angka lebih besar (lebih akurat lintas device)
-    if (r1&&r1.count) todaySB=r1.count;
-    if (r2&&r2.count) weekSB=r2.count;
-    if (r3&&r3.count) totalSB=r3.count;
-    if (totalSB > totalLS) {
-      setVal('visitorHariIni', Math.max(todayLS,todaySB));
-      setVal('visitorMinggu',  Math.max(weekLS,weekSB));
-      setVal('visitorTotal',   totalSB);
+  // ── Buat data 7 hari untuk grafik ──
+  const labels = [], dataPoints = [];
+  for (let i=6; i>=0; i--) {
+    const d = new Date(Date.now()-i*24*60*60*1000);
+    const key = d.toISOString().split('T')[0];
+    const label = d.toLocaleDateString('id-ID',{day:'numeric',month:'short'});
+    labels.push(label);
+    dataPoints.push(ls.days[key]||0);
+  }
+
+  // ── Render Chart.js ──
+  const canvas = document.getElementById('visitorChart');
+  if (!canvas) return;
+  if (_visitorChartInstance) { _visitorChartInstance.destroy(); _visitorChartInstance=null; }
+
+  const ctx = canvas.getContext('2d');
+  const gradient = ctx.createLinearGradient(0,0,0,100);
+  gradient.addColorStop(0,'rgba(26,58,92,0.25)');
+  gradient.addColorStop(1,'rgba(26,58,92,0.01)');
+
+  _visitorChartInstance = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        data: dataPoints,
+        borderColor: '#1a3a5c',
+        borderWidth: 2,
+        backgroundColor: gradient,
+        fill: true,
+        tension: 0.4,
+        pointRadius: 3,
+        pointBackgroundColor: '#c8a96e',
+        pointBorderColor: '#fff',
+        pointBorderWidth: 1.5,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend:{display:false}, tooltip:{
+        backgroundColor:'#1a3a5c',
+        titleFont:{size:11}, bodyFont:{size:12},
+        callbacks:{ title:i=>i[0].label, label:i=>`${i.raw} kunjungan` }
+      }},
+      scales: {
+        x: { grid:{display:false}, ticks:{font:{size:9}, color:'#94a3b8'} },
+        y: { grid:{color:'#f1f5f9'}, ticks:{font:{size:9}, color:'#94a3b8', stepSize:1,
+             callback:v=>Number.isInteger(v)?v:'' }, min:0 }
+      }
     }
-  } catch(e) { /* Supabase tidak tersedia — tampilkan localStorage */ }
+  });
 }
 
 // ===== SOCIAL MEDIA =====
