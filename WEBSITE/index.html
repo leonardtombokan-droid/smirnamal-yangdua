@@ -1422,6 +1422,7 @@ tr:hover td { background:rgba(26,58,92,0.03); }
           <div class="nav-sub-item" id="subPerKolom" onclick="showSubJemaat('per-kolom')"><span class="sub-dot"></span> Per Kolom</div>
           <div class="nav-sub-item" id="subSidi" onclick="showSubJemaat('sidi')"><span class="sub-dot"></span> Sudah Sidi</div>
           <div class="nav-sub-item" id="subBelumSidi" onclick="showSubJemaat('belum-sidi')"><span class="sub-dot"></span> Belum Sidi</div>
+          <div class="nav-sub-item" id="subPerKeluarga" onclick="showSubJemaat('per-keluarga')"><span class="sub-dot"></span> Per Keluarga</div>
         </div>
       </div>
       <div class="nav-item" onclick="showPage('keluarga')"><span class="icon">🏠</span> Data Keluarga</div>
@@ -1549,6 +1550,18 @@ tr:hover td { background:rgba(26,58,92,0.03); }
       </div>
       <div class="table-wrapper"><table id="belumSidiTable"><thead><tr><th>No</th><th>Kolom</th><th>Nama Lengkap</th><th>L/P</th><th>Tgl Lahir</th><th>Umur</th><th>Pekerjaan</th><th>Baptis</th><th>Relasi</th><th>Aksi</th></tr></thead><tbody id="belumSidiBody"></tbody></table></div>
       <div class="pagination" id="belumSidiPagination"></div>
+    </div>
+
+    <!-- SUB: PER KELUARGA -->
+    <div class="page" id="page-per-keluarga">
+      <div class="page-header"><h1>🏠 Data Jemaat Per Keluarga</h1><p id="subtitlePerKeluarga">Daftar jemaat dikelompokkan per keluarga</p></div>
+      <div class="table-controls">
+        <input class="search-box" type="text" id="searchPerKeluarga" placeholder="🔍 Cari nama / keluarga..." oninput="renderSubKeluarga()">
+        <select class="filter-select" id="filterKolomPerKeluarga" onchange="renderSubKeluarga()"><option value="">Semua Kolom</option></select>
+        <button class="btn btn-primary" onclick="openModalKeluargaBaru()">🏠 + Keluarga Baru</button>
+        <button class="btn btn-excel" onclick="exportExcelPerKeluarga()">📥 Excel</button>
+      </div>
+      <div id="perKeluargaList"></div>
     </div>
 
     <!-- KELUARGA -->
