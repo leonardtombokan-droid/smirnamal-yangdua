@@ -349,6 +349,7 @@ function showPage(name) {
   if (name==='penatua') loadPenatua();
   if (name==='akun') loadAkun();
   if (name==='peta') setTimeout(loadPeta,200);
+  if (name==='meninggal') loadHalamanMeninggal();
   if (name==='ultah') loadUltah();
   if (name==='lansia') loadLansia();
   if (name==='log') loadLog();
@@ -383,11 +384,12 @@ function showSubJemaat(sub) {
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item,.nav-sub-item').forEach(n=>n.classList.remove('active'));
   document.getElementById('page-'+sub).classList.add('active');
-  const subMap={'per-kolom':'subPerKolom','sidi':'subSidi','belum-sidi':'subBelumSidi','per-keluarga':'subPerKeluarga'};
+  const subMap={'per-kolom':'subPerKolom','sidi':'subSidi','belum-sidi':'subBelumSidi','per-keluarga':'subPerKeluarga','meninggal':'subMeninggal'};
   document.getElementById(subMap[sub]).classList.add('active');
   document.getElementById('navGroupJemaat').classList.add('open');
   currentSubPage=sub; subCurrentPage=1;
   if (sub==='per-keluarga') { renderSubKeluarga(); }
+  else if (sub==='meninggal') { loadHalamanMeninggal(); }
   else { populateKolomDropdowns(); renderSubJemaat(); }
   if (window.innerWidth<768) { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebarBackdrop').classList.remove('open'); }
 }
@@ -3629,5 +3631,170 @@ async function bukaModalDaftarMeninggal() {
       </table>`;
   } catch(e) {
     el.innerHTML = `<div style="text-align:center;padding:32px;color:#dc2626">Gagal memuat: ${e.message}</div>`;
+  }
+}
+
+// ===== HALAMAN MENINGGAL DUNIA (FULL PAGE) =====
+let _allMeninggal = [];
+let _filteredMeninggal = [];
+let _meninggalPage = 1;
+const _meninggalPerPage = 25;
+
+async function loadHalamanMeninggal() {
+  const tbody = document.getElementById('meninggalBody');
+  if (tbody) tbody.innerHTML = '<tr><td colspan="10" class="loading"><div class="spinner"></div></td></tr>';
+  try {
+    const { data, error } = await sb.from('jemaat')
+      .select('id,nama_lengkap,lp,kolom,nama_keluarga,tanggal_lahir,tempat_lahir,tanggal_meninggal,penyebab_meninggal')
+      .eq('status_jemaat', 'meninggal')
+      .order('tanggal_meninggal', { ascending: false });
+    if (error) throw error;
+    _allMeninggal = data || [];
+    _filteredMeninggal = [..._allMeninggal];
+    _meninggalPage = 1;
+    // Populate kolom filter
+    const koloms = [...new Set(_allMeninggal.map(j => j.kolom).filter(Boolean))].sort((a,b) => a-b);
+    const kEl = document.getElementById('filterKolomMeninggal');
+    if (kEl) {
+      const cur = kEl.value;
+      kEl.innerHTML = '<option value="">Semua Kolom</option>' + koloms.map(k => `<option value="${k}"${String(k)===cur?' selected':''}>Kolom ${k}</option>`).join('');
+    }
+    renderHalamanMeninggal();
+  } catch(e) {
+    if (tbody) tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:32px;color:#dc2626">Gagal memuat: ${e.message}</td></tr>`;
+  }
+}
+
+function filterHalamanMeninggal() {
+  const q = (document.getElementById('searchMeninggal')?.value || '').toLowerCase();
+  const kolom = document.getElementById('filterKolomMeninggal')?.value || '';
+  _filteredMeninggal = _allMeninggal.filter(j => {
+    const matchQ = !q || (j.nama_lengkap||'').toLowerCase().includes(q) || (j.nama_keluarga||'').toLowerCase().includes(q);
+    const matchK = !kolom || String(j.kolom) === String(kolom);
+    return matchQ && matchK;
+  });
+  _meninggalPage = 1;
+  renderHalamanMeninggal();
+}
+
+function renderHalamanMeninggal() {
+  const tbody = document.getElementById('meninggalBody');
+  if (!tbody) return;
+  const sub = document.getElementById('subtitleMeninggal');
+  if (sub) sub.textContent = `${_filteredMeninggal.length} data ditemukan`;
+  const start = (_meninggalPage - 1) * _meninggalPerPage;
+  const slice = _filteredMeninggal.slice(start, start + _meninggalPerPage);
+  if (!slice.length) {
+    tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:40px;color:var(--text-muted)">Tidak ada data jemaat meninggal</td></tr>';
+    document.getElementById('meninggalPagination').innerHTML = '';
+    return;
+  }
+  tbody.innerHTML = slice.map((j, i) => {
+    const tglM = j.tanggal_meninggal ? new Date(j.tanggal_meninggal) : null;
+    const tglL = parseTanggal(j.tanggal_lahir);
+    let usia = '-';
+    if (tglM && tglL && !isNaN(tglL)) {
+      let th = tglM.getFullYear() - tglL.getFullYear();
+      let bl = tglM.getMonth() - tglL.getMonth();
+      let hr = tglM.getDate() - tglL.getDate();
+      if (hr < 0) { bl--; hr += new Date(tglM.getFullYear(), tglM.getMonth(), 0).getDate(); }
+      if (bl < 0) { th--; bl += 12; }
+      usia = `${th} th ${bl} bln`;
+    }
+    const tglMStr = tglM ? tglM.toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'}) + ' ' + tglM.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}) : '-';
+    const penyebab = j.penyebab_meninggal || '-';
+    const tglWaktuVal = j.tanggal_meninggal ? new Date(j.tanggal_meninggal).toISOString().slice(0,16) : '';
+    const penyebabEsc = penyebab.replace(/'/g,"\\'");
+    return `<tr>
+      <td>${start + i + 1}</td>
+      <td><strong>${j.nama_lengkap||'-'}</strong></td>
+      <td><span class="badge ${j.lp==='L'?'badge-l':'badge-p'}">${j.lp||'-'}</span></td>
+      <td><span class="badge badge-l" style="background:#e8f4f0;color:#2d6a4f">Kol ${j.kolom||'-'}</span></td>
+      <td>${j.nama_keluarga||'-'}</td>
+      <td style="white-space:nowrap">${formatTanggal(j.tanggal_lahir)}</td>
+      <td style="white-space:nowrap;font-size:12px">${tglMStr}</td>
+      <td style="white-space:nowrap;font-size:12px">${usia}</td>
+      <td style="font-size:12px;color:var(--text-muted)">${penyebab}</td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-outline btn-sm" title="Cetak Kartu Duka" onclick="_cetakKartuDuka(${j.id},'${tglWaktuVal}','${penyebabEsc}')">🖨️</button>
+        ${isAdmin() ? `<button class="btn btn-danger btn-sm" title="Hapus data meninggal" onclick="hapusStatusMeninggal(${j.id},'${(j.nama_lengkap||'').replace(/'/g,"\\'")}')">↩️</button>` : ''}
+      </td>
+    </tr>`;
+  }).join('');
+  // Pagination
+  const total = _filteredMeninggal.length;
+  const pages = Math.ceil(total / _meninggalPerPage);
+  const pagEl = document.getElementById('meninggalPagination');
+  if (!pagEl) return;
+  if (pages <= 1) { pagEl.innerHTML = `<span class="page-info">${total} data</span>`; return; }
+  let html = `<button class="page-btn" onclick="_meninggalChangePage(${_meninggalPage-1})" ${_meninggalPage===1?'disabled':''}>‹</button>`;
+  for (let i=1; i<=pages; i++) {
+    if (i===1||i===pages||Math.abs(i-_meninggalPage)<=2) html += `<button class="page-btn ${i===_meninggalPage?'active':''}" onclick="_meninggalChangePage(${i})">${i}</button>`;
+    else if (Math.abs(i-_meninggalPage)===3) html += `<span style="padding:8px">...</span>`;
+  }
+  html += `<button class="page-btn" onclick="_meninggalChangePage(${_meninggalPage+1})" ${_meninggalPage===pages?'disabled':''}>›</button><span class="page-info">${total} data</span>`;
+  pagEl.innerHTML = html;
+}
+
+function _meninggalChangePage(p) {
+  const pages = Math.ceil(_filteredMeninggal.length / _meninggalPerPage);
+  if (p < 1 || p > pages) return;
+  _meninggalPage = p;
+  renderHalamanMeninggal();
+}
+
+// Fungsi untuk membatalkan status meninggal (restore ke lama)
+async function hapusStatusMeninggal(id, nama) {
+  if (!confirm(`Batalkan status meninggal untuk "${nama}"?\nData akan dikembalikan ke status Jemaat Lama.`)) return;
+  try {
+    const { error } = await sbAdmin.from('jemaat').update({
+      status_jemaat: 'lama',
+      tanggal_meninggal: null,
+      penyebab_meninggal: null,
+      updated_at: new Date().toISOString()
+    }).eq('id', id);
+    if (error) throw error;
+    showToast(`Status meninggal ${nama} berhasil dibatalkan`, 'success');
+    await loadHalamanMeninggal();
+    await loadJemaat();
+  } catch(e) {
+    showToast('Gagal: ' + e.message, 'error');
+  }
+}
+
+// Export Excel khusus meninggal
+function exportExcelMeninggal() {
+  if (!_filteredMeninggal.length) { showToast('Tidak ada data untuk diekspor', 'error'); return; }
+  const rows = _filteredMeninggal.map((j, i) => {
+    const tglM = j.tanggal_meninggal ? new Date(j.tanggal_meninggal) : null;
+    const tglL = parseTanggal(j.tanggal_lahir);
+    let usia = '-';
+    if (tglM && tglL && !isNaN(tglL)) {
+      let th = tglM.getFullYear() - tglL.getFullYear();
+      let bl = tglM.getMonth() - tglL.getMonth();
+      if (bl < 0) { th--; bl += 12; }
+      usia = `${th} tahun ${bl} bulan`;
+    }
+    return {
+      'No': i + 1,
+      'Nama Lengkap': j.nama_lengkap || '',
+      'L/P': j.lp || '',
+      'Kolom': j.kolom || '',
+      'Nama Keluarga': j.nama_keluarga || '',
+      'Tempat Lahir': j.tempat_lahir || '',
+      'Tanggal Lahir': formatTanggal(j.tanggal_lahir),
+      'Tanggal Meninggal': tglM ? tglM.toLocaleString('id-ID') : '-',
+      'Usia saat Meninggal': usia,
+      'Penyebab Meninggal': j.penyebab_meninggal || '-'
+    };
+  });
+  try {
+    const ws = XLSX.utils.json_to_sheet(rows);
+    ws['!cols'] = Object.keys(rows[0]).map(k => ({ wch: Math.max(k.length, ...rows.map(r => String(r[k]||'').length)) + 2 }));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Meninggal Dunia');
+    XLSX.writeFile(wb, `Data_Meninggal_GMIM_Smirna_${new Date().toISOString().slice(0,10)}.xlsx`);
+  } catch(e) {
+    showToast('Gagal export: ' + e.message, 'error');
   }
 }
