@@ -250,7 +250,7 @@ body{font-family:'Source Sans 3',sans-serif;background:var(--bg);color:var(--tex
 .nav-item .arrow { margin-left:auto; font-size:11px; transition:transform 0.25s; color:rgba(255,255,255,0.4); }
 .nav-group.open > .nav-item .arrow { transform:rotate(90deg); }
 .nav-sub { max-height:0; overflow:hidden; transition:max-height 0.3s ease; background:rgba(0,0,0,0.2); }
-.nav-group.open > .nav-sub { max-height:350px; }
+.nav-group.open > .nav-sub { max-height:500px; }
 .nav-sub-item { display:flex; align-items:center; gap:10px; padding:9px 20px 9px 44px; cursor:pointer; font-size:13px; color:rgba(255,255,255,0.6); border-left:3px solid transparent; transition:background 0.2s; }
 .nav-sub-item:hover { background:rgba(255,255,255,0.06); color:white; }
 .nav-sub-item.active { background:rgba(200,169,110,0.12); color:var(--accent); border-left-color:var(--accent); }
@@ -1450,12 +1450,15 @@ tr:hover td { background:rgba(26,58,92,0.03); }
           <div class="nav-sub-item" id="subBelumSidi" onclick="showSubJemaat('belum-sidi')"><span class="sub-dot"></span> Belum Sidi</div>
           <div class="nav-sub-item" id="subPerKeluarga" onclick="showSubJemaat('per-keluarga')"><span class="sub-dot"></span> Per Keluarga</div>
           <div class="nav-sub-item" id="subMeninggal" onclick="showSubJemaat('meninggal')"><span class="sub-dot" style="background:#ef4444"></span> <span style="color:rgba(255,255,255,0.6)">✝️ Meninggal Dunia</span></div>
+          <div class="nav-sub-item" id="subPemuda" onclick="showSubJemaat('pemuda')"><span class="sub-dot" style="background:#3b82f6"></span> 🧑 Pemuda</div>
+          <div class="nav-sub-item" id="subRemaja" onclick="showSubJemaat('remaja')"><span class="sub-dot" style="background:#8b5cf6"></span> 👦 Remaja</div>
+          <div class="nav-sub-item" id="subAnakSM" onclick="showSubJemaat('anak-sm')"><span class="sub-dot" style="background:#f59e0b"></span> 👶 Anak Sekolah Minggu</div>
+          <div class="nav-sub-item" id="subLansiaJemaat" onclick="showSubJemaat('lansia-jemaat')"><span class="sub-dot" style="background:#10b981"></span> 👴 Lansia</div>
         </div>
       </div>
       <div class="nav-item" onclick="showPage('keluarga')"><span class="icon">🏠</span> Data Keluarga</div>
       <div class="nav-item" onclick="showPage('peta')"><span class="icon">🗺️</span> Peta Jemaat</div>
       <div class="nav-item" onclick="showPage('ultah')"><span class="icon">🎂</span> Ulang Tahun</div>
-      <div class="nav-item" onclick="showPage('lansia')"><span class="icon">👴</span> Data Lansia</div>
       <div class="nav-item" onclick="showPage('kehadiran')"><span class="icon">📋</span> Kehadiran Ibadah</div>
       <div class="nav-item" id="navPengumuman" onclick="showPage('pengumuman')"><span class="icon">📢</span> Pengumuman</div>
       <div class="nav-item" id="navBerita" onclick="showPage('berita')"><span class="icon">📰</span> Berita</div>
@@ -1647,7 +1650,67 @@ tr:hover td { background:rgba(26,58,92,0.03); }
     </div>
 
     <!-- LANSIA -->
-    <div class="page" id="page-lansia">
+    <!-- PEMUDA -->
+    <div class="page" id="page-pemuda">
+      <div class="page-header"><h1>🧑 Data Pemuda</h1><p id="pemudaSubtitle">Data jemaat kategori pemuda</p></div>
+      <div class="table-controls">
+        <input class="search-box" type="text" id="searchPemuda" placeholder="🔍 Cari nama..." oninput="renderKategoriJemaat('pemuda')">
+        <select class="filter-select" id="filterKolomPemuda" onchange="renderKategoriJemaat('pemuda')"><option value="">Semua Kolom</option></select>
+        <select class="filter-select" id="filterLPPemuda" onchange="renderKategoriJemaat('pemuda')"><option value="">Semua L/P</option><option value="L">Laki-laki</option><option value="P">Perempuan</option></select>
+        <select class="perpage-select" id="perpagePemuda" onchange="renderKategoriJemaat('pemuda')"><option value="25">25 data</option><option value="50">50 data</option><option value="99999">Semua</option></select>
+        <button class="btn btn-excel" onclick="exportExcelKategoriJemaat('pemuda')">📥 Excel</button>
+        <button class="btn btn-outline" onclick="printTable()">🖨️ Cetak</button>
+      </div>
+      <div class="table-wrapper"><table><thead><tr><th>No</th><th>Kolom</th><th>Nama Lengkap</th><th>L/P</th><th>Tgl Lahir</th><th>Umur</th><th>Pekerjaan</th><th>Keluarga</th><th>Alamat</th></tr></thead><tbody id="pemudaBody"></tbody></table></div>
+      <div class="pagination" id="pemudaPagination"></div>
+    </div>
+
+    <!-- REMAJA -->
+    <div class="page" id="page-remaja">
+      <div class="page-header"><h1>👦 Data Remaja</h1><p id="remajaSubtitle">Data jemaat kategori remaja</p></div>
+      <div class="table-controls">
+        <input class="search-box" type="text" id="searchRemaja" placeholder="🔍 Cari nama..." oninput="renderKategoriJemaat('remaja')">
+        <select class="filter-select" id="filterKolomRemaja" onchange="renderKategoriJemaat('remaja')"><option value="">Semua Kolom</option></select>
+        <select class="filter-select" id="filterLPRemaja" onchange="renderKategoriJemaat('remaja')"><option value="">Semua L/P</option><option value="L">Laki-laki</option><option value="P">Perempuan</option></select>
+        <select class="perpage-select" id="perpageRemaja" onchange="renderKategoriJemaat('remaja')"><option value="25">25 data</option><option value="50">50 data</option><option value="99999">Semua</option></select>
+        <button class="btn btn-excel" onclick="exportExcelKategoriJemaat('remaja')">📥 Excel</button>
+        <button class="btn btn-outline" onclick="printTable()">🖨️ Cetak</button>
+      </div>
+      <div class="table-wrapper"><table><thead><tr><th>No</th><th>Kolom</th><th>Nama Lengkap</th><th>L/P</th><th>Tgl Lahir</th><th>Umur</th><th>Pekerjaan</th><th>Keluarga</th><th>Alamat</th></tr></thead><tbody id="remajaBody"></tbody></table></div>
+      <div class="pagination" id="remajaPagination"></div>
+    </div>
+
+    <!-- ANAK SEKOLAH MINGGU -->
+    <div class="page" id="page-anak-sm">
+      <div class="page-header"><h1>👶 Anak Sekolah Minggu</h1><p id="anakSMSubtitle">Data jemaat kategori anak sekolah minggu</p></div>
+      <div class="table-controls">
+        <input class="search-box" type="text" id="searchAnakSM" placeholder="🔍 Cari nama..." oninput="renderKategoriJemaat('anak-sm')">
+        <select class="filter-select" id="filterKolomAnakSM" onchange="renderKategoriJemaat('anak-sm')"><option value="">Semua Kolom</option></select>
+        <select class="filter-select" id="filterLPAnakSM" onchange="renderKategoriJemaat('anak-sm')"><option value="">Semua L/P</option><option value="L">Laki-laki</option><option value="P">Perempuan</option></select>
+        <select class="perpage-select" id="perpageAnakSM" onchange="renderKategoriJemaat('anak-sm')"><option value="25">25 data</option><option value="50">50 data</option><option value="99999">Semua</option></select>
+        <button class="btn btn-excel" onclick="exportExcelKategoriJemaat('anak-sm')">📥 Excel</button>
+        <button class="btn btn-outline" onclick="printTable()">🖨️ Cetak</button>
+      </div>
+      <div class="table-wrapper"><table><thead><tr><th>No</th><th>Kolom</th><th>Nama Lengkap</th><th>L/P</th><th>Tgl Lahir</th><th>Umur</th><th>Pekerjaan</th><th>Keluarga</th><th>Alamat</th></tr></thead><tbody id="anakSMBody"></tbody></table></div>
+      <div class="pagination" id="anakSMPagination"></div>
+    </div>
+
+    <!-- LANSIA JEMAAT -->
+    <div class="page" id="page-lansia-jemaat">
+      <div class="page-header"><h1>👴 Data Lansia</h1><p id="lansiaJemaatSubtitle">Data jemaat berusia ≥ 60 tahun</p></div>
+      <div class="table-controls">
+        <input class="search-box" type="text" id="searchLansiaJemaat" placeholder="🔍 Cari nama..." oninput="renderKategoriJemaat('lansia-jemaat')">
+        <select class="filter-select" id="filterKolomLansiaJemaat" onchange="renderKategoriJemaat('lansia-jemaat')"><option value="">Semua Kolom</option></select>
+        <select class="filter-select" id="filterLPLansiaJemaat" onchange="renderKategoriJemaat('lansia-jemaat')"><option value="">Semua L/P</option><option value="L">Laki-laki</option><option value="P">Perempuan</option></select>
+        <select class="perpage-select" id="perpageLansiaJemaat" onchange="renderKategoriJemaat('lansia-jemaat')"><option value="25">25 data</option><option value="50">50 data</option><option value="99999">Semua</option></select>
+        <button class="btn btn-excel" onclick="exportExcelKategoriJemaat('lansia-jemaat')">📥 Excel</button>
+        <button class="btn btn-outline" onclick="printTable()">🖨️ Cetak</button>
+      </div>
+      <div class="table-wrapper"><table><thead><tr><th>No</th><th>Kolom</th><th>Nama Lengkap</th><th>L/P</th><th>Tgl Lahir</th><th>Umur</th><th>Keluarga</th><th>Alamat</th></tr></thead><tbody id="lansiaJemaatBody"></tbody></table></div>
+      <div class="pagination" id="lansiaJemaatPagination"></div>
+    </div>
+
+        <div class="page" id="page-lansia">
       <div class="page-header"><h1>👴 Data Lansia</h1><p id="lansiaSubtitle">Jemaat berusia ≥ 60 tahun</p></div>
       <div class="table-controls">
         <input class="search-box" type="text" id="searchLansia" placeholder="🔍 Cari nama..." oninput="loadLansia()">
