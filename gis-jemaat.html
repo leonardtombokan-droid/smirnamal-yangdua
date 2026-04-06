@@ -663,6 +663,42 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { storageKey: 'sb_pub' } });
 
 // ============================================
+// POLYGON WILAYAH JEMAAT SMIRNA (dari smirna.kml)
+// Koordinat sudah di-hardcode — tampil otomatis tanpa upload
+// ============================================
+const WILAYAH_SMIRNA = [
+  [1.46108739128055,124.783936818561],[1.46118874375371,124.784202570774],
+  [1.4612482714921,124.784725388011],[1.46137697565305,124.785417397937],
+  [1.4616290212802,124.786881884059],[1.46164510929797,124.787740190944],
+  [1.46137697565303,124.788995464763],[1.46073345477456,124.789843042812],
+  [1.46063692662688,124.790510748637],[1.46061547592683,124.792270277751],
+  [1.46021863793917,124.793482636226],[1.46047604637165,124.795231436504],
+  [1.46061547592693,124.798675392879],[1.46062620127698,124.801089380992],
+  [1.46058858862557,124.802166357142],[1.45973056044566,124.802123084968],
+  [1.45922646873724,124.801865592903],[1.45886180657987,124.801597372001],
+  [1.45858294724318,124.801178947395],[1.4584971443634,124.800653234428],
+  [1.45789652411333,124.800460115379],[1.4574353334554,124.800427928871],
+  [1.45719937540785,124.800481573051],[1.45675963534417,124.800395742363],
+  [1.45655585333434,124.800352827019],[1.45631989519467,124.800159707969],
+  [1.45655446358955,124.799103816715],[1.45647824987519,124.79691959948],
+  [1.45641389765551,124.796125665611],[1.45653569419297,124.795028362518],
+  [1.45643534839561,124.794623628563],[1.45611434625098,124.793570124005],
+  [1.45627384796551,124.793457471226],[1.45638172154486,124.792447080638],
+  [1.4564186404662,124.791721318782],[1.45646752450525,124.791395654704],
+  [1.45624229172727,124.791068425205],[1.45597415743842,124.790351533369],
+  [1.45601169624078,124.790008210615],[1.4561993902432,124.78967025228],
+  [1.45622084098533,124.789321565108],[1.45635160690222,124.788968997678],
+  [1.45660365309242,124.789057510575],[1.45665727993777,124.788684683522],
+  [1.45637573898548,124.787986645059],[1.45633551884657,124.787589678125],
+  [1.4562765293082,124.787434110002],[1.45615318754117,124.787050554113],
+  [1.45658282222816,124.786715215384],[1.45639987106849,124.786388048486],
+  [1.45652383269626,124.785937374769],[1.45655064612004,124.785561865507],
+  [1.45655002624577,124.784602219918],[1.45683424851826,124.781992430546],
+  [1.45877553930729,124.782239193775],[1.46077045516862,124.78238939748],
+  [1.46108739128055,124.783936818561]
+];
+
+// ============================================
 // STATE
 // ============================================
 let families = [];
@@ -673,6 +709,9 @@ let activeKolom = 'all';
 let pickingLocation = false;
 let selectedFamilyId = null;
 let layers = { wilayah: true, families: true, kolom: true };
+
+// Polygon wilayah sudah tersedia dari KML
+let wilayahPolygons = [ WILAYAH_SMIRNA.map(p => [p[1], p[0]]) ]; // format [lng,lat] untuk ray casting
 
 // Warna per kolom
 const KOLOM_COLORS = [
@@ -702,6 +741,17 @@ basemaps.osm.addTo(map);
 familiesLayerGroup.addTo(map);
 kolomLayerGroup.addTo(map);
 
+// ── Render polygon wilayah Smirna otomatis ──
+wilayahLayer = L.polygon(WILAYAH_SMIRNA, {
+  color: '#1a4a6b',
+  fillColor: '#1a4a6b',
+  fillOpacity: 0.12,
+  weight: 2.5
+}).addTo(map);
+wilayahLayer.bindTooltip('Wilayah Teritorial Jemaat GMIM "Smirna"', { sticky: true });
+document.getElementById('layer-wilayah-status').textContent = 'Wilayah Smirna (KML)';
+map.fitBounds(wilayahLayer.getBounds(), { padding: [30, 30] });
+
 // ============================================
 // POINT IN POLYGON (Algoritma Ray Casting)
 // Digunakan saat Supabase tidak tersedia
@@ -719,9 +769,6 @@ function pointInPolygon(point, polygon) {
   }
   return inside;
 }
-
-// Extract polygon coordinates from KML layer
-let wilayahPolygons = [];
 
 function checkPointInWilayah(lat, lng) {
   if (wilayahPolygons.length === 0) return null;
@@ -784,21 +831,21 @@ async function addFamily() {
     status_wilayah: status
   };
 
-  // Simpan ke Supabase
+  // Simpan koordinat ke tabel jemaat (update lat/lng berdasarkan nama_keluarga)
   try {
-    const { data, error } = await sb.from('families').insert([family]).select().single();
-    if (!error && data) {
-      families.push({ ...family, id: data.id });
-    } else {
-      // Fallback localStorage
-      family.id = 'f_' + Date.now();
-      families.push(family);
-      localStorage.setItem('gis_families', JSON.stringify(families));
-    }
+    const { error } = await sb
+      .from('jemaat')
+      .update({ lat, lng })
+      .eq('nama_keluarga', nama);
+    if (error) throw error;
   } catch(e) {
-    family.id = 'f_' + Date.now();
-    families.push(family);
+    // Fallback localStorage jika gagal
+    const family2 = { id: 'f_' + Date.now(), nama_kk: nama, alamat, lat, lng, kolom, no_telp: telp, jumlah_jiwa: jiwa, status_wilayah: status };
+    families.push(family2);
     localStorage.setItem('gis_families', JSON.stringify(families));
+    updateAll();
+    showToast('✅ Tersimpan (offline)');
+    return;
   }
 
   // Reset form
@@ -1037,7 +1084,8 @@ function flyToFamily(f) {
 async function deleteFamily(id) {
   if (!confirm('Hapus data keluarga ini?')) return;
   try {
-    await sb.from('families').delete().eq('id', id);
+    // Hapus dari local state saja (data master tetap di tabel jemaat)
+    console.log('Hapus dari tampilan peta:', id);
   } catch(e) {}
   families = families.filter(f => f.id !== id);
   localStorage.setItem('gis_families', JSON.stringify(families));
@@ -1380,31 +1428,57 @@ function editFamily(id) {
 }
 
 // ============================================
-// LOAD DATA DARI SUPABASE
+// LOAD DATA DARI TABEL JEMAAT (Supabase)
 // ============================================
 async function loadFromStorage() {
   try {
-    // Coba load dari Supabase dulu
-    const { data, error } = await sb.from('families').select('*').order('kolom').order('nama_kk');
-    if (!error && data) {
-      families = data.map(f => ({
-        id: f.id,
-        nama_kk: f.nama_kk,
-        alamat: f.alamat || '',
-        lat: parseFloat(f.lat),
-        lng: parseFloat(f.lng),
-        kolom: f.kolom,
-        no_telp: f.no_telp || '',
-        jumlah_jiwa: f.jumlah_jiwa || 1,
-        status_wilayah: f.status_wilayah || 'Belum dicek'
-      }));
+    showToast('⏳ Memuat data jemaat...');
+    const { data, error } = await sb
+      .from('jemaat')
+      .select('nama_keluarga,kolom,lat,lng,status_jemaat')
+      .not('lat', 'is', null)
+      .not('lng', 'is', null)
+      .order('kolom')
+      .order('nama_keluarga');
+
+    if (!error && data && data.length > 0) {
+      // Kelompokkan per keluarga (ambil 1 per nama_keluarga)
+      const seen = new Set();
+      families = [];
+      data.forEach(f => {
+        if (!f.nama_keluarga || seen.has(f.nama_keluarga)) return;
+        seen.add(f.nama_keluarga);
+        const lat = parseFloat(f.lat);
+        const lng = parseFloat(f.lng);
+        if (isNaN(lat) || isNaN(lng)) return;
+
+        // Cek point-in-polygon dengan polygon Smirna
+        const inWilayah = checkPointInWilayah(lat, lng);
+        const status = inWilayah
+          ? 'Di dalam wilayah Teritorial Jemaat Smirna'
+          : 'Di luar wilayah teritorial Jemaat Smirna';
+
+        families.push({
+          id: f.nama_keluarga,
+          nama_kk: f.nama_keluarga,
+          alamat: '',
+          lat, lng,
+          kolom: `Kolom ${f.kolom}`,
+          no_telp: '',
+          jumlah_jiwa: 1,
+          status_wilayah: status
+        });
+      });
+
       updateAll();
       showToast(`✅ ${families.length} keluarga dimuat dari database`);
       return;
     }
-  } catch(e) {}
+  } catch(e) {
+    console.error('Supabase error:', e);
+  }
 
-  // Fallback: localStorage
+  // Fallback localStorage
   try {
     const saved = localStorage.getItem('gis_families');
     if (saved) {
