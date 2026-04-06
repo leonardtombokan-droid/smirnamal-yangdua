@@ -1848,6 +1848,42 @@ tr:hover td { background:rgba(26,58,92,0.03); }
       </div>
     </div>
 
+    <!-- SUB: MENINGGAL DUNIA -->
+    <div class="page" id="page-meninggal">
+      <div class="page-header">
+        <h1>✝️ Data Jemaat Meninggal Dunia</h1>
+        <p id="subtitleMeninggal">Daftar jemaat yang telah meninggal dunia</p>
+      </div>
+      <div class="table-controls">
+        <input class="search-box" type="text" id="searchMeninggal" placeholder="🔍 Cari nama..." oninput="filterHalamanMeninggal()">
+        <select class="filter-select" id="filterKolomMeninggal" onchange="filterHalamanMeninggal()"><option value="">Semua Kolom</option></select>
+        <button class="btn btn-outline" onclick="printTable('meninggalTable')">🖨️ Cetak</button>
+        <button class="btn btn-excel" onclick="exportExcelMeninggal()">📥 Excel</button>
+      </div>
+      <div class="table-wrapper">
+        <table id="meninggalTable">
+          <thead>
+            <tr>
+              <th>No</th>
+              <th>Nama Lengkap</th>
+              <th>L/P</th>
+              <th>Kolom</th>
+              <th>Keluarga</th>
+              <th>Tgl Lahir</th>
+              <th>Meninggal Pada</th>
+              <th>Usia saat Meninggal</th>
+              <th>Penyebab</th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="meninggalBody">
+            <tr><td colspan="10" class="loading"><div class="spinner"></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pagination" id="meninggalPagination"></div>
+    </div>
+
   </div>
 </div>
 
@@ -2216,42 +2252,6 @@ tr:hover td { background:rgba(26,58,92,0.03); }
     </div>
   </div>
 </div>
-    <!-- SUB: MENINGGAL DUNIA -->
-    <div class="page" id="page-meninggal">
-      <div class="page-header">
-        <h1>✝️ Data Jemaat Meninggal Dunia</h1>
-        <p id="subtitleMeninggal">Daftar jemaat yang telah meninggal dunia</p>
-      </div>
-      <div class="table-controls">
-        <input class="search-box" type="text" id="searchMeninggal" placeholder="🔍 Cari nama..." oninput="filterHalamanMeninggal()">
-        <select class="filter-select" id="filterKolomMeninggal" onchange="filterHalamanMeninggal()"><option value="">Semua Kolom</option></select>
-        <button class="btn btn-outline" onclick="printTable('meninggalTable')">🖨️ Cetak</button>
-        <button class="btn btn-excel" onclick="exportExcelMeninggal()">📥 Excel</button>
-      </div>
-      <div class="table-wrapper">
-        <table id="meninggalTable">
-          <thead>
-            <tr>
-              <th>No</th>
-              <th>Nama Lengkap</th>
-              <th>L/P</th>
-              <th>Kolom</th>
-              <th>Keluarga</th>
-              <th>Tgl Lahir</th>
-              <th>Meninggal Pada</th>
-              <th>Usia saat Meninggal</th>
-              <th>Penyebab</th>
-              <th>Aksi</th>
-            </tr>
-          </thead>
-          <tbody id="meninggalBody">
-            <tr><td colspan="10" class="loading"><div class="spinner"></div></td></tr>
-          </tbody>
-        </table>
-      </div>
-      <div class="pagination" id="meninggalPagination"></div>
-    </div>
-
 
 <!-- MODAL PINDAH ANGGOTA KE KELUARGA LAIN -->
 <div class="modal-overlay" id="modalPindahAnggota">
