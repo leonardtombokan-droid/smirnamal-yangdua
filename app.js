@@ -434,7 +434,7 @@ function renderSubJemaat() {
     <td><span class="badge ${j.baptis==='sudah-baptis'?'badge-baptis':'badge-belum'}">${j.baptis==='sudah-baptis'?'✓':'✗'}</span></td>
     ${cfg.showSidi?`<td><span class="badge ${j.sidi==='sudah-sidi'?'badge-baptis':'badge-belum'}">${j.sidi==='sudah-sidi'?'✓':'✗'}</span></td>`:''}
     <td>${j.relasi||'-'}</td>
-    <td style="white-space:nowrap">${(isAdmin()||currentUser.kolom===j.kolom)?`<button class="btn btn-outline btn-sm" onclick="editJemaat(${j.id})">✏️</button> <button class="btn btn-danger btn-sm" onclick="deleteJemaat(${j.id},'${(j.nama_lengkap||'').replace(/'/g,"\\'")}')">🗑️</button>`:'—'}</td>
+    <td style="white-space:nowrap">${(isAdmin()||currentUser.kolom===j.kolom)?`<button class="btn btn-outline btn-sm" onclick="editJemaat(${j.id})">✏️</button> <button class="btn btn-danger btn-sm" onclick="deleteJemaat(${j.id},'${(j.nama_lengkap||'').replace(/'/g,"\\'")}')">🗑️</button> <button class="btn btn-outline btn-sm" style="color:#dc2626;border-color:#dc2626" title="Catat Meninggal" onclick="bukaModalMeninggal(${j.id})">✝️</button> <button class="btn btn-outline btn-sm" style="color:#7c3aed;border-color:#7c3aed" title="Pindah Keluarga" onclick="bukaModalPindahAnggota(${j.id})">🔀</button>`:'—'}</td>
   </tr>`).join('');
   const pagEl=document.getElementById(cfg.pag);
   if (pages<=1){pagEl.innerHTML=`<span class="page-info">${data.length} data</span>`;return;}
@@ -552,7 +552,7 @@ function renderSubKeluarga() {
                     <span style="padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;${j.relasi==='Suami'?'background:#dbeafe;color:#1e40af':j.relasi==='Istri'?'background:#fce7f3;color:#9d174d':j.relasi==='Anak'?'background:#fef9c3;color:#854d0e':'background:#e5e7eb;color:#374151'}">${j.relasi||'-'}</span>
                   </td>
                   <td style="padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowrap">
-                    ${canEdit?`<button class="btn btn-outline btn-sm" onclick="editJemaat(${j.id})">✏️</button> <button class="btn btn-danger btn-sm" onclick="deleteJemaat(${j.id},'${(j.nama_lengkap||'').replace(/'/g,"\\'")}')">🗑️</button>`:'—'}
+                    ${canEdit?`<button class="btn btn-outline btn-sm" onclick="editJemaat(${j.id})">✏️</button> <button class="btn btn-danger btn-sm" onclick="deleteJemaat(${j.id},'${(j.nama_lengkap||'').replace(/'/g,"\\'")}')">🗑️</button> <button class="btn btn-outline btn-sm" style="color:#7c3aed;border-color:#7c3aed" title="Pindah keluarga" onclick="bukaModalPindahAnggota(${j.id})">🔀</button>`:'—'}
                   </td>
                 </tr>`;
               }).join('');
@@ -3294,4 +3294,340 @@ async function mkbSelesai() {
   showToast(`Keluarga ${_mkbDataKeluarga.nama_keluarga} berhasil ditambahkan dengan ${_mkbAnggotaList.length} anggota! 🎉`,'success');
   if (typeof loadJemaat==='function') loadJemaat();
   if (typeof loadKeluarga==='function') loadKeluarga();
+}
+
+// ===== PINDAH ANGGOTA KE KELUARGA LAIN =====
+function bukaModalPindahAnggota(id) {
+  const j = allJemaat.find(x => x.id === id);
+  if (!j) { showToast('Data jemaat tidak ditemukan','error'); return; }
+  document.getElementById('pindahJemaatId').value = id;
+  document.getElementById('pindahNamaJemaat').textContent = j.nama_lengkap || '-';
+  document.getElementById('pindahDariKeluarga').textContent = j.nama_keluarga || '-';
+  // Populate dropdown semua keluarga kecuali keluarga saat ini
+  const semuaKeluarga = [...new Set(allJemaat.map(x => x.nama_keluarga).filter(Boolean))].sort();
+  const sel = document.getElementById('pindahKeKeluarga');
+  sel.innerHTML = '<option value="">-- Pilih Keluarga Tujuan --</option>' +
+    semuaKeluarga.filter(k => k !== j.nama_keluarga)
+      .map(k => `<option value="${k}">${k}</option>`).join('');
+  // Set relasi default dari data sekarang
+  const relSel = document.getElementById('pindahRelasiBaru');
+  if (relSel) relSel.value = j.relasi || 'Anak';
+  document.getElementById('modalPindahAnggota').classList.add('open');
+}
+
+function closeModalPindah() {
+  document.getElementById('modalPindahAnggota').classList.remove('open');
+}
+
+async function simpanPindahAnggota() {
+  const id = parseInt(document.getElementById('pindahJemaatId').value);
+  const keluargaBaru = document.getElementById('pindahKeKeluarga').value.trim();
+  const relasiBaru = document.getElementById('pindahRelasiBaru').value;
+  if (!keluargaBaru) { showToast('Pilih keluarga tujuan terlebih dahulu!', 'error'); return; }
+  const jSrc = allJemaat.find(x => x.id === id);
+  // Ambil data representatif keluarga tujuan
+  const targetMember = allJemaat.find(x => x.nama_keluarga === keluargaBaru);
+  if (!targetMember) { showToast('Keluarga tujuan tidak ditemukan', 'error'); return; }
+  const confirmMsg = `Pindahkan "${jSrc?.nama_lengkap}" ke keluarga "${keluargaBaru}" sebagai ${relasiBaru}?\n\nData kolom, alamat dan KK akan mengikuti keluarga tujuan.`;
+  if (!confirm(confirmMsg)) return;
+  const payload = {
+    nama_keluarga: keluargaBaru,
+    relasi: relasiBaru,
+    kolom: targetMember.kolom || null,
+    no_kk: targetMember.no_kk || null,
+    alamat_rumah: targetMember.alamat_rumah || null,
+    jemaat_asal: targetMember.jemaat_asal || null,
+    alamat_kolom: targetMember.alamat_kolom || null,
+    updated_at: new Date().toISOString()
+  };
+  const btnSave = document.querySelector('#modalPindahAnggota .btn-primary');
+  if (btnSave) { btnSave.disabled = true; btnSave.textContent = 'Memproses...'; }
+  try {
+    const { error } = await sbAdmin.from('jemaat').update(payload).eq('id', id);
+    if (error) throw error;
+    showToast(`${jSrc?.nama_lengkap} berhasil dipindahkan ke keluarga ${keluargaBaru} ✅`, 'success');
+    logAktivitas('pindah', `Pindah: ${jSrc?.nama_lengkap} → Keluarga ${keluargaBaru}`);
+    closeModalPindah();
+    await loadJemaat();
+    const _pg = document.querySelector('.page.active');
+    if (_pg && _pg.id === 'page-per-keluarga') renderSubKeluarga();
+    if (_pg && _pg.id === 'page-keluarga') loadKeluarga();
+  } catch(e) {
+    showToast('Gagal memindahkan: ' + e.message, 'error');
+  } finally {
+    if (btnSave) { btnSave.disabled = false; btnSave.textContent = '🔀 Pindahkan'; }
+  }
+}
+
+// ===== MENINGGAL DUNIA =====
+function bukaModalMeninggal(id) {
+  if (!isAdmin()) { showToast('Hanya admin yang dapat mencatat data meninggal', 'error'); return; }
+  const j = allJemaat.find(x => x.id === id);
+  if (!j) { showToast('Data jemaat tidak ditemukan','error'); return; }
+  document.getElementById('meninggalJemaatId').value = id;
+  document.getElementById('meninggalNamaJemaat').textContent = j.nama_lengkap || '-';
+  document.getElementById('meninggalKolom').textContent = 'Kolom ' + (j.kolom || '-');
+  document.getElementById('meninggalKeluarga').textContent = j.nama_keluarga || '-';
+  document.getElementById('meninggalTglLahir').textContent = formatTanggal(j.tanggal_lahir);
+  // Set default waktu ke saat ini
+  const now = new Date();
+  const localISO = new Date(now.getTime() - now.getTimezoneOffset()*60000).toISOString().slice(0,16);
+  document.getElementById('meninggalTglWaktu').value = localISO;
+  document.getElementById('meninggalPenyebab').value = '';
+  document.getElementById('modalMeninggal').classList.add('open');
+}
+
+function closeModalMeninggal() {
+  document.getElementById('modalMeninggal').classList.remove('open');
+}
+
+async function simpanMeninggal() {
+  const id = parseInt(document.getElementById('meninggalJemaatId').value);
+  const j = allJemaat.find(x => x.id === id);
+  const tglWaktu = document.getElementById('meninggalTglWaktu').value;
+  const penyebab = document.getElementById('meninggalPenyebab').value.trim();
+  if (!tglWaktu) { showToast('Isi tanggal & jam meninggal!', 'error'); return; }
+  if (!j) { showToast('Data jemaat tidak ditemukan','error'); return; }
+  const btnSave = document.querySelector('#modalMeninggal .btn-primary');
+  if (btnSave) { btnSave.disabled = true; btnSave.textContent = 'Menyimpan...'; }
+  try {
+    const { error } = await sbAdmin.from('jemaat').update({
+      status_jemaat: 'meninggal',
+      tanggal_meninggal: new Date(tglWaktu).toISOString(),
+      penyebab_meninggal: penyebab,
+      updated_at: new Date().toISOString()
+    }).eq('id', id);
+    if (error) throw error;
+    // Update cache lokal
+    const idx = allJemaat.findIndex(x => x.id === id);
+    if (idx !== -1) {
+      allJemaat[idx].status_jemaat = 'meninggal';
+      allJemaat[idx].tanggal_meninggal = new Date(tglWaktu).toISOString();
+      allJemaat[idx].penyebab_meninggal = penyebab;
+    }
+    showToast(`${j.nama_lengkap} telah dicatat meninggal dunia 🕊️`, 'success');
+    logAktivitas('meninggal', `Meninggal: ${j.nama_lengkap} (Kolom ${j.kolom}) — ${penyebab||'tanpa keterangan'}`);
+    closeModalMeninggal();
+    // Cetak kartu duka
+    await _cetakKartuDuka(id, tglWaktu, penyebab);
+    await loadJemaat();
+  } catch(e) {
+    showToast('Gagal menyimpan: ' + e.message, 'error');
+  } finally {
+    if (btnSave) { btnSave.disabled = false; btnSave.textContent = '✝️ Simpan & Cetak Kartu'; }
+  }
+}
+
+async function _cetakKartuDuka(id, tglWaktu, penyebab) {
+  // Ambil data terbaru dari cache
+  let j = allJemaat.find(x => x.id === id);
+  if (!j) return;
+
+  // Hitung usia saat meninggal
+  const tglM = new Date(tglWaktu);
+  const tglL = parseTanggal(j.tanggal_lahir);
+  let usiaSaatMeninggal = '-';
+  if (tglL && !isNaN(tglL)) {
+    let th = tglM.getFullYear() - tglL.getFullYear();
+    let bl = tglM.getMonth() - tglL.getMonth();
+    let hr = tglM.getDate() - tglL.getDate();
+    if (hr < 0) { bl--; hr += new Date(tglM.getFullYear(), tglM.getMonth(), 0).getDate(); }
+    if (bl < 0) { th--; bl += 12; }
+    usiaSaatMeninggal = `${th} tahun ${bl} bulan`;
+  }
+
+  const tglMStr = tglM.toLocaleString('id-ID', {
+    weekday:'long', year:'numeric', month:'long', day:'numeric',
+    hour:'2-digit', minute:'2-digit'
+  });
+
+  const tglCetak = new Date().toLocaleString('id-ID', {
+    weekday:'long', year:'numeric', month:'long', day:'numeric'
+  });
+
+  // Ambil data ketua & sekretaris BPMJ dari database
+  let ketuaBpmj = 'Pdt. Alfius Mangode, M.Th.';
+  let sekretarisBpmj = 'Pnt. Dr. Ir. Ari Berty Rondonuwu, M.Sc.M.Si.';
+  try {
+    const { data: bpmjData } = await sb.from('struktur_bpmj').select('jabatan,nama').limit(30);
+    if (bpmjData && bpmjData.length) {
+      const ketua = bpmjData.find(b => (b.jabatan||'').toLowerCase().includes('ketua') && !(b.jabatan||'').toLowerCase().includes('wakil'));
+      const sek = bpmjData.find(b => (b.jabatan||'').toLowerCase().includes('sekretaris'));
+      if (ketua?.nama) ketuaBpmj = ketua.nama;
+      if (sek?.nama) sekretarisBpmj = sek.nama;
+    }
+  } catch(e) { /* gunakan default */ }
+
+  const qrDataKetua = `GMIM Smirna|Ketua BPMJ|${ketuaBpmj}|${j.nama_lengkap}|${tglWaktu.slice(0,10)}`;
+  const qrDataSek = `GMIM Smirna|Sekretaris BPMJ|${sekretarisBpmj}|${j.nama_lengkap}|${tglWaktu.slice(0,10)}`;
+
+  const html = `<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Surat Keterangan Meninggal - ${j.nama_lengkap}</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>
+<style>
+  @page { size: A5 portrait; margin: 10mm 12mm; }
+  * { box-sizing: border-box; }
+  body { margin:0; padding:0; background:#fff; font-family: 'Arial', sans-serif; color:#1a1a2e; }
+  .kartu { border:2.5px solid #1a3a5c; border-radius:10px; padding:18px 20px; max-width:500px; margin:8px auto; }
+  .header { text-align:center; padding-bottom:12px; margin-bottom:14px; border-bottom:2px solid #c8a96e; }
+  .header .salib { font-size:36px; display:block; color:#1a3a5c; margin-bottom:6px; }
+  .header h2 { font-size:13px; font-weight:700; color:#1a3a5c; margin:3px 0; letter-spacing:0.5px; }
+  .header h3 { font-size:11px; font-weight:400; color:#6b7280; margin:2px 0; }
+  .sub-judul { text-align:center; font-size:10px; letter-spacing:2px; font-weight:700; color:#c8a96e; text-transform:uppercase; margin:8px 0 4px; }
+  .nama-almarhum { text-align:center; font-size:22px; font-weight:700; color:#1a3a5c; margin:6px 0 10px; border-bottom:1px solid #e5e7eb; padding-bottom:8px; }
+  table.info { width:100%; border-collapse:collapse; font-size:11px; margin:8px 0 14px; }
+  table.info tr td { padding:5px 8px; border-bottom:1px solid #f1f5f9; vertical-align:top; }
+  table.info tr:last-child td { border-bottom:none; }
+  table.info td:first-child { font-weight:700; color:#374151; width:44%; background:#f8fafc; border-radius:3px; }
+  table.info td:last-child { color:#1a1a2e; }
+  .ttd-section { margin-top:14px; border-top:1px solid #e5e7eb; padding-top:14px; }
+  .ttd-title { text-align:center; font-size:10px; color:#6b7280; margin-bottom:12px; letter-spacing:1px; text-transform:uppercase; }
+  .ttd-row { display:flex; justify-content:space-around; align-items:flex-end; gap:10px; }
+  .ttd-box { display:flex; flex-direction:column; align-items:center; gap:4px; flex:1; }
+  .ttd-qr { width:72px; height:72px; }
+  .ttd-nama { font-size:10px; font-weight:700; color:#1a3a5c; text-align:center; max-width:130px; line-height:1.3; margin-top:4px; }
+  .ttd-jabatan { font-size:9px; color:#6b7280; text-align:center; }
+  .footer-note { font-size:9px; color:#9ca3af; text-align:center; margin-top:10px; padding-top:8px; border-top:1px dashed #e5e7eb; }
+  @media print {
+    body { margin:0; padding:0; }
+    .kartu { border:2.5px solid #1a3a5c; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    table.info td:first-child { background:#f8fafc !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  }
+</style>
+</head>
+<body>
+<div class="kartu">
+  <div class="header">
+    <span class="salib">✝</span>
+    <h2>GEREJA MASEHI INJILI DI MINAHASA</h2>
+    <h2>JEMAAT SMIRNA MALABAR</h2>
+    <h3>Badan Pekerja Majelis Jemaat (BPMJ)</h3>
+  </div>
+  <div class="sub-judul">Surat Keterangan Meninggal Dunia</div>
+  <div class="nama-almarhum">${j.nama_lengkap || '-'}</div>
+  <table class="info">
+    <tr><td>Kolom Domisili</td><td><strong>Kolom ${j.kolom || '-'}</strong></td></tr>
+    <tr><td>Nama Keluarga</td><td>${j.nama_keluarga || '-'}</td></tr>
+    <tr><td>Tempat Lahir</td><td>${j.tempat_lahir || '-'}</td></tr>
+    <tr><td>Tanggal Lahir</td><td>${formatTanggal(j.tanggal_lahir)}</td></tr>
+    <tr><td>Usia saat Meninggal</td><td><strong>${usiaSaatMeninggal}</strong></td></tr>
+    <tr><td>Meninggal pada</td><td><strong>${tglMStr}</strong></td></tr>
+    <tr><td>Penyebab Meninggal</td><td>${penyebab || '-'}</td></tr>
+  </table>
+  <div class="ttd-section">
+    <div class="ttd-title">Mengetahui, BPMJ GMIM Smirna Malabar</div>
+    <div class="ttd-row">
+      <div class="ttd-box">
+        <div class="ttd-qr" id="qrDukaKetua"></div>
+        <div class="ttd-nama">${ketuaBpmj}</div>
+        <div class="ttd-jabatan">Ketua BPMJ</div>
+      </div>
+      <div class="ttd-box">
+        <div class="ttd-qr" id="qrDukaSekretaris"></div>
+        <div class="ttd-nama">${sekretarisBpmj}</div>
+        <div class="ttd-jabatan">Sekretaris BPMJ</div>
+      </div>
+    </div>
+  </div>
+  <div class="footer-note">
+    Dicetak: ${tglCetak} &nbsp;|&nbsp; Sistem Informasi Digital GMIM Smirna
+  </div>
+</div>
+<script>
+  window.onload = function() {
+    try {
+      new QRCode(document.getElementById('qrDukaKetua'), {
+        text: '${qrDataKetua.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}',
+        width:72, height:72, colorDark:'#1a3a5c', colorLight:'#ffffff',
+        correctLevel: QRCode.CorrectLevel ? QRCode.CorrectLevel.M : 0
+      });
+      new QRCode(document.getElementById('qrDukaSekretaris'), {
+        text: '${qrDataSek.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}',
+        width:72, height:72, colorDark:'#1a3a5c', colorLight:'#ffffff',
+        correctLevel: QRCode.CorrectLevel ? QRCode.CorrectLevel.M : 0
+      });
+    } catch(e) {}
+    setTimeout(function(){ window.focus(); window.print(); }, 900);
+  };
+<\/script>
+</body>
+</html>`;
+
+  const win = window.open('', '_blank', 'width=720,height=960');
+  if (win) {
+    win.document.write(html);
+    win.document.close();
+  } else {
+    showToast('Popup diblokir browser. Aktifkan popup untuk cetak kartu.', 'error');
+  }
+}
+
+// ===== DAFTAR JEMAAT MENINGGAL =====
+async function bukaModalDaftarMeninggal() {
+  document.getElementById('modalDaftarMeninggal').classList.add('open');
+  const el = document.getElementById('daftarMeninggalContent');
+  el.innerHTML = '<div style="text-align:center;padding:32px;color:var(--text-muted)">⏳ Memuat data...</div>';
+  try {
+    const { data, error } = await sb.from('jemaat')
+      .select('id,nama_lengkap,lp,kolom,nama_keluarga,tanggal_lahir,tanggal_meninggal,penyebab_meninggal,tempat_lahir')
+      .eq('status_jemaat','meninggal')
+      .order('tanggal_meninggal', { ascending: false });
+    if (error) throw error;
+    if (!data || !data.length) {
+      el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted)">Belum ada data jemaat meninggal</div>';
+      return;
+    }
+    el.innerHTML = `
+      <div style="padding:12px 16px;background:#f8fafc;border-bottom:1px solid var(--border);font-size:12px;color:var(--text-muted)">
+        Total: <strong style="color:var(--text)">${data.length} jemaat</strong>
+      </div>
+      <table style="width:100%;border-collapse:collapse;font-size:13px">
+        <thead>
+          <tr style="background:#1a3a5c;color:white">
+            <th style="padding:9px 12px;text-align:left;font-weight:600">Nama</th>
+            <th style="padding:9px 12px;text-align:left;font-weight:600">Kolom/Keluarga</th>
+            <th style="padding:9px 12px;text-align:left;font-weight:600">Tgl Meninggal</th>
+            <th style="padding:9px 12px;text-align:left;font-weight:600">Usia</th>
+            <th style="padding:9px 12px;text-align:left;font-weight:600">Penyebab</th>
+            <th style="padding:9px 8px;text-align:center;font-weight:600">Cetak</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${data.map((j,i) => {
+            const tglM = j.tanggal_meninggal ? new Date(j.tanggal_meninggal) : null;
+            const tglL = parseTanggal(j.tanggal_lahir);
+            let usia = '-';
+            if (tglM && tglL && !isNaN(tglL)) {
+              let th = tglM.getFullYear() - tglL.getFullYear();
+              let bl = tglM.getMonth() - tglL.getMonth();
+              if (bl < 0) { th--; bl += 12; }
+              usia = `${th} th ${bl} bln`;
+            }
+            const tglMStr = tglM ? tglM.toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'}) + ' ' + tglM.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}) : '-';
+            const bg = i%2===0?'':'background:#f8fafc';
+            return `<tr style="${bg}">
+              <td style="padding:8px 12px;border-bottom:1px solid var(--border)">
+                <strong>${j.nama_lengkap||'-'}</strong>
+                <br><small style="color:var(--text-muted)">${j.lp==='L'?'👨 Laki-laki':'👩 Perempuan'}</small>
+              </td>
+              <td style="padding:8px 12px;border-bottom:1px solid var(--border)">
+                <span style="font-weight:600;color:var(--primary)">Kolom ${j.kolom||'-'}</span>
+                <br><small style="color:var(--text-muted)">${j.nama_keluarga||'-'}</small>
+              </td>
+              <td style="padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowrap;font-size:12px">${tglMStr}</td>
+              <td style="padding:8px 12px;border-bottom:1px solid var(--border);font-size:12px">${usia}</td>
+              <td style="padding:8px 12px;border-bottom:1px solid var(--border);font-size:12px;color:var(--text-muted)">${j.penyebab_meninggal||'-'}</td>
+              <td style="padding:8px;border-bottom:1px solid var(--border);text-align:center">
+                <button class="btn btn-outline btn-sm" style="font-size:11px;padding:3px 8px" onclick="_cetakKartuDuka(${j.id},'${(j.tanggal_meninggal||new Date().toISOString()).slice(0,16)}','${(j.penyebab_meninggal||'').replace(/'/g,"\\\\'")}')">🖨️ Cetak</button>
+              </td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>`;
+  } catch(e) {
+    el.innerHTML = `<div style="text-align:center;padding:32px;color:#dc2626">Gagal memuat: ${e.message}</div>`;
+  }
 }
