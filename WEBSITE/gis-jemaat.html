@@ -1,0 +1,1445 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GIS Jemaat — GMIM "Smirna" Wilayah Manado Malalayang Barat</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --primary: #1a4a6b;
+  --primary-light: #2563a8;
+  --accent: #e67e22;
+  --accent-light: #f39c12;
+  --success: #16a34a;
+  --danger: #dc2626;
+  --bg: #f0f4f8;
+  --surface: #ffffff;
+  --surface2: #f8fafc;
+  --border: #e2e8f0;
+  --text: #1e293b;
+  --text-muted: #64748b;
+  --text-xs: #94a3b8;
+  --radius: 10px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.10);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+/* ── HEADER ── */
+.header {
+  background: var(--primary);
+  color: white;
+  padding: 0 20px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+.header-left { display: flex; align-items: center; gap: 12px; }
+.header-logo {
+  width: 34px; height: 34px;
+  background: rgba(255,255,255,0.15);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+}
+.header-title { font-size: 15px; font-weight: 600; }
+.header-sub { font-size: 11px; opacity: 0.7; margin-top: 1px; }
+.header-actions { display: flex; gap: 8px; }
+.btn {
+  padding: 7px 14px;
+  border-radius: 7px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: all 0.15s;
+  display: flex; align-items: center; gap: 6px;
+}
+.btn-outline {
+  background: rgba(255,255,255,0.12);
+  color: white;
+  border: 1px solid rgba(255,255,255,0.25);
+}
+.btn-outline:hover { background: rgba(255,255,255,0.22); }
+.btn-accent { background: var(--accent); color: white; }
+.btn-accent:hover { background: var(--accent-light); }
+.btn-primary { background: var(--primary-light); color: white; }
+.btn-primary:hover { background: #1d4ed8; }
+.btn-sm { padding: 5px 10px; font-size: 12px; }
+.btn-success { background: var(--success); color: white; }
+.btn-danger { background: var(--danger); color: white; }
+
+/* ── MAIN LAYOUT ── */
+.main { display: flex; flex: 1; overflow: hidden; }
+
+/* ── SIDEBAR ── */
+.sidebar {
+  width: 320px;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.sidebar-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.tab-btn {
+  flex: 1;
+  padding: 12px 8px;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: 'DM Sans', sans-serif;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: all 0.15s;
+}
+.tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+.tab-btn:hover { background: var(--bg); }
+
+.tab-panel { display: none; flex: 1; overflow-y: auto; flex-direction: column; }
+.tab-panel.active { display: flex; }
+
+/* ── STATS BAR ── */
+.stats-bar {
+  padding: 12px;
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+  text-align: center;
+}
+.stat-value { font-size: 20px; font-weight: 600; color: var(--primary); }
+.stat-label { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+
+/* ── FILTER SECTION ── */
+.filter-section { padding: 12px; border-bottom: 1px solid var(--border); }
+.filter-section label { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 6px; }
+.search-box {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  background: var(--surface2);
+  color: var(--text);
+  transition: border-color 0.15s;
+}
+.search-box:focus { outline: none; border-color: var(--primary-light); }
+.kolom-filters { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.kolom-chip {
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1.5px solid transparent;
+  transition: all 0.15s;
+  background: var(--surface2);
+  color: var(--text-muted);
+  border-color: var(--border);
+}
+.kolom-chip.active { color: white; border-color: transparent; }
+
+/* ── KELUARGA LIST ── */
+.family-list { flex: 1; overflow-y: auto; }
+.family-item {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 0.1s;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.family-item:hover { background: var(--bg); }
+.family-item.selected { background: #eff6ff; border-left: 3px solid var(--primary-light); }
+.family-avatar {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 600;
+  flex-shrink: 0;
+  color: white;
+}
+.family-info { flex: 1; min-width: 0; }
+.family-name { font-size: 13px; font-weight: 600; color: var(--text); }
+.family-meta { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+.status-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 10px; font-weight: 500;
+  padding: 2px 7px; border-radius: 10px;
+  margin-top: 4px;
+}
+.status-inside { background: #dcfce7; color: #15803d; }
+.status-outside { background: #fee2e2; color: #b91c1c; }
+.status-unknown { background: #f1f5f9; color: #64748b; }
+
+/* ── FORM PANEL ── */
+.form-panel { padding: 14px; }
+.form-group { margin-bottom: 12px; }
+.form-group label { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.4px; display: block; margin-bottom: 5px; }
+.form-input {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  color: var(--text);
+  background: var(--surface2);
+  transition: border-color 0.15s;
+}
+.form-input:focus { outline: none; border-color: var(--primary-light); background: white; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.coord-hint { font-size: 10px; color: var(--text-xs); margin-top: 4px; }
+.btn-locate {
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 500;
+  color: var(--text);
+  transition: all 0.15s;
+  margin-top: 6px;
+  width: 100%;
+}
+.btn-locate:hover { background: var(--primary); color: white; border-color: var(--primary); }
+.form-divider { border: none; border-top: 1px solid var(--border); margin: 14px 0; }
+.upload-zone {
+  border: 2px dashed var(--border);
+  border-radius: 10px;
+  padding: 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.15s;
+  background: var(--surface2);
+}
+.upload-zone:hover { border-color: var(--primary-light); background: #eff6ff; }
+.upload-zone.drag-over { border-color: var(--accent); background: #fff7ed; }
+.upload-icon { font-size: 24px; margin-bottom: 6px; }
+.upload-text { font-size: 12px; color: var(--text-muted); }
+.upload-text strong { color: var(--primary); }
+
+/* ── LAYER PANEL ── */
+.layer-section { padding: 12px 14px; border-bottom: 1px solid var(--border); }
+.layer-section h4 { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 10px; }
+.layer-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--surface2);
+  margin-bottom: 6px;
+}
+.layer-item-left { display: flex; align-items: center; gap: 10px; }
+.layer-color { width: 14px; height: 14px; border-radius: 3px; flex-shrink: 0; }
+.layer-name { font-size: 12px; font-weight: 500; }
+.layer-count { font-size: 11px; color: var(--text-muted); }
+.toggle-switch {
+  width: 32px; height: 18px;
+  background: var(--border);
+  border-radius: 9px;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.toggle-switch.on { background: var(--primary-light); }
+.toggle-switch::after {
+  content: '';
+  position: absolute;
+  width: 14px; height: 14px;
+  background: white;
+  border-radius: 50%;
+  top: 2px; left: 2px;
+  transition: transform 0.2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+.toggle-switch.on::after { transform: translateX(14px); }
+
+/* ── MAP CONTAINER ── */
+.map-container { flex: 1; position: relative; }
+#map { width: 100%; height: 100%; }
+
+/* ── MAP CONTROLS ── */
+.map-controls {
+  position: absolute;
+  top: 12px; right: 12px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.map-btn {
+  width: 36px; height: 36px;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  font-size: 16px;
+  box-shadow: var(--shadow);
+  transition: all 0.15s;
+}
+.map-btn:hover { background: var(--primary); color: white; border-color: var(--primary); }
+
+/* ── LEGEND ── */
+.map-legend {
+  position: absolute;
+  bottom: 24px; right: 12px;
+  z-index: 1000;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  box-shadow: var(--shadow-md);
+  min-width: 160px;
+}
+.legend-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; color: var(--text-muted); margin-bottom: 8px; }
+.legend-item { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 12px; }
+.legend-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+.legend-square { width: 12px; height: 12px; border-radius: 2px; flex-shrink: 0; }
+
+/* ── CSV UPLOAD ── */
+.csv-section { padding: 12px 14px; }
+.csv-table-wrapper { overflow-x: auto; margin-top: 10px; }
+.csv-preview {
+  width: 100%;
+  font-size: 11px;
+  border-collapse: collapse;
+}
+.csv-preview th {
+  background: var(--surface2);
+  padding: 6px 8px;
+  text-align: left;
+  font-weight: 600;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+.csv-preview td {
+  padding: 5px 8px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── TOAST ── */
+.toast {
+  position: fixed;
+  bottom: 20px; left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: var(--text);
+  color: white;
+  padding: 10px 20px;
+  border-radius: 20px;
+  font-size: 13px;
+  z-index: 9999;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: var(--shadow-md);
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+
+/* ── LEAFLET CUSTOM ── */
+.leaflet-popup-content-wrapper {
+  border-radius: 10px !important;
+  box-shadow: var(--shadow-md) !important;
+  font-family: 'DM Sans', sans-serif !important;
+  padding: 0 !important;
+  overflow: hidden;
+}
+.leaflet-popup-content { margin: 0 !important; }
+.popup-header {
+  padding: 12px 14px 10px;
+  font-weight: 600;
+  font-size: 14px;
+  border-bottom: 1px solid var(--border);
+}
+.popup-body { padding: 10px 14px 12px; }
+.popup-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; font-size: 12px; }
+.popup-label { color: var(--text-muted); }
+.popup-value { font-weight: 500; color: var(--text); }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 768px) {
+  .sidebar { width: 280px; }
+  .header-title { font-size: 13px; }
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="header-left">
+    <div class="header-logo">⛪</div>
+    <div>
+      <div class="header-title">GIS Jemaat — GMIM "Smirna"</div>
+      <div class="header-sub">Wilayah Manado Malalayang Barat · Geodatabase & Peta</div>
+    </div>
+  </div>
+  <div class="header-actions">
+    <button class="btn btn-outline btn-sm" onclick="exportCSV()">⬇ Export CSV</button>
+    <button class="btn btn-outline btn-sm" onclick="runSpatialAnalysis()">🔄 Update Status</button>
+    <button class="btn btn-accent btn-sm" onclick="switchTab('tambah')">+ Tambah Keluarga</button>
+  </div>
+</header>
+
+<!-- MAIN -->
+<div class="main">
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <!-- TABS -->
+    <div class="sidebar-tabs">
+      <button class="tab-btn active" onclick="switchTab('daftar')" id="tab-daftar">📋 Daftar</button>
+      <button class="tab-btn" onclick="switchTab('tambah')" id="tab-tambah">➕ Input</button>
+      <button class="tab-btn" onclick="switchTab('layer')" id="tab-layer">🗺 Layer</button>
+    </div>
+
+    <!-- TAB: DAFTAR -->
+    <div class="tab-panel active" id="panel-daftar">
+      <!-- Stats -->
+      <div class="stats-bar">
+        <div class="stat-card">
+          <div class="stat-value" id="stat-total">0</div>
+          <div class="stat-label">Total KK</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" style="color:var(--success)" id="stat-inside">0</div>
+          <div class="stat-label">Dalam Wilayah</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" style="color:var(--danger)" id="stat-outside">0</div>
+          <div class="stat-label">Luar Wilayah</div>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="filter-section">
+        <label>Cari Keluarga</label>
+        <input class="search-box" type="text" id="search-input" placeholder="Ketik nama kepala keluarga..." oninput="filterFamilies()">
+        <div class="kolom-filters" id="kolom-filters">
+          <div class="kolom-chip active" data-kolom="all" onclick="filterByKolom('all', this)" style="background:var(--primary);color:white;border-color:var(--primary)">Semua</div>
+        </div>
+      </div>
+
+      <!-- List -->
+      <div class="family-list" id="family-list">
+        <div style="padding:30px;text-align:center;color:var(--text-muted);font-size:13px;">
+          <div style="font-size:32px;margin-bottom:10px">👨‍👩‍👧‍👦</div>
+          Belum ada data keluarga.<br>Tambah keluarga atau upload CSV.
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: INPUT -->
+    <div class="tab-panel" id="panel-tambah">
+      <div class="form-panel">
+        <div style="font-size:13px;font-weight:600;margin-bottom:14px;color:var(--primary)">Data Keluarga Baru</div>
+
+        <div class="form-group">
+          <label>Nama Kepala Keluarga *</label>
+          <input class="form-input" id="f-nama" type="text" placeholder="cth: Pnt. Yohanes Makaluas">
+        </div>
+        <div class="form-group">
+          <label>Alamat</label>
+          <input class="form-input" id="f-alamat" type="text" placeholder="Jl. Malalayang II No. 5">
+        </div>
+        <div class="form-group">
+          <label>Kolom / Wilayah Pelayanan *</label>
+          <select class="form-input" id="f-kolom">
+            <option value="">-- Pilih Kolom --</option>
+            <option>Kolom I</option>
+            <option>Kolom II</option>
+            <option>Kolom III</option>
+            <option>Kolom IV</option>
+            <option>Kolom V</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Latitude *</label>
+            <input class="form-input" id="f-lat" type="number" step="any" placeholder="1.4748">
+          </div>
+          <div class="form-group">
+            <label>Longitude *</label>
+            <input class="form-input" id="f-lng" type="number" step="any" placeholder="124.8232">
+          </div>
+        </div>
+        <p class="coord-hint">💡 Klik tombol di bawah atau klik titik di peta untuk isi koordinat</p>
+        <button class="btn-locate" onclick="startPickLocation()">📍 Klik Lokasi di Peta</button>
+
+        <div class="form-group" style="margin-top:12px">
+          <label>No. Telepon</label>
+          <input class="form-input" id="f-telp" type="text" placeholder="0812-xxxx-xxxx">
+        </div>
+        <div class="form-group">
+          <label>Jumlah Jiwa</label>
+          <input class="form-input" id="f-jiwa" type="number" min="1" value="1">
+        </div>
+
+        <button class="btn btn-primary" onclick="addFamily()" style="width:100%;justify-content:center;margin-top:4px">
+          ✅ Simpan Keluarga
+        </button>
+
+        <hr class="form-divider">
+
+        <div style="font-size:13px;font-weight:600;margin-bottom:10px;color:var(--primary)">Upload CSV Massal</div>
+        <div class="upload-zone" id="csv-drop-zone" onclick="document.getElementById('csv-file').click()" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="dropCSV(event)">
+          <div class="upload-icon">📄</div>
+          <div class="upload-text"><strong>Klik atau drag CSV</strong> ke sini<br>Kolom: nama_kk, alamat, lat, lng, kolom</div>
+        </div>
+        <input type="file" id="csv-file" accept=".csv" style="display:none" onchange="uploadCSV(event)">
+
+        <hr class="form-divider">
+
+        <div style="font-size:13px;font-weight:600;margin-bottom:10px;color:var(--primary)">Upload Batas Wilayah (KML)</div>
+        <div class="upload-zone" onclick="document.getElementById('kml-file').click()">
+          <div class="upload-icon">🗺️</div>
+          <div class="upload-text"><strong>Klik untuk upload KML</strong><br>Polygon batas wilayah jemaat</div>
+        </div>
+        <input type="file" id="kml-file" accept=".kml,.kmz" style="display:none" onchange="uploadKML(event)">
+      </div>
+    </div>
+
+    <!-- TAB: LAYER -->
+    <div class="tab-panel" id="panel-layer">
+      <div class="layer-section">
+        <h4>Layer Peta</h4>
+
+        <div class="layer-item">
+          <div class="layer-item-left">
+            <div class="layer-color" style="background:#1a4a6b;border:2px solid #1a4a6b;opacity:0.6"></div>
+            <div>
+              <div class="layer-name">Batas Wilayah Jemaat</div>
+              <div class="layer-count" id="layer-wilayah-status">Belum ada KML</div>
+            </div>
+          </div>
+          <div class="toggle-switch on" id="toggle-wilayah" onclick="toggleLayer('wilayah', this)"></div>
+        </div>
+
+        <div class="layer-item">
+          <div class="layer-item-left">
+            <div class="layer-color" style="background:var(--primary-light);border-radius:50%"></div>
+            <div>
+              <div class="layer-name">Marker Keluarga</div>
+              <div class="layer-count" id="layer-families-count">0 keluarga</div>
+            </div>
+          </div>
+          <div class="toggle-switch on" id="toggle-families" onclick="toggleLayer('families', this)"></div>
+        </div>
+
+        <div class="layer-item">
+          <div class="layer-item-left">
+            <div class="layer-color" style="background:transparent;border:2px dashed #888;border-radius:2px"></div>
+            <div>
+              <div class="layer-name">Boundary Kolom</div>
+              <div class="layer-count" id="layer-kolom-count">0 kolom</div>
+            </div>
+          </div>
+          <div class="toggle-switch on" id="toggle-kolom" onclick="toggleLayer('kolom', this)"></div>
+        </div>
+      </div>
+
+      <div class="layer-section">
+        <h4>Basemap</h4>
+        <select class="form-input" onchange="changeBasemap(this.value)">
+          <option value="osm">OpenStreetMap</option>
+          <option value="satellite">Satellite (Esri)</option>
+          <option value="topo">Topografi (Esri)</option>
+          <option value="dark">Dark Mode (CartoDB)</option>
+        </select>
+      </div>
+
+      <div class="layer-section">
+        <h4>Analisis Spasial</h4>
+        <button class="btn btn-primary" style="width:100%;justify-content:center;margin-bottom:8px" onclick="runSpatialAnalysis()">
+          🔄 Update Status Wilayah
+        </button>
+        <button class="btn btn-sm" style="width:100%;justify-content:center;background:var(--surface2);border:1px solid var(--border)" onclick="rebuildKolomBoundaries()">
+          🔷 Rebuild Boundary Kolom
+        </button>
+        <p style="font-size:11px;color:var(--text-muted);margin-top:8px">
+          Status wilayah dihitung berdasarkan polygon KML menggunakan algoritma point-in-polygon.
+        </p>
+      </div>
+
+      <div class="layer-section">
+        <h4>Legenda Kolom</h4>
+        <div id="legend-kolom-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAP -->
+  <div class="map-container">
+    <div id="map"></div>
+
+    <!-- Map Controls -->
+    <div class="map-controls">
+      <div class="map-btn" onclick="locateMe()" title="Lokasi Saya">📍</div>
+      <div class="map-btn" onclick="fitBounds()" title="Tampilkan Semua">⊞</div>
+    </div>
+
+    <!-- Legend -->
+    <div class="map-legend">
+      <div class="legend-title">Status Wilayah</div>
+      <div class="legend-item">
+        <div class="legend-dot" style="background:#16a34a"></div>
+        <span>Dalam wilayah</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot" style="background:#dc2626"></div>
+        <span>Luar wilayah</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot" style="background:#94a3b8"></div>
+        <span>Belum dicek</span>
+      </div>
+      <div style="border-top:1px solid var(--border);margin:8px 0"></div>
+      <div class="legend-item">
+        <div class="legend-square" style="background:#1a4a6b;opacity:0.35"></div>
+        <span>Wilayah jemaat</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-square" style="border:2px dashed #666;background:transparent"></div>
+        <span>Boundary kolom</span>
+      </div>
+    </div>
+
+    <!-- Pick location overlay -->
+    <div id="pick-overlay" style="display:none;position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(37,99,168,0.15);z-index:999;pointer-events:none;">
+      <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--primary);color:white;padding:10px 20px;border-radius:20px;font-size:13px;font-weight:500;pointer-events:none;box-shadow:var(--shadow-md)">
+        🖱️ Klik titik lokasi di peta
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+window.onload = function() {
+// ============================================
+// SUPABASE CONFIG
+// ============================================
+const SUPABASE_URL = 'https://vgjhlvzjwnhsgpozznrp.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZnamhsdnpqd25oc2dwb3p6bnJwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE2MjM0NDIsImV4cCI6MjA4NzE5OTQ0Mn0.o4kikie_9ifzIEDKEoaA1jf5XHJkU8YUF6KkFpRWIfg';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { storageKey: 'sb_pub' } });
+
+// ============================================
+// STATE
+// ============================================
+let families = [];
+let wilayahLayer = null;
+let familiesLayerGroup = L.layerGroup();
+let kolomLayerGroup = L.layerGroup();
+let activeKolom = 'all';
+let pickingLocation = false;
+let selectedFamilyId = null;
+let layers = { wilayah: true, families: true, kolom: true };
+
+// Warna per kolom
+const KOLOM_COLORS = [
+  '#2563a8','#16a34a','#d97706','#9333ea',
+  '#e11d48','#0891b2','#65a30d','#c2410c'
+];
+let kolomColorMap = {};
+
+// ============================================
+// INIT MAP
+// ============================================
+const map = L.map('map', {
+  center: [1.4748, 124.8232],
+  zoom: 14,
+  zoomControl: false
+});
+
+L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+const basemaps = {
+  osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }),
+  satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: '© Esri' }),
+  topo: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', { attribution: '© Esri' }),
+  dark: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '© CartoDB' })
+};
+basemaps.osm.addTo(map);
+familiesLayerGroup.addTo(map);
+kolomLayerGroup.addTo(map);
+
+// ============================================
+// POINT IN POLYGON (Algoritma Ray Casting)
+// Digunakan saat Supabase tidak tersedia
+// ============================================
+function pointInPolygon(point, polygon) {
+  const [px, py] = [point.lng, point.lat];
+  let inside = false;
+  const coords = polygon;
+  for (let i = 0, j = coords.length - 1; i < coords.length; j = i++) {
+    const [xi, yi] = coords[i];
+    const [xj, yj] = coords[j];
+    const intersect = ((yi > py) !== (yj > py)) &&
+      (px < (xj - xi) * (py - yi) / (yj - yi) + xi);
+    if (intersect) inside = !inside;
+  }
+  return inside;
+}
+
+// Extract polygon coordinates from KML layer
+let wilayahPolygons = [];
+
+function checkPointInWilayah(lat, lng) {
+  if (wilayahPolygons.length === 0) return null;
+  for (const poly of wilayahPolygons) {
+    if (pointInPolygon({ lat, lng }, poly)) return true;
+  }
+  return false;
+}
+
+// ============================================
+// CONVEX HULL (algoritma Graham Scan)
+// Untuk membuat boundary per kolom
+// ============================================
+function convexHull(points) {
+  if (points.length < 3) return points;
+  const sorted = [...points].sort((a, b) => a[0] === b[0] ? a[1] - b[1] : a[0] - b[0]);
+  const cross = (O, A, B) => (A[0]-O[0])*(B[1]-O[1]) - (A[1]-O[1])*(B[0]-O[0]);
+  const lower = [], upper = [];
+  for (const p of sorted) {
+    while (lower.length >= 2 && cross(lower[lower.length-2], lower[lower.length-1], p) <= 0) lower.pop();
+    lower.push(p);
+  }
+  for (let i = sorted.length-1; i >= 0; i--) {
+    const p = sorted[i];
+    while (upper.length >= 2 && cross(upper[upper.length-2], upper[upper.length-1], p) <= 0) upper.pop();
+    upper.push(p);
+  }
+  upper.pop(); lower.pop();
+  return lower.concat(upper);
+}
+
+// ============================================
+// ADD FAMILY
+// ============================================
+async function addFamily() {
+  const nama = document.getElementById('f-nama').value.trim();
+  const alamat = document.getElementById('f-alamat').value.trim();
+  const kolom = document.getElementById('f-kolom').value;
+  const lat = parseFloat(document.getElementById('f-lat').value);
+  const lng = parseFloat(document.getElementById('f-lng').value);
+  const telp = document.getElementById('f-telp').value.trim();
+  const jiwa = parseInt(document.getElementById('f-jiwa').value) || 1;
+
+  if (!nama || !kolom || isNaN(lat) || isNaN(lng)) {
+    showToast('⚠️ Nama, kolom, dan koordinat wajib diisi!');
+    return;
+  }
+
+  const inWilayah = checkPointInWilayah(lat, lng);
+  const status = inWilayah === null ? 'Belum dicek' :
+    inWilayah ? 'Di dalam wilayah Teritorial Jemaat Smirna' :
+    'Di luar wilayah teritorial Jemaat Smirna';
+
+  const family = {
+    nama_kk: nama,
+    alamat: alamat,
+    lat, lng, kolom,
+    no_telp: telp,
+    jumlah_jiwa: jiwa,
+    status_wilayah: status
+  };
+
+  // Simpan ke Supabase
+  try {
+    const { data, error } = await sb.from('families').insert([family]).select().single();
+    if (!error && data) {
+      families.push({ ...family, id: data.id });
+    } else {
+      // Fallback localStorage
+      family.id = 'f_' + Date.now();
+      families.push(family);
+      localStorage.setItem('gis_families', JSON.stringify(families));
+    }
+  } catch(e) {
+    family.id = 'f_' + Date.now();
+    families.push(family);
+    localStorage.setItem('gis_families', JSON.stringify(families));
+  }
+
+  // Reset form
+  ['f-nama','f-alamat','f-lat','f-lng','f-telp'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('f-kolom').value = '';
+  document.getElementById('f-jiwa').value = 1;
+
+  updateAll();
+  switchTab('daftar');
+  showToast('✅ Keluarga berhasil ditambahkan!');
+  setTimeout(() => flyToFamily(family), 300);
+}
+
+// ============================================
+// RENDER MARKERS
+// ============================================
+function getKolomColor(kolom) {
+  if (!kolomColorMap[kolom]) {
+    const idx = Object.keys(kolomColorMap).length % KOLOM_COLORS.length;
+    kolomColorMap[kolom] = KOLOM_COLORS[idx];
+  }
+  return kolomColorMap[kolom];
+}
+
+function createMarkerIcon(color, status) {
+  const ring = status === 'Di dalam wilayah Teritorial Jemaat Smirna' ? '#16a34a' :
+               status === 'Di luar wilayah teritorial Jemaat Smirna' ? '#dc2626' : '#94a3b8';
+  return L.divIcon({
+    className: '',
+    html: `<div style="
+      width:20px;height:20px;border-radius:50%;
+      background:${color};border:3px solid ${ring};
+      box-shadow:0 2px 4px rgba(0,0,0,0.3);
+      transition:transform 0.2s;cursor:pointer;
+    "></div>`,
+    iconSize: [20, 20],
+    iconAnchor: [10, 10],
+    popupAnchor: [0, -12]
+  });
+}
+
+function renderMarkers() {
+  familiesLayerGroup.clearLayers();
+  const filtered = getFilteredFamilies();
+
+  filtered.forEach(f => {
+    const color = getKolomColor(f.kolom);
+    const marker = L.marker([f.lat, f.lng], { icon: createMarkerIcon(color, f.status_wilayah) });
+
+    const statusClass = f.status_wilayah.includes('Di dalam') ? 'status-inside' :
+                        f.status_wilayah.includes('Di luar') ? 'status-outside' : 'status-unknown';
+    const statusShort = f.status_wilayah.includes('Di dalam') ? '✅ Dalam wilayah' :
+                        f.status_wilayah.includes('Di luar') ? '❌ Luar wilayah' : '⏳ Belum dicek';
+
+    marker.bindPopup(`
+      <div class="popup-header" style="border-left:4px solid ${color}">
+        👤 ${f.nama_kk}
+      </div>
+      <div class="popup-body">
+        <div class="popup-row"><span class="popup-label">Kolom</span><span class="popup-value" style="color:${color}">${f.kolom}</span></div>
+        ${f.alamat ? `<div class="popup-row"><span class="popup-label">Alamat</span><span class="popup-value">${f.alamat}</span></div>` : ''}
+        ${f.no_telp ? `<div class="popup-row"><span class="popup-label">Telepon</span><span class="popup-value">${f.no_telp}</span></div>` : ''}
+        <div class="popup-row"><span class="popup-label">Jiwa</span><span class="popup-value">${f.jumlah_jiwa} orang</span></div>
+        <div style="margin-top:8px">
+          <span class="status-badge ${statusClass}">${statusShort}</span>
+        </div>
+        <div style="margin-top:8px;display:flex;gap:6px">
+          <button onclick="editFamily('${f.id}')" style="flex:1;padding:5px;font-size:11px;border-radius:6px;border:1px solid var(--border);cursor:pointer;background:var(--surface2)">✏️ Edit</button>
+          <button onclick="deleteFamily('${f.id}')" style="flex:1;padding:5px;font-size:11px;border-radius:6px;border:1px solid #fee2e2;cursor:pointer;background:#fee2e2;color:#b91c1c">🗑 Hapus</button>
+        </div>
+      </div>
+    `, { maxWidth: 220 });
+
+    marker.on('click', () => selectFamily(f.id));
+    familiesLayerGroup.addLayer(marker);
+  });
+
+  document.getElementById('layer-families-count').textContent = `${families.length} keluarga`;
+}
+
+// ============================================
+// RENDER KOLOM BOUNDARIES (Convex Hull)
+// ============================================
+function renderKolomBoundaries() {
+  kolomLayerGroup.clearLayers();
+  const groups = {};
+  families.forEach(f => {
+    if (!groups[f.kolom]) groups[f.kolom] = [];
+    groups[f.kolom].push([f.lng, f.lat]);
+  });
+
+  let count = 0;
+  Object.entries(groups).forEach(([kolom, pts]) => {
+    const color = getKolomColor(kolom);
+    let latlngs;
+
+    if (pts.length >= 3) {
+      const hull = convexHull(pts);
+      latlngs = hull.map(p => [p[1], p[0]]);
+    } else if (pts.length === 2) {
+      latlngs = pts.map(p => [p[1], p[0]]);
+    } else {
+      return;
+    }
+
+    const poly = L.polygon(latlngs, {
+      color: color,
+      fillColor: color,
+      fillOpacity: 0.06,
+      weight: 1.5,
+      dashArray: '6 4'
+    });
+
+    poly.bindTooltip(`<b>${kolom}</b><br>${pts.length} KK`, { sticky: true });
+    kolomLayerGroup.addLayer(poly);
+    count++;
+  });
+
+  document.getElementById('layer-kolom-count').textContent = `${count} kolom`;
+  renderKolomLegend();
+}
+
+// ============================================
+// RENDER FAMILY LIST
+// ============================================
+function renderFamilyList() {
+  const list = document.getElementById('family-list');
+  const filtered = getFilteredFamilies();
+
+  if (filtered.length === 0) {
+    list.innerHTML = `<div style="padding:30px;text-align:center;color:var(--text-muted);font-size:13px">
+      <div style="font-size:28px;margin-bottom:8px">🔍</div>Tidak ada data yang cocok.
+    </div>`;
+    return;
+  }
+
+  list.innerHTML = filtered.map(f => {
+    const color = getKolomColor(f.kolom);
+    const initials = f.nama_kk.split(' ').slice(0,2).map(w => w[0]).join('').toUpperCase();
+    const statusClass = f.status_wilayah.includes('Di dalam') ? 'status-inside' :
+                        f.status_wilayah.includes('Di luar') ? 'status-outside' : 'status-unknown';
+    const statusShort = f.status_wilayah.includes('Di dalam') ? '✅ Dalam wilayah' :
+                        f.status_wilayah.includes('Di luar') ? '❌ Luar wilayah' : '⏳ Belum dicek';
+    const isSelected = f.id === selectedFamilyId;
+
+    return `<div class="family-item ${isSelected ? 'selected' : ''}" onclick="selectFamily('${f.id}')">
+      <div class="family-avatar" style="background:${color}">${initials}</div>
+      <div class="family-info">
+        <div class="family-name">${f.nama_kk}</div>
+        <div class="family-meta">${f.kolom} · ${f.jumlah_jiwa} jiwa${f.alamat ? ' · ' + f.alamat.substring(0,25) : ''}</div>
+        <span class="status-badge ${statusClass}">${statusShort}</span>
+      </div>
+    </div>`;
+  }).join('');
+
+  updateStats();
+  updateKolomFilters();
+}
+
+// ============================================
+// STATS & FILTERS
+// ============================================
+function updateStats() {
+  document.getElementById('stat-total').textContent = families.length;
+  document.getElementById('stat-inside').textContent = families.filter(f => f.status_wilayah.includes('Di dalam')).length;
+  document.getElementById('stat-outside').textContent = families.filter(f => f.status_wilayah.includes('Di luar')).length;
+}
+
+function updateKolomFilters() {
+  const koloms = [...new Set(families.map(f => f.kolom))].sort();
+  const container = document.getElementById('kolom-filters');
+  const allActive = activeKolom === 'all';
+  container.innerHTML = `<div class="kolom-chip ${allActive ? 'active' : ''}" 
+    data-kolom="all" onclick="filterByKolom('all', this)"
+    style="${allActive ? 'background:var(--primary);color:white;border-color:var(--primary)' : ''}">Semua</div>`;
+
+  koloms.forEach(k => {
+    const color = getKolomColor(k);
+    const isActive = activeKolom === k;
+    container.innerHTML += `<div class="kolom-chip ${isActive ? 'active' : ''}"
+      data-kolom="${k}" onclick="filterByKolom('${k}', this)"
+      style="${isActive ? `background:${color};color:white;border-color:${color}` : `border-color:${color};color:${color}`}">${k}</div>`;
+  });
+}
+
+function filterByKolom(kolom, el) {
+  activeKolom = kolom;
+  document.querySelectorAll('.kolom-chip').forEach(c => {
+    c.classList.remove('active');
+    const k = c.dataset.kolom;
+    const col = k === 'all' ? 'var(--primary)' : getKolomColor(k);
+    c.style.background = '';
+    c.style.color = col === 'var(--primary)' ? 'var(--text-muted)' : col;
+    c.style.borderColor = col;
+  });
+  el.classList.add('active');
+  const col = kolom === 'all' ? 'var(--primary)' : getKolomColor(kolom);
+  el.style.background = col;
+  el.style.color = 'white';
+  el.style.borderColor = col;
+  renderFamilyList();
+  renderMarkers();
+}
+
+function filterFamilies() {
+  renderFamilyList();
+  renderMarkers();
+}
+
+function getFilteredFamilies() {
+  const query = document.getElementById('search-input').value.toLowerCase();
+  return families.filter(f => {
+    const matchSearch = !query || f.nama_kk.toLowerCase().includes(query) || (f.alamat||'').toLowerCase().includes(query);
+    const matchKolom = activeKolom === 'all' || f.kolom === activeKolom;
+    return matchSearch && matchKolom;
+  });
+}
+
+// ============================================
+// SELECT FAMILY
+// ============================================
+function selectFamily(id) {
+  selectedFamilyId = id;
+  const f = families.find(x => x.id === id);
+  if (f) flyToFamily(f);
+  renderFamilyList();
+}
+
+function flyToFamily(f) {
+  map.flyTo([f.lat, f.lng], 17, { duration: 0.8 });
+}
+
+// ============================================
+// DELETE FAMILY
+// ============================================
+async function deleteFamily(id) {
+  if (!confirm('Hapus data keluarga ini?')) return;
+  try {
+    await sb.from('families').delete().eq('id', id);
+  } catch(e) {}
+  families = families.filter(f => f.id !== id);
+  localStorage.setItem('gis_families', JSON.stringify(families));
+  updateAll();
+  map.closePopup();
+  showToast('🗑️ Data keluarga dihapus');
+}
+
+// ============================================
+// SPATIAL ANALYSIS: Update status wilayah
+// ============================================
+function runSpatialAnalysis() {
+  if (wilayahPolygons.length === 0) {
+    showToast('⚠️ Upload KML wilayah terlebih dahulu!');
+    return;
+  }
+  let updated = 0;
+  families.forEach(f => {
+    const inWilayah = checkPointInWilayah(f.lat, f.lng);
+    f.status_wilayah = inWilayah ?
+      'Di dalam wilayah Teritorial Jemaat Smirna' :
+      'Di luar wilayah teritorial Jemaat Smirna';
+    updated++;
+  });
+  localStorage.setItem('gis_families', JSON.stringify(families));
+  updateAll();
+  showToast(`✅ Status ${updated} keluarga berhasil diperbarui!`);
+}
+
+// ============================================
+// REBUILD BOUNDARIES
+// ============================================
+function rebuildKolomBoundaries() {
+  renderKolomBoundaries();
+  showToast('🔷 Boundary kolom berhasil diperbarui!');
+}
+
+// ============================================
+// UPLOAD KML
+// ============================================
+// ============================================
+// KML PARSER (native, tanpa library eksternal)
+// ============================================
+function parseKML(kmlText) {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(kmlText, 'text/xml');
+  const polygons = [];
+
+  // Ambil semua elemen Polygon dari KML
+  const polyEls = doc.getElementsByTagName('Polygon');
+  for (const poly of polyEls) {
+    const coordEl = poly.getElementsByTagName('coordinates')[0];
+    if (!coordEl) continue;
+    const raw = coordEl.textContent.trim();
+    const latlngs = raw.split(/\s+/).map(c => {
+      const parts = c.split(',');
+      const lng = parseFloat(parts[0]);
+      const lat = parseFloat(parts[1]);
+      if (!isNaN(lat) && !isNaN(lng)) return [lat, lng];
+      return null;
+    }).filter(Boolean);
+    if (latlngs.length > 2) polygons.push(latlngs);
+  }
+
+  // Fallback: coba LinearRing jika tidak ada Polygon
+  if (polygons.length === 0) {
+    const rings = doc.getElementsByTagName('LinearRing');
+    for (const ring of rings) {
+      const coordEl = ring.getElementsByTagName('coordinates')[0];
+      if (!coordEl) continue;
+      const raw = coordEl.textContent.trim();
+      const latlngs = raw.split(/\s+/).map(c => {
+        const parts = c.split(',');
+        const lng = parseFloat(parts[0]);
+        const lat = parseFloat(parts[1]);
+        if (!isNaN(lat) && !isNaN(lng)) return [lat, lng];
+        return null;
+      }).filter(Boolean);
+      if (latlngs.length > 2) polygons.push(latlngs);
+    }
+  }
+
+  return polygons;
+}
+
+function uploadKML(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    if (wilayahLayer) map.removeLayer(wilayahLayer);
+    try {
+      const polygons = parseKML(e.target.result);
+      if (polygons.length === 0) {
+        showToast('❌ Tidak ada polygon ditemukan dalam KML.');
+        return;
+      }
+
+      // Simpan koordinat untuk point-in-polygon
+      wilayahPolygons = polygons.map(latlngs =>
+        latlngs.map(p => [p[1], p[0]]) // convert ke [lng, lat] untuk ray casting
+      );
+
+      // Render di peta
+      wilayahLayer = L.layerGroup();
+      polygons.forEach(latlngs => {
+        L.polygon(latlngs, {
+          color: '#1a4a6b',
+          fillColor: '#1a4a6b',
+          fillOpacity: 0.1,
+          weight: 2
+        }).addTo(wilayahLayer);
+      });
+      wilayahLayer.addTo(map);
+
+      // Fit bounds
+      const allPoints = polygons.flat();
+      const bounds = L.latLngBounds(allPoints);
+      map.fitBounds(bounds);
+
+      document.getElementById('layer-wilayah-status').textContent = `${polygons.length} polygon dimuat`;
+      showToast('🗺️ Batas wilayah berhasil dimuat!');
+      if (families.length > 0) runSpatialAnalysis();
+    } catch(err) {
+      console.error(err);
+      showToast('❌ Gagal memuat KML. Cek format file.');
+    }
+  };
+  reader.readAsText(file);
+}
+
+// ============================================
+// UPLOAD CSV
+// ============================================
+function uploadCSV(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => parseCSV(e.target.result);
+  reader.readAsText(file);
+}
+
+function parseCSV(text) {
+  const lines = text.trim().split('\n');
+  const header = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/"/g,''));
+  let added = 0, errors = 0;
+
+  for (let i = 1; i < lines.length; i++) {
+    const vals = lines[i].split(',').map(v => v.trim().replace(/"/g,''));
+    const row = {};
+    header.forEach((h, idx) => row[h] = vals[idx] || '');
+
+    const lat = parseFloat(row.lat || row.latitude);
+    const lng = parseFloat(row.lng || row.longitude || row.lon);
+    const nama = row.nama_kk || row.nama || row.name;
+    const kolom = row.kolom || row.wilayah || row.kolom_pelayanan || 'Kolom I';
+
+    if (!nama || isNaN(lat) || isNaN(lng)) { errors++; continue; }
+
+    const inWilayah = checkPointInWilayah(lat, lng);
+    families.push({
+      id: 'f_csv_' + Date.now() + '_' + i,
+      nama_kk: nama,
+      alamat: row.alamat || row.address || '',
+      lat, lng, kolom,
+      no_telp: row.no_telp || row.telepon || row.phone || '',
+      jumlah_jiwa: parseInt(row.jumlah_jiwa || row.jiwa) || 1,
+      status_wilayah: inWilayah === null ? 'Belum dicek' :
+        inWilayah ? 'Di dalam wilayah Teritorial Jemaat Smirna' :
+        'Di luar wilayah teritorial Jemaat Smirna'
+    });
+    added++;
+  }
+
+  localStorage.setItem('gis_families', JSON.stringify(families));
+  updateAll();
+  showToast(`✅ ${added} keluarga ditambahkan${errors > 0 ? `, ${errors} baris dilewati` : ''}`);
+}
+
+function dragOver(e) { e.preventDefault(); document.getElementById('csv-drop-zone').classList.add('drag-over'); }
+function dragLeave(e) { document.getElementById('csv-drop-zone').classList.remove('drag-over'); }
+function dropCSV(e) {
+  e.preventDefault();
+  dragLeave(e);
+  const file = e.dataTransfer.files[0];
+  if (file && file.name.endsWith('.csv')) {
+    const reader = new FileReader();
+    reader.onload = ev => parseCSV(ev.target.result);
+    reader.readAsText(file);
+  }
+}
+
+// ============================================
+// EXPORT CSV
+// ============================================
+function exportCSV() {
+  if (families.length === 0) { showToast('⚠️ Belum ada data untuk diekspor!'); return; }
+  const header = 'nama_kk,alamat,lat,lng,kolom,no_telp,jumlah_jiwa,status_wilayah';
+  const rows = families.map(f =>
+    `"${f.nama_kk}","${f.alamat||''}",${f.lat},${f.lng},"${f.kolom}","${f.no_telp||''}",${f.jumlah_jiwa},"${f.status_wilayah}"`
+  );
+  const csv = [header, ...rows].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `GIS_Jemaat_Smirna_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  showToast('⬇️ CSV berhasil diunduh!');
+}
+
+// ============================================
+// LOCATE ME
+// ============================================
+function locateMe() {
+  map.locate({ setView: true, maxZoom: 17 });
+  map.once('locationfound', e => {
+    L.circleMarker(e.latlng, { radius: 10, color: '#2563a8', fillColor: '#93c5fd', fillOpacity: 0.8, weight: 2 })
+      .addTo(map).bindPopup('📍 Lokasi Anda').openPopup();
+    showToast('📍 Lokasi ditemukan!');
+  });
+  map.once('locationerror', () => showToast('❌ Tidak bisa mengakses lokasi'));
+}
+
+// ============================================
+// PICK LOCATION ON MAP
+// ============================================
+function startPickLocation() {
+  pickingLocation = true;
+  document.getElementById('pick-overlay').style.display = 'block';
+  map.getContainer().style.cursor = 'crosshair';
+  switchTab('daftar');
+  setTimeout(() => switchTab('tambah'), 0);
+  showToast('🖱️ Klik titik lokasi di peta');
+}
+
+map.on('click', e => {
+  if (!pickingLocation) return;
+  document.getElementById('f-lat').value = e.latlng.lat.toFixed(6);
+  document.getElementById('f-lng').value = e.latlng.lng.toFixed(6);
+  pickingLocation = false;
+  document.getElementById('pick-overlay').style.display = 'none';
+  map.getContainer().style.cursor = '';
+  showToast('✅ Koordinat dipilih!');
+});
+
+// ============================================
+// LAYER TOGGLES
+// ============================================
+function toggleLayer(name, el) {
+  el.classList.toggle('on');
+  layers[name] = el.classList.contains('on');
+  if (name === 'wilayah' && wilayahLayer) {
+    layers.wilayah ? map.addLayer(wilayahLayer) : map.removeLayer(wilayahLayer);
+  }
+  if (name === 'families') {
+    layers.families ? map.addLayer(familiesLayerGroup) : map.removeLayer(familiesLayerGroup);
+  }
+  if (name === 'kolom') {
+    layers.kolom ? map.addLayer(kolomLayerGroup) : map.removeLayer(kolomLayerGroup);
+  }
+}
+
+function changeBasemap(type) {
+  Object.values(basemaps).forEach(b => map.removeLayer(b));
+  basemaps[type].addTo(map);
+}
+
+// ============================================
+// FIT BOUNDS
+// ============================================
+function fitBounds() {
+  if (families.length === 0) { map.setView([1.4748, 124.8232], 14); return; }
+  const latlngs = families.map(f => [f.lat, f.lng]);
+  map.fitBounds(latlngs, { padding: [40, 40] });
+}
+
+// ============================================
+// KOLOM LEGEND (Layer panel)
+// ============================================
+function renderKolomLegend() {
+  const koloms = [...new Set(families.map(f => f.kolom))].sort();
+  const el = document.getElementById('legend-kolom-list');
+  el.innerHTML = koloms.map(k => {
+    const color = getKolomColor(k);
+    const count = families.filter(f => f.kolom === k).length;
+    return `<div class="legend-item">
+      <div class="legend-dot" style="background:${color}"></div>
+      <span style="flex:1">${k}</span>
+      <span style="color:var(--text-muted);font-size:11px">${count} KK</span>
+    </div>`;
+  }).join('');
+}
+
+// ============================================
+// TABS
+// ============================================
+function switchTab(name) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  document.getElementById('panel-' + name).classList.add('active');
+}
+
+// ============================================
+// TOAST
+// ============================================
+function showToast(msg, duration = 3000) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), duration);
+}
+
+// ============================================
+// UPDATE ALL
+// ============================================
+function updateAll() {
+  renderFamilyList();
+  renderMarkers();
+  renderKolomBoundaries();
+}
+
+// ============================================
+// EDIT FAMILY (stub)
+// ============================================
+function editFamily(id) {
+  const f = families.find(x => x.id === id);
+  if (!f) return;
+  map.closePopup();
+  switchTab('tambah');
+  document.getElementById('f-nama').value = f.nama_kk;
+  document.getElementById('f-alamat').value = f.alamat || '';
+  document.getElementById('f-kolom').value = f.kolom;
+  document.getElementById('f-lat').value = f.lat;
+  document.getElementById('f-lng').value = f.lng;
+  document.getElementById('f-telp').value = f.no_telp || '';
+  document.getElementById('f-jiwa').value = f.jumlah_jiwa || 1;
+  families = families.filter(x => x.id !== id);
+  showToast('✏️ Edit data — klik Simpan untuk memperbarui');
+}
+
+// ============================================
+// LOAD DATA DARI SUPABASE
+// ============================================
+async function loadFromStorage() {
+  try {
+    // Coba load dari Supabase dulu
+    const { data, error } = await sb.from('families').select('*').order('kolom').order('nama_kk');
+    if (!error && data) {
+      families = data.map(f => ({
+        id: f.id,
+        nama_kk: f.nama_kk,
+        alamat: f.alamat || '',
+        lat: parseFloat(f.lat),
+        lng: parseFloat(f.lng),
+        kolom: f.kolom,
+        no_telp: f.no_telp || '',
+        jumlah_jiwa: f.jumlah_jiwa || 1,
+        status_wilayah: f.status_wilayah || 'Belum dicek'
+      }));
+      updateAll();
+      showToast(`✅ ${families.length} keluarga dimuat dari database`);
+      return;
+    }
+  } catch(e) {}
+
+  // Fallback: localStorage
+  try {
+    const saved = localStorage.getItem('gis_families');
+    if (saved) {
+      families = JSON.parse(saved);
+      updateAll();
+    }
+  } catch(e) {}
+}
+
+// INIT — mulai kosong, tidak ada data demo
+loadFromStorage();
+
+// Expose fungsi ke global scope untuk onclick di HTML
+window.switchTab = switchTab;
+window.exportCSV = exportCSV;
+window.runSpatialAnalysis = runSpatialAnalysis;
+window.addFamily = addFamily;
+window.deleteFamily = deleteFamily;
+window.editFamily = editFamily;
+window.filterFamilies = filterFamilies;
+window.filterByKolom = filterByKolom;
+window.locateMe = locateMe;
+window.fitBounds = fitBounds;
+window.startPickLocation = startPickLocation;
+window.toggleLayer = toggleLayer;
+window.changeBasemap = changeBasemap;
+window.rebuildKolomBoundaries = rebuildKolomBoundaries;
+window.uploadCSV = uploadCSV;
+window.uploadKML = uploadKML;
+window.dragOver = dragOver;
+window.dragLeave = dragLeave;
+window.dropCSV = dropCSV;
+window.selectFamily = selectFamily;
+
+}; // end window.onload
+</script>
+</body>
+</html>
