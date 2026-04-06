@@ -384,12 +384,17 @@ function showSubJemaat(sub) {
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item,.nav-sub-item').forEach(n=>n.classList.remove('active'));
   document.getElementById('page-'+sub).classList.add('active');
-  const subMap={'per-kolom':'subPerKolom','sidi':'subSidi','belum-sidi':'subBelumSidi','per-keluarga':'subPerKeluarga','meninggal':'subMeninggal'};
+  const subMap={
+    'per-kolom':'subPerKolom','sidi':'subSidi','belum-sidi':'subBelumSidi',
+    'per-keluarga':'subPerKeluarga','meninggal':'subMeninggal',
+    'pemuda':'subPemuda','remaja':'subRemaja','anak-sm':'subAnakSM','lansia-jemaat':'subLansiaJemaat'
+  };
   document.getElementById(subMap[sub]).classList.add('active');
   document.getElementById('navGroupJemaat').classList.add('open');
   currentSubPage=sub; subCurrentPage=1;
   if (sub==='per-keluarga') { renderSubKeluarga(); }
   else if (sub==='meninggal') { loadHalamanMeninggal(); }
+  else if (['pemuda','remaja','anak-sm','lansia-jemaat'].includes(sub)) { renderKategoriJemaat(sub); }
   else { populateKolomDropdowns(); renderSubJemaat(); }
   if (window.innerWidth<768) { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebarBackdrop').classList.remove('open'); }
 }
@@ -1284,6 +1289,115 @@ function exportExcelNikah(){
 }
 
 // ===== LANSIA =====
+// ===== KATEGORI JEMAAT (Pemuda, Remaja, Anak SM, Lansia) =====
+const kategoriPageState = {};
+
+function renderKategoriJemaat(sub) {
+  const cfg = {
+    'pemuda':       { bipra:'pemuda',  search:'searchPemuda',       kolom:'filterKolomPemuda',       lp:'filterLPPemuda',       perpage:'perpagePemuda',       body:'pemudaBody',       pag:'pemudaPagination',       subtitle:'pemudaSubtitle',       label:'Pemuda',            icon:'🧑', cols:9 },
+    'remaja':       { bipra:'remaja',  search:'searchRemaja',       kolom:'filterKolomRemaja',       lp:'filterLPRemaja',       perpage:'perpageRemaja',       body:'remajaBody',       pag:'remajaPagination',       subtitle:'remajaSubtitle',       label:'Remaja',            icon:'👦', cols:9 },
+    'anak-sm':      { bipra:'anak',    search:'searchAnakSM',       kolom:'filterKolomAnakSM',       lp:'filterLPAnakSM',       perpage:'perpageAnakSM',       body:'anakSMBody',       pag:'anakSMPagination',       subtitle:'anakSMSubtitle',       label:'Anak Sekolah Minggu',icon:'👶', cols:9 },
+    'lansia-jemaat':{ lansia:true,     search:'searchLansiaJemaat', kolom:'filterKolomLansiaJemaat', lp:'filterLPLansiaJemaat', perpage:'perpageLansiaJemaat', body:'lansiaJemaatBody', pag:'lansiaJemaatPagination', subtitle:'lansiaJemaatSubtitle', label:'Lansia',            icon:'👴', cols:8 }
+  };
+  const c = cfg[sub]; if (!c) return;
+
+  // Populate kolom dropdown
+  const koloms = [...new Set(allJemaat.map(j=>j.kolom).filter(Boolean))].sort((a,b)=>a-b);
+  const kEl = document.getElementById(c.kolom);
+  if (kEl) { const cur=kEl.value; kEl.innerHTML='<option value="">Semua Kolom</option>'+koloms.map(k=>`<option value="${k}"${String(k)===cur?' selected':''}>Kolom ${k}</option>`).join(''); }
+
+  const q = (document.getElementById(c.search)?.value||'').toLowerCase();
+  const kolom = document.getElementById(c.kolom)?.value||'';
+  const lp = document.getElementById(c.lp)?.value||'';
+  const pp = parseInt(document.getElementById(c.perpage)?.value||25);
+
+  let data = allJemaat.filter(j => {
+    if (c.lansia) {
+      const isL = j.lansia==='lansia' || (()=>{
+        if (!j.tanggal_lahir) return false;
+        const d = parseTanggal(j.tanggal_lahir);
+        return d && !isNaN(d) && new Date().getFullYear()-d.getFullYear()>=60;
+      })();
+      if (!isL) return false;
+    } else {
+      if ((j.bipra||'').toLowerCase() !== c.bipra) return false;
+    }
+    return (!q||(j.nama_lengkap||'').toLowerCase().includes(q))
+        && (!kolom||String(j.kolom)===kolom)
+        && (!lp||j.lp===lp);
+  }).sort((a,b)=>(a.kolom||0)-(b.kolom||0)||(a.nama_lengkap||'').localeCompare(b.nama_lengkap||''));
+
+  const subtitle = document.getElementById(c.subtitle);
+  if (subtitle) subtitle.textContent = `${data.length} data ${c.label}`;
+
+  if (!kategoriPageState[sub]) kategoriPageState[sub]=1;
+  const totalPages = pp>=99999 ? 1 : Math.ceil(data.length/pp);
+  if (kategoriPageState[sub]>totalPages) kategoriPageState[sub]=1;
+  const page = kategoriPageState[sub];
+  const start = pp>=99999 ? 0 : (page-1)*pp;
+  const slice = pp>=99999 ? data : data.slice(start, start+pp);
+
+  const tbody = document.getElementById(c.body);
+  if (!slice.length) {
+    tbody.innerHTML=`<tr><td colspan="${c.cols}" style="text-align:center;padding:32px;color:var(--text-muted)">Tidak ada data</td></tr>`;
+    document.getElementById(c.pag).innerHTML=''; return;
+  }
+
+  tbody.innerHTML = slice.map((j,i) => {
+    const no = start+i+1;
+    const kol = `<span class="badge badge-l" style="background:#e8f4f0;color:#2d6a4f">Kol ${j.kolom||'-'}</span>`;
+    const nama = `<strong>${j.nama_lengkap||'-'}</strong>`;
+    const badgeLp = `<span class="badge ${j.lp==='L'?'badge-l':'badge-p'}">${j.lp||'-'}</span>`;
+    const tgl = formatTanggal(j.tanggal_lahir);
+    const umur = hitungUmur(j.tanggal_lahir);
+    const kerja = j.pekerjaan||'-';
+    const kel = j.nama_keluarga||'-';
+    const adr = j.alamat_rumah||'-';
+    if (c.lansia) {
+      return `<tr><td>${no}</td><td>${kol}</td><td>${nama}</td><td>${badgeLp}</td><td>${tgl}</td><td>${umur}</td><td>${kel}</td><td>${adr}</td></tr>`;
+    }
+    return `<tr><td>${no}</td><td>${kol}</td><td>${nama}</td><td>${badgeLp}</td><td>${tgl}</td><td>${umur}</td><td>${kerja}</td><td>${kel}</td><td>${adr}</td></tr>`;
+  }).join('');
+
+  // Pagination
+  const pagEl = document.getElementById(c.pag);
+  if (pp>=99999||totalPages<=1) { pagEl.innerHTML=''; return; }
+  let btns='';
+  btns+=`<button class="page-btn${page===1?' disabled':''}" onclick="setKategoriPage('${sub}',${page-1})">‹</button>`;
+  for(let p=1;p<=totalPages;p++){
+    if(p===1||p===totalPages||Math.abs(p-page)<=1) btns+=`<button class="page-btn${p===page?' active':''}" onclick="setKategoriPage('${sub}',${p})">${p}</button>`;
+    else if(Math.abs(p-page)===2) btns+=`<span class="page-btn" style="cursor:default">…</span>`;
+  }
+  btns+=`<button class="page-btn${page===totalPages?' disabled':''}" onclick="setKategoriPage('${sub}',${page+1})">›</button>`;
+  pagEl.innerHTML=btns;
+}
+
+function setKategoriPage(sub, page) {
+  const totalEl = document.getElementById({pemuda:'pemudaBody',remaja:'remajaBody','anak-sm':'anakSMBody','lansia-jemaat':'lansiaJemaatBody'}[sub]);
+  if (!totalEl) return;
+  kategoriPageState[sub] = page;
+  renderKategoriJemaat(sub);
+}
+
+function exportExcelKategoriJemaat(sub) {
+  const cfg = {
+    'pemuda':       { body:'pemudaBody',       label:'Pemuda',             cols:['No','Kolom','Nama','L/P','Tgl Lahir','Umur','Pekerjaan','Keluarga','Alamat'] },
+    'remaja':       { body:'remajaBody',       label:'Remaja',             cols:['No','Kolom','Nama','L/P','Tgl Lahir','Umur','Pekerjaan','Keluarga','Alamat'] },
+    'anak-sm':      { body:'anakSMBody',       label:'Anak_Sekolah_Minggu',cols:['No','Kolom','Nama','L/P','Tgl Lahir','Umur','Pekerjaan','Keluarga','Alamat'] },
+    'lansia-jemaat':{ body:'lansiaJemaatBody', label:'Lansia',             cols:['No','Kolom','Nama','L/P','Tgl Lahir','Umur','Keluarga','Alamat'] }
+  };
+  const c = cfg[sub]; if (!c) return;
+  const rows = [];
+  document.querySelectorAll(`#${c.body} tr`).forEach(tr=>{
+    const tds=tr.querySelectorAll('td'); if(tds.length<2) return;
+    const row={}; c.cols.forEach((col,i)=>{ row[col]=(tds[i]?.textContent||'').trim(); }); rows.push(row);
+  });
+  if (!rows.length){alert('Tidak ada data');return;}
+  const ws=XLSX.utils.json_to_sheet(rows); const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,c.label);
+  XLSX.writeFile(wb,`${c.label}_${new Date().toLocaleDateString('id-ID').replace(/\//g,'-')}.xlsx`);
+}
+
 async function loadLansia() {
   const q=(document.getElementById('searchLansia')?.value||'').toLowerCase();
   const kolom=document.getElementById('filterKolomLansia')?.value||'';
