@@ -1525,6 +1525,7 @@ tr:hover td { background:rgba(26,58,92,0.03); }
         <select class="filter-select" id="filterStatus" onchange="filterJemaat()"><option value="">Semua Status</option><option value="baru">🆕 Jemaat Baru</option><option value="lama">✅ Jemaat Lama</option></select>
         <button class="btn btn-primary" onclick="openModal()">+ Tambah</button>
         <button class="btn btn-outline" onclick="printTable()">🖨️ Cetak</button>
+        <button class="btn btn-outline" style="color:#dc2626;border-color:#dc2626" onclick="bukaModalDaftarMeninggal()">✝️ Data Meninggal</button>
         <button class="btn btn-excel" onclick="exportExcel('jemaat')">📥 Excel</button>
         <select class="perpage-select" onchange="changePerPage(this.value)"><option value="25">25 data</option><option value="50">50 data</option><option value="99999">Semua</option></select>
       </div>
@@ -2212,6 +2213,92 @@ tr:hover td { background:rgba(26,58,92,0.03); }
       <button class="btn btn-outline" onclick="document.getElementById('modalAlamat').classList.remove('open')">Batal</button>
       <button class="btn btn-primary" onclick="simpanAlamatKeluarga()">💾 Simpan</button>
     </div>
+  </div>
+</div>
+
+<!-- MODAL PINDAH ANGGOTA KE KELUARGA LAIN -->
+<div class="modal-overlay" id="modalPindahAnggota">
+  <div class="modal" style="max-width:500px">
+    <div class="modal-header">
+      <h2>🔀 Pindah Anggota ke Keluarga Lain</h2>
+      <button class="modal-close" onclick="closeModalPindah()">×</button>
+    </div>
+    <input type="hidden" id="pindahJemaatId">
+    <div style="background:rgba(124,58,237,0.06);border:1px solid rgba(124,58,237,0.2);border-radius:8px;padding:12px 16px;margin-bottom:16px">
+      <div style="font-size:13px;color:var(--text-muted);margin-bottom:4px">Anggota yang akan dipindahkan:</div>
+      <div id="pindahNamaJemaat" style="font-size:16px;font-weight:700;color:#5b21b6"></div>
+      <div style="font-size:12px;color:var(--text-muted);margin-top:2px">Dari keluarga: <span id="pindahDariKeluarga" style="font-weight:600;color:var(--text)"></span></div>
+    </div>
+    <div class="form-group-modal full">
+      <label>🏠 Pindah ke Keluarga</label>
+      <select id="pindahKeKeluarga" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:6px;font-size:14px;font-family:inherit;outline:none;background:var(--card)">
+        <option value="">-- Pilih Keluarga Tujuan --</option>
+      </select>
+    </div>
+    <div class="form-group-modal full" style="margin-top:12px">
+      <label>👤 Relasi dalam Keluarga Baru</label>
+      <select id="pindahRelasiBaru" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:6px;font-size:14px;font-family:inherit;outline:none;background:var(--card)">
+        <option value="Suami">Suami</option>
+        <option value="Istri">Istri</option>
+        <option value="Anak">Anak</option>
+        <option value="Orang Tua">Orang Tua</option>
+        <option value="Tanggungan">Tanggungan</option>
+        <option value="Lainnya">Lainnya</option>
+      </select>
+    </div>
+    <p style="font-size:12px;color:var(--text-muted);margin-top:10px;padding:8px 12px;background:#fef9c3;border-radius:6px;border:1px solid #fde68a">
+      ⚠️ Data kolom, alamat, dan no. KK akan otomatis mengikuti keluarga tujuan.
+    </p>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModalPindah()">Batal</button>
+      <button class="btn btn-primary" style="background:#7c3aed;border-color:#7c3aed" onclick="simpanPindahAnggota()">🔀 Pindahkan</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL MENINGGAL DUNIA -->
+<div class="modal-overlay" id="modalMeninggal">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-header" style="background:linear-gradient(135deg,#1a3a5c,#374151)">
+      <h2 style="color:white">✝️ Catat Jemaat Meninggal Dunia</h2>
+      <button class="modal-close" style="color:white" onclick="closeModalMeninggal()">×</button>
+    </div>
+    <input type="hidden" id="meninggalJemaatId">
+    <div style="background:rgba(220,38,38,0.05);border:1px solid rgba(220,38,38,0.15);border-radius:8px;padding:14px 16px;margin-bottom:16px">
+      <div style="font-size:13px;color:var(--text-muted);margin-bottom:6px">Jemaat yang meninggal dunia:</div>
+      <div id="meninggalNamaJemaat" style="font-size:18px;font-weight:700;color:#1a3a5c"></div>
+      <div style="display:flex;gap:16px;margin-top:6px;font-size:12px;color:var(--text-muted)">
+        <span>📍 <span id="meninggalKolom"></span></span>
+        <span>🏠 <span id="meninggalKeluarga"></span></span>
+      </div>
+      <div style="margin-top:4px;font-size:12px;color:var(--text-muted)">📅 Tgl Lahir: <span id="meninggalTglLahir" style="font-weight:600;color:var(--text)"></span></div>
+    </div>
+    <div class="form-group-modal full">
+      <label>📅 Tanggal &amp; Jam Meninggal</label>
+      <input type="datetime-local" id="meninggalTglWaktu" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:6px;font-size:14px;font-family:inherit;outline:none;background:var(--card)">
+    </div>
+    <div class="form-group-modal full" style="margin-top:12px">
+      <label>🩺 Penyebab Meninggal</label>
+      <textarea id="meninggalPenyebab" rows="3" placeholder="Contoh: Sakit jantung, kecelakaan, usia lanjut..." style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:6px;font-size:14px;font-family:inherit;outline:none;resize:vertical;background:var(--card)"></textarea>
+    </div>
+    <p style="font-size:12px;color:var(--text-muted);margin-top:10px;padding:8px 12px;background:#f0f9ff;border-radius:6px;border:1px solid #bae6fd">
+      ℹ️ Status jemaat akan diubah menjadi <strong>Meninggal</strong>. Kartu surat keterangan meninggal akan otomatis dicetak setelah disimpan.
+    </p>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModalMeninggal()">Batal</button>
+      <button class="btn btn-primary" style="background:#dc2626;border-color:#dc2626" onclick="simpanMeninggal()">✝️ Simpan &amp; Cetak Kartu</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DAFTAR JEMAAT MENINGGAL -->
+<div class="modal-overlay" id="modalDaftarMeninggal">
+  <div class="modal" style="max-width:700px;max-height:85vh;overflow-y:auto">
+    <div class="modal-header" style="background:linear-gradient(135deg,#1a3a5c,#374151)">
+      <h2 style="color:white">✝️ Data Jemaat Meninggal Dunia</h2>
+      <button class="modal-close" style="color:white" onclick="document.getElementById('modalDaftarMeninggal').classList.remove('open')">×</button>
+    </div>
+    <div id="daftarMeninggalContent" style="padding:4px 0"></div>
   </div>
 </div>
 
