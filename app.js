@@ -197,15 +197,85 @@ function renderPubUltah(data) {
 }
 
 function renderDashUltah(hari, minggu, bulan) {
-  const mkRow = (j) => `<span style="display:inline-block;background:var(--accent-light);color:var(--primary);border-radius:20px;padding:2px 12px;font-size:13px;margin:2px;font-weight:600">${j.nama_lengkap} <span style="font-weight:400;color:var(--text-muted)">(Kol.${j.kolom})</span></span>`;
-  const mkRowNikah = (n) => `<span style="display:inline-block;background:#fff7ed;color:#c2410c;border-radius:20px;padding:2px 12px;font-size:13px;margin:2px;font-weight:600">💍 ${n.nama_keluarga} <span style="font-weight:400;color:var(--text-muted)">(${n.tahunKe} thn · Kol.${n.kolom})</span></span>`;
+  // Helper: buat tabel ulang tahun
+  const mkTable = (list, emptyMsg) => {
+    if (!list.length) return `<div style="color:var(--text-muted);font-size:13px;padding:8px 0">${emptyMsg}</div>`;
+    return `<table style="width:100%;border-collapse:collapse;font-size:13px">
+      <thead>
+        <tr style="background:var(--bg);border-bottom:2px solid var(--border)">
+          <th style="padding:7px 10px;text-align:left;font-weight:600;color:var(--text-muted);width:28px">No</th>
+          <th style="padding:7px 10px;text-align:left;font-weight:600;color:var(--text-muted)">Nama Lengkap</th>
+          <th style="padding:7px 10px;text-align:center;font-weight:600;color:var(--text-muted);width:40px">L/P</th>
+          <th style="padding:7px 10px;text-align:left;font-weight:600;color:var(--text-muted)">Tanggal Lahir</th>
+          <th style="padding:7px 10px;text-align:center;font-weight:600;color:var(--text-muted)">Kolom</th>
+          <th style="padding:7px 10px;text-align:center;font-weight:600;color:var(--text-muted)">Keterangan</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${list.map((j,i) => {
+          const isToday = j.diff === 0;
+          const ket = isToday
+            ? '<span style="color:#dc2626;font-weight:700">🎉 Hari ini!</span>'
+            : j.diff > 0 ? `${j.diff} hari lagi` : `${Math.abs(j.diff)} hari lalu`;
+          return `<tr style="border-bottom:1px solid var(--border);${isToday?'background:#fffbeb;':''}${i%2===0&&!isToday?'background:var(--bg);':''}">
+            <td style="padding:7px 10px;color:var(--text-muted)">${i+1}</td>
+            <td style="padding:7px 10px;font-weight:${isToday?'700':'500'}">${isToday?'🎂 ':''}${j.nama_lengkap||'-'}</td>
+            <td style="padding:7px 10px;text-align:center"><span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;background:${j.lp==='L'?'#dbeafe':'#fce7f3'};color:${j.lp==='L'?'#1e40af':'#9d174d'}">${j.lp||'-'}</span></td>
+            <td style="padding:7px 10px;color:var(--text-muted)">${formatTanggal(j.tanggal_lahir)}</td>
+            <td style="padding:7px 10px;text-align:center"><span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;background:#e8f4f0;color:#2d6a4f">Kol.${j.kolom||'-'}</span></td>
+            <td style="padding:7px 10px;text-align:center">${ket}</td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>`;
+  };
+
+  // Helper: buat tabel perkawinan
+  const mkTableNikah = (list, emptyMsg) => {
+    if (!list.length) return `<div style="color:var(--text-muted);font-size:13px;padding:8px 0">${emptyMsg}</div>`;
+    return `<table style="width:100%;border-collapse:collapse;font-size:13px">
+      <thead>
+        <tr style="background:var(--bg);border-bottom:2px solid var(--border)">
+          <th style="padding:7px 10px;text-align:left;font-weight:600;color:var(--text-muted);width:28px">No</th>
+          <th style="padding:7px 10px;text-align:left;font-weight:600;color:var(--text-muted)">Nama Keluarga</th>
+          <th style="padding:7px 10px;text-align:center;font-weight:600;color:var(--text-muted)">Tahun Ke-</th>
+          <th style="padding:7px 10px;text-align:center;font-weight:600;color:var(--text-muted)">Kolom</th>
+          <th style="padding:7px 10px;text-align:center;font-weight:600;color:var(--text-muted)">Keterangan</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${list.map((n,i) => {
+          const isToday = n.diff === 0;
+          const ket = isToday
+            ? '<span style="color:#dc2626;font-weight:700">💍 Hari ini!</span>'
+            : n.diff > 0 ? `${n.diff} hari lagi` : `${Math.abs(n.diff)} hari lalu`;
+          return `<tr style="border-bottom:1px solid var(--border);${isToday?'background:#fff7ed;':''}${i%2===0&&!isToday?'background:var(--bg);':''}">
+            <td style="padding:7px 10px;color:var(--text-muted)">${i+1}</td>
+            <td style="padding:7px 10px;font-weight:${isToday?'700':'500'}">${isToday?'💍 ':''}${n.nama_keluarga||'-'}</td>
+            <td style="padding:7px 10px;text-align:center;font-weight:600;color:#c2410c">${n.tahunKe} tahun</td>
+            <td style="padding:7px 10px;text-align:center"><span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;background:#e8f4f0;color:#2d6a4f">Kol.${n.kolom||'-'}</span></td>
+            <td style="padding:7px 10px;text-align:center">${ket}</td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>`;
+  };
+
   const h = document.getElementById('dashUltahHari');
   const m = document.getElementById('dashUltahMinggu');
   const b = document.getElementById('dashUltahBulan');
-  if (h) h.innerHTML = `<strong style="color:var(--primary);font-size:14px">🎉 Hari ini:</strong> ${hari.length?hari.map(mkRow).join(''):'<span style="color:var(--text-muted);font-size:13px">Tidak ada</span>'}`;
-  if (m) m.innerHTML = `<strong style="color:var(--primary);font-size:14px">📅 Minggu ini:</strong> ${minggu.length?minggu.map(mkRow).join(''):'<span style="color:var(--text-muted);font-size:13px">Tidak ada</span>'}`;
-  if (b) b.innerHTML = `<strong style="color:var(--primary);font-size:14px">🗓️ Bulan ini:</strong> ${bulan.length?bulan.map(mkRow).join(''):'<span style="color:var(--text-muted);font-size:13px">Tidak ada</span>'}`;
-  // Wedding anniversary dashboard
+
+  if (h) h.innerHTML = `
+    <div style="font-size:13px;font-weight:700;color:var(--primary);margin-bottom:6px">🎉 Hari ini (${hari.length})</div>
+    ${mkTable(hari, 'Tidak ada jemaat yang berulang tahun hari ini')}`;
+  if (m) m.innerHTML = `
+    <div style="font-size:13px;font-weight:700;color:var(--primary);margin-bottom:6px;margin-top:14px">📅 Minggu ini (${minggu.length})</div>
+    ${mkTable(minggu, 'Tidak ada ulang tahun minggu ini')}`;
+  if (b) b.innerHTML = `
+    <div style="font-size:13px;font-weight:700;color:var(--primary);margin-bottom:6px;margin-top:14px">🗓️ Bulan ini (${bulan.length})</div>
+    ${mkTable(bulan, 'Tidak ada data bulan ini')}`;
+
+  // Perkawinan
   const today = new Date();
   const todayM = today.getMonth(), todayD = today.getDate();
   const weekEnd = new Date(today); weekEnd.setDate(weekEnd.getDate()+7);
@@ -224,10 +294,18 @@ function renderDashUltah(hari, minggu, bulan) {
   const nHari = nikahList.filter(n=>n.bm===todayM&&n.bd===todayD);
   const nMinggu = nikahList.filter(n=>n.diff>0&&n.diff<=7);
   const nBulan = nikahList.filter(n=>n.bm===todayM).sort((a,b)=>a.bd-b.bd);
-  const nh=document.getElementById('dashNikahHari'), nm=document.getElementById('dashNikahMinggu'), nb=document.getElementById('dashNikahBulan');
-  if (nh) nh.innerHTML=`<strong style="color:#c2410c;font-size:14px">💍 Hari ini:</strong> ${nHari.length?nHari.map(mkRowNikah).join(''):'<span style="color:var(--text-muted);font-size:13px">Tidak ada</span>'}`;
-  if (nm) nm.innerHTML=`<strong style="color:#c2410c;font-size:14px">📅 Minggu ini:</strong> ${nMinggu.length?nMinggu.map(mkRowNikah).join(''):'<span style="color:var(--text-muted);font-size:13px">Tidak ada</span>'}`;
-  if (nb) nb.innerHTML=`<strong style="color:#c2410c;font-size:14px">🗓️ Bulan ini:</strong> ${nBulan.length?nBulan.map(mkRowNikah).join(''):'<span style="color:var(--text-muted);font-size:13px">Tidak ada</span>'}`;
+  const nh=document.getElementById('dashNikahHari');
+  const nm=document.getElementById('dashNikahMinggu');
+  const nb=document.getElementById('dashNikahBulan');
+  if (nh) nh.innerHTML=`
+    <div style="font-size:13px;font-weight:700;color:#c2410c;margin-bottom:6px">💍 Hari ini (${nHari.length})</div>
+    ${mkTableNikah(nHari,'Tidak ada perayaan perkawinan hari ini')}`;
+  if (nm) nm.innerHTML=`
+    <div style="font-size:13px;font-weight:700;color:#c2410c;margin-bottom:6px;margin-top:14px">📅 Minggu ini (${nMinggu.length})</div>
+    ${mkTableNikah(nMinggu,'Tidak ada perayaan perkawinan minggu ini')}`;
+  if (nb) nb.innerHTML=`
+    <div style="font-size:13px;font-weight:700;color:#c2410c;margin-bottom:6px;margin-top:14px">🗓️ Bulan ini (${nBulan.length})</div>
+    ${mkTableNikah(nBulan,'Tidak ada data bulan ini')}`;
 }
 
 // loadPubPengumuman sudah di-override di bawah
@@ -816,6 +894,10 @@ async function deleteJemaat(id,nama) {
 }
 
 // ===== DASHBOARD =====
+// Chart instances (simpan agar bisa di-destroy saat refresh)
+let _chartPieKat = null, _chartPieGender = null, _chartBarKolom = null, _chartBarBaptis = null;
+let _dashData = []; // simpan data untuk filter chart
+
 async function loadDashboard() {
   let allData = [];
   let from = 0;
@@ -831,27 +913,207 @@ async function loadDashboard() {
     from += batchSize;
   }
   const data = allData;
+  _dashData = data;
   if (!data) return;
-  const total=data.length;
-  const jumlahBaru=data.filter(j=>j.status_jemaat==='baru').length;
-  const jumlahLama=data.filter(j=>j.status_jemaat==='lama'||(!j.status_jemaat&&j.id)).length;
-  document.getElementById('statTotal').textContent=total;
-  document.getElementById('statL').textContent=data.filter(j=>j.lp==='L').length;
-  document.getElementById('statP').textContent=data.filter(j=>j.lp==='P').length;
-  document.getElementById('statLansia').textContent=data.filter(j=>j.lansia==='lansia').length;
-  document.getElementById('statBaptis').textContent=data.filter(j=>j.baptis==='sudah-baptis').length;
-  document.getElementById('statSidi').textContent=data.filter(j=>j.sidi==='sudah-sidi').length;
-  document.getElementById('statBaru').textContent=jumlahBaru;
-  document.getElementById('statLama').textContent=jumlahLama;
-  const kategoriList=['bipra','pemuda','remaja','anak','bapak','ibu'];
-  const katLabel={bipra:'Bipra',pemuda:'Pemuda',remaja:'Remaja',anak:'Anak',bapak:'Bapak',ibu:'Ibu'};
-  const katIcon={bipra:'👩',pemuda:'🧑',remaja:'👦',anak:'👶',bapak:'👨',ibu:'👩‍🦱'};
-  document.getElementById('statsKategori').innerHTML=kategoriList.map(k=>`<div class="stat-card"><div class="label">${katIcon[k]} ${katLabel[k]}</div><div class="value" style="font-size:28px">${data.filter(j=>j.bipra===k).length}</div><div class="sub">jemaat</div></div>`).join('');
-  if (isAdmin()) {
-    const byKolom={};
-    data.forEach(j=>{if (!byKolom[j.kolom])byKolom[j.kolom]=0;byKolom[j.kolom]++;});
-    document.getElementById('kolom-dash').innerHTML=`<div class="page-header" style="margin-top:16px"><h1 style="font-size:20px">Jemaat Per Kolom</h1></div><div class="stats-grid">${Object.keys(byKolom).sort((a,b)=>a-b).map(k=>`<div class="stat-card"><div class="label">Kolom ${k}</div><div class="value" style="font-size:28px">${byKolom[k]}</div><div class="sub">jemaat</div></div>`).join('')}</div>`;
+
+  const total = data.length;
+  const jumlahBaru = data.filter(j=>j.status_jemaat==='baru').length;
+  const jumlahLama = data.filter(j=>j.status_jemaat==='lama'||(!j.status_jemaat&&j.id)).length;
+  document.getElementById('statTotal').textContent = total;
+  document.getElementById('statL').textContent = data.filter(j=>j.lp==='L').length;
+  document.getElementById('statP').textContent = data.filter(j=>j.lp==='P').length;
+  document.getElementById('statLansia').textContent = data.filter(j=>j.lansia==='lansia').length;
+  document.getElementById('statBaptis').textContent = data.filter(j=>j.baptis==='sudah-baptis').length;
+  document.getElementById('statSidi').textContent = data.filter(j=>j.sidi==='sudah-sidi').length;
+  document.getElementById('statBaru').textContent = jumlahBaru;
+  document.getElementById('statLama').textContent = jumlahLama;
+
+  // Kategori stat cards
+  const kategoriList = ['bipra','pemuda','remaja','anak','bapak','ibu'];
+  const katLabel = {bipra:'Bipra',pemuda:'Pemuda',remaja:'Remaja',anak:'Anak SM',bapak:'Bapak',ibu:'Ibu'};
+  const katIcon  = {bipra:'👩',pemuda:'🧑',remaja:'👦',anak:'👶',bapak:'👨',ibu:'👩‍🦱'};
+  const katColor = {bipra:'#7c3aed',pemuda:'#2563eb',remaja:'#0891b2',anak:'#d97706',bapak:'#1a4a6b',ibu:'#db2777'};
+  const katCount = {};
+  kategoriList.forEach(k => { katCount[k] = data.filter(j=>j.bipra===k).length; });
+
+  document.getElementById('statsKategori').innerHTML = kategoriList.map(k => {
+    const pct = total > 0 ? ((katCount[k]/total)*100).toFixed(1) : 0;
+    return `<div class="stat-card" style="border-left:4px solid ${katColor[k]}">
+      <div class="label">${katIcon[k]} ${katLabel[k]}</div>
+      <div class="value" style="font-size:28px;color:${katColor[k]}">${katCount[k]}</div>
+      <div class="sub">${pct}% dari total jemaat</div>
+    </div>`;
+  }).join('');
+
+  // ── GRAFIK ──
+  const katLabels = kategoriList.map(k => katLabel[k]);
+  const katValues = kategoriList.map(k => katCount[k]);
+  const katColors = kategoriList.map(k => katColor[k]);
+
+  // 1. Pie Chart Kategori
+  if (_chartPieKat) _chartPieKat.destroy();
+  const ctxPieKat = document.getElementById('chartPieKategori');
+  if (ctxPieKat) {
+    _chartPieKat = new Chart(ctxPieKat, {
+      type: 'doughnut',
+      data: {
+        labels: katLabels,
+        datasets: [{ data: katValues, backgroundColor: katColors, borderWidth: 2, borderColor: '#fff' }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'right', labels: { font: { size: 12 }, padding: 12 } },
+          tooltip: {
+            callbacks: {
+              label: ctx => {
+                const pct = total > 0 ? ((ctx.raw/total)*100).toFixed(1) : 0;
+                return ` ${ctx.label}: ${ctx.raw} jiwa (${pct}%)`;
+              }
+            }
+          }
+        }
+      }
+    });
   }
+
+  // 2. Pie Chart Gender
+  const jmlL = data.filter(j=>j.lp==='L').length;
+  const jmlP = data.filter(j=>j.lp==='P').length;
+  if (_chartPieGender) _chartPieGender.destroy();
+  const ctxPieG = document.getElementById('chartPieGender');
+  if (ctxPieG) {
+    _chartPieGender = new Chart(ctxPieG, {
+      type: 'doughnut',
+      data: {
+        labels: ['Laki-laki','Perempuan'],
+        datasets: [{ data: [jmlL, jmlP], backgroundColor: ['#2563eb','#db2777'], borderWidth: 2, borderColor: '#fff' }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'right', labels: { font: { size: 12 }, padding: 16 } },
+          tooltip: {
+            callbacks: {
+              label: ctx => {
+                const pct = total > 0 ? ((ctx.raw/total)*100).toFixed(1) : 0;
+                return ` ${ctx.label}: ${ctx.raw} jiwa (${pct}%)`;
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  // Isi dropdown filter kolom untuk chart bar
+  if (isAdmin()) {
+    const koloms = [...new Set(data.map(j=>j.kolom).filter(Boolean))].sort((a,b)=>a-b);
+    const sel = document.getElementById('chartKolomFilter');
+    if (sel) {
+      sel.innerHTML = '<option value="semua">Semua Kolom</option>' +
+        koloms.map(k=>`<option value="${k}">Kolom ${k}</option>`).join('');
+    }
+  }
+
+  // 3. Bar Chart kategori per kolom
+  renderChartBar(data);
+
+  // 4. Bar Chart Baptis/Sidi per kolom
+  renderChartBaptis(data);
+
+  if (isAdmin()) {
+    const byKolom = {};
+    data.forEach(j => { if (!byKolom[j.kolom]) byKolom[j.kolom]=0; byKolom[j.kolom]++; });
+    document.getElementById('kolom-dash').innerHTML = `<div class="page-header" style="margin-top:16px"><h1 style="font-size:20px">Jemaat Per Kolom</h1></div><div class="stats-grid">${Object.keys(byKolom).sort((a,b)=>a-b).map(k=>`<div class="stat-card"><div class="label">Kolom ${k}</div><div class="value" style="font-size:28px">${byKolom[k]}</div><div class="sub">jemaat</div></div>`).join('')}</div>`;
+  }
+}
+
+function renderChartBar(data) {
+  if (_chartBarKolom) _chartBarKolom.destroy();
+  const ctxBar = document.getElementById('chartBarKolom');
+  if (!ctxBar) return;
+
+  const kategoriList = ['bipra','pemuda','remaja','anak','bapak','ibu'];
+  const katLabel = {bipra:'Bipra',pemuda:'Pemuda',remaja:'Remaja',anak:'Anak SM',bapak:'Bapak',ibu:'Ibu'};
+  const katColor = {bipra:'#7c3aed',pemuda:'#2563eb',remaja:'#0891b2',anak:'#d97706',bapak:'#1a4a6b',ibu:'#db2777'};
+  const koloms = [...new Set(data.map(j=>j.kolom).filter(Boolean))].sort((a,b)=>a-b);
+
+  _chartBarKolom = new Chart(ctxBar, {
+    type: 'bar',
+    data: {
+      labels: koloms.map(k=>`Kolom ${k}`),
+      datasets: kategoriList.map(k => ({
+        label: katLabel[k],
+        data: koloms.map(kol => data.filter(j=>j.kolom==kol&&j.bipra===k).length),
+        backgroundColor: katColor[k] + 'cc',
+        borderColor: katColor[k],
+        borderWidth: 1,
+        borderRadius: 4
+      }))
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'top', labels: { font: { size: 11 }, padding: 10 } },
+        tooltip: { mode: 'index', intersect: false }
+      },
+      scales: {
+        x: { stacked: false, grid: { display: false }, ticks: { font: { size: 11 } } },
+        y: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 11 } }, grid: { color: '#f0ede6' } }
+      }
+    }
+  });
+}
+
+function renderChartBaptis(data) {
+  if (_chartBarBaptis) _chartBarBaptis.destroy();
+  const ctxBaptis = document.getElementById('chartBarBaptis');
+  if (!ctxBaptis) return;
+
+  const koloms = [...new Set(data.map(j=>j.kolom).filter(Boolean))].sort((a,b)=>a-b);
+  _chartBarBaptis = new Chart(ctxBaptis, {
+    type: 'bar',
+    data: {
+      labels: koloms.map(k=>`Kolom ${k}`),
+      datasets: [
+        {
+          label: 'Sudah Baptis',
+          data: koloms.map(kol => data.filter(j=>j.kolom==kol&&j.baptis==='sudah-baptis').length),
+          backgroundColor: '#2563eb99', borderColor: '#2563eb', borderWidth: 1, borderRadius: 4
+        },
+        {
+          label: 'Sudah Sidi',
+          data: koloms.map(kol => data.filter(j=>j.kolom==kol&&j.sidi==='sudah-sidi').length),
+          backgroundColor: '#16a34a99', borderColor: '#16a34a', borderWidth: 1, borderRadius: 4
+        },
+        {
+          label: 'Lansia',
+          data: koloms.map(kol => data.filter(j=>j.kolom==kol&&j.lansia==='lansia').length),
+          backgroundColor: '#d9770699', borderColor: '#d97706', borderWidth: 1, borderRadius: 4
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'top', labels: { font: { size: 11 }, padding: 10 } },
+        tooltip: { mode: 'index', intersect: false }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 11 } } },
+        y: { beginAtZero: true, ticks: { stepSize: 5, font: { size: 11 } }, grid: { color: '#f0ede6' } }
+      }
+    }
+  });
+}
+
+function updateChartBar() {
+  const sel = document.getElementById('chartKolomFilter');
+  if (!sel || !_dashData.length) return;
+  const val = sel.value;
+  const filtered = val === 'semua' ? _dashData : _dashData.filter(j=>String(j.kolom)===String(val));
+  renderChartBar(filtered);
 }
 
 // ===== KEHADIRAN IBADAH =====
@@ -3238,6 +3500,8 @@ window.addEventListener('DOMContentLoaded', () => {
   initEmailJS();
   // Mulai slideshow (async, ambil dari database)
   initHeroSlideshow();
+  // Expose chart update ke global
+  window.updateChartBar = updateChartBar;
 });
 
 // Set email di footer via JS (agar tidak diblokir Cloudflare)
