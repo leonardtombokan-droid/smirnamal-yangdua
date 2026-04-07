@@ -1161,6 +1161,7 @@ tr:hover td { background:rgba(26,58,92,0.03); }
         <a class="pub-nav-link" onclick="switchPubSection('komisi',this)">👥 Komisi Kerja & Lansia</a>
         <a class="pub-nav-link" onclick="switchPubSection('warta',this)">📋 Warta Jemaat</a>
         <a class="pub-nav-link" onclick="switchPubSection('video',this)">▶️ Video</a>
+        <a class="pub-nav-link" onclick="switchPubSection('dashboard',this)">📊 Dashboard</a>
         <a class="pub-nav-link" href="gis-jemaat.html" target="_blank">🗺️ Peta Jemaat</a>
       </div>
     </div>
@@ -1270,6 +1271,69 @@ tr:hover td { background:rgba(26,58,92,0.03); }
         </p>
         <div class="warta-grid" id="pubWartaGrid">
           <div class="pub-loading" style="grid-column:1/-1">Memuat warta jemaat...</div>
+        </div>
+      </div>
+
+      <!-- DASHBOARD PUBLIK -->
+      <div id="pub-section-dashboard" style="display:none">
+        <div class="pub-section-title">📊 Dashboard Statistik Jemaat</div>
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:20px">
+          Informasi statistik jemaat GMIM "Smirna" Wilayah Manado Malalayang Barat
+        </p>
+
+        <!-- Stat Cards -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px" id="pubDashCards">
+          <div style="background:var(--bg-card);border-radius:10px;border:1px solid var(--border);padding:16px;text-align:center">
+            <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px">Total Jemaat</div>
+            <div style="font-size:32px;font-weight:700;color:var(--primary);font-family:'Playfair Display',serif" id="pubStatTotal">-</div>
+          </div>
+          <div style="background:var(--bg-card);border-radius:10px;border:1px solid var(--border);padding:16px;text-align:center;border-left:4px solid #2563eb">
+            <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px">Laki-laki</div>
+            <div style="font-size:32px;font-weight:700;color:#2563eb;font-family:'Playfair Display',serif" id="pubStatL">-</div>
+          </div>
+          <div style="background:var(--bg-card);border-radius:10px;border:1px solid var(--border);padding:16px;text-align:center;border-left:4px solid #db2777">
+            <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px">Perempuan</div>
+            <div style="font-size:32px;font-weight:700;color:#db2777;font-family:'Playfair Display',serif" id="pubStatP">-</div>
+          </div>
+          <div style="background:var(--bg-card);border-radius:10px;border:1px solid var(--border);padding:16px;text-align:center;border-left:4px solid #d97706">
+            <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px">Lansia</div>
+            <div style="font-size:32px;font-weight:700;color:#d97706;font-family:'Playfair Display',serif" id="pubStatLansia">-</div>
+          </div>
+          <div style="background:var(--bg-card);border-radius:10px;border:1px solid var(--border);padding:16px;text-align:center;border-left:4px solid #16a34a">
+            <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px">Sudah Baptis</div>
+            <div style="font-size:32px;font-weight:700;color:#16a34a;font-family:'Playfair Display',serif" id="pubStatBaptis">-</div>
+          </div>
+          <div style="background:var(--bg-card);border-radius:10px;border:1px solid var(--border);padding:16px;text-align:center;border-left:4px solid #0891b2">
+            <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px">Sudah Sidi</div>
+            <div style="font-size:32px;font-weight:700;color:#0891b2;font-family:'Playfair Display',serif" id="pubStatSidi">-</div>
+          </div>
+        </div>
+
+        <!-- Kategori Cards -->
+        <div style="font-size:14px;font-weight:700;color:var(--primary);margin-bottom:10px">Kategori Jemaat</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:24px" id="pubDashKategori"></div>
+
+        <!-- Grafik 2 kolom -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
+          <div style="background:var(--bg-card);border-radius:10px;border:1px solid var(--border);padding:16px">
+            <div style="font-size:13px;font-weight:700;color:var(--primary);margin-bottom:12px">🥧 Komposisi Kategori</div>
+            <div style="height:220px;position:relative"><canvas id="pubChartPieKat"></canvas></div>
+          </div>
+          <div style="background:var(--bg-card);border-radius:10px;border:1px solid var(--border);padding:16px">
+            <div style="font-size:13px;font-weight:700;color:var(--primary);margin-bottom:12px">🥧 Gender</div>
+            <div style="height:220px;position:relative"><canvas id="pubChartPieGender"></canvas></div>
+          </div>
+        </div>
+
+        <!-- Bar Chart -->
+        <div style="background:var(--bg-card);border-radius:10px;border:1px solid var(--border);padding:16px;margin-bottom:16px">
+          <div style="font-size:13px;font-weight:700;color:var(--primary);margin-bottom:12px">📊 Kategori per Kolom</div>
+          <div style="height:280px;position:relative"><canvas id="pubChartBarKolom"></canvas></div>
+        </div>
+
+        <div style="background:var(--bg-card);border-radius:10px;border:1px solid var(--border);padding:16px">
+          <div style="font-size:13px;font-weight:700;color:var(--primary);margin-bottom:12px">📊 Baptis & Sidi per Kolom</div>
+          <div style="height:260px;position:relative"><canvas id="pubChartBarBaptis"></canvas></div>
         </div>
       </div>
 

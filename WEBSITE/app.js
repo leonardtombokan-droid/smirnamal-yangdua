@@ -2580,6 +2580,7 @@ function switchPubSection(sec, el) {
   if (sec === 'pengumuman-full') loadPubPengumuman();
   if (sec === 'home') { loadPubPengumumanRingkasan(); loadPubWartaBeranda(); }
   if (sec === 'video') loadPubVideo();
+  if (sec === 'dashboard') loadPubDashboard();
 }
 
 async function loadPubWartaBeranda() {
@@ -3271,6 +3272,149 @@ function youtubeEmbed(videoId) {
 }
 
 // --- PUBLIC ---
+// ===== DASHBOARD PUBLIK =====
+let _pubChartPieKat=null, _pubChartPieGender=null, _pubChartBarKolom=null, _pubChartBarBaptis=null;
+let _pubDashLoaded = false;
+
+async function loadPubDashboard() {
+  if (_pubDashLoaded) return; // sudah dimuat, tidak perlu reload
+  const data = allJemaat;
+  if (!data || !data.length) {
+    // Muat ulang jika allJemaat kosong
+    setTimeout(loadPubDashboard, 800);
+    return;
+  }
+  _pubDashLoaded = true;
+
+  const total = data.length;
+  const jmlL = data.filter(j=>j.lp==='L').length;
+  const jmlP = data.filter(j=>j.lp==='P').length;
+  const jmlLansia = data.filter(j=>j.lansia==='lansia').length;
+  const jmlBaptis = data.filter(j=>j.baptis==='sudah-baptis').length;
+  const jmlSidi = data.filter(j=>j.sidi==='sudah-sidi').length;
+
+  // Isi stat cards
+  const _s = (id, val) => { const el=document.getElementById(id); if(el) el.textContent=val; };
+  _s('pubStatTotal', total);
+  _s('pubStatL', jmlL);
+  _s('pubStatP', jmlP);
+  _s('pubStatLansia', jmlLansia);
+  _s('pubStatBaptis', jmlBaptis);
+  _s('pubStatSidi', jmlSidi);
+
+  // Kategori cards
+  const kategoriList = ['bipra','pemuda','remaja','anak','bapak','ibu'];
+  const katLabel = {bipra:'Bipra',pemuda:'Pemuda',remaja:'Remaja',anak:'Anak SM',bapak:'Bapak',ibu:'Ibu'};
+  const katIcon  = {bipra:'👩',pemuda:'🧑',remaja:'👦',anak:'👶',bapak:'👨',ibu:'👩‍🦱'};
+  const katColor = {bipra:'#7c3aed',pemuda:'#2563eb',remaja:'#0891b2',anak:'#d97706',bapak:'#1a4a6b',ibu:'#db2777'};
+  const katCount = {};
+  kategoriList.forEach(k => { katCount[k] = data.filter(j=>j.bipra===k).length; });
+
+  const elKat = document.getElementById('pubDashKategori');
+  if (elKat) {
+    elKat.innerHTML = kategoriList.map(k => {
+      const pct = total > 0 ? ((katCount[k]/total)*100).toFixed(1) : 0;
+      return `<div style="background:var(--bg-card);border-radius:10px;border:1px solid var(--border);padding:14px;text-align:center;border-left:4px solid ${katColor[k]}">
+        <div style="font-size:18px">${katIcon[k]}</div>
+        <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;margin:4px 0">${katLabel[k]}</div>
+        <div style="font-size:24px;font-weight:700;color:${katColor[k]};font-family:'Playfair Display',serif">${katCount[k]}</div>
+        <div style="font-size:11px;color:var(--text-muted)">${pct}%</div>
+      </div>`;
+    }).join('');
+  }
+
+  // Grafik pie kategori
+  if (_pubChartPieKat) _pubChartPieKat.destroy();
+  const c1 = document.getElementById('pubChartPieKat');
+  if (c1) {
+    _pubChartPieKat = new Chart(c1, {
+      type: 'doughnut',
+      data: {
+        labels: kategoriList.map(k=>katLabel[k]),
+        datasets: [{ data: kategoriList.map(k=>katCount[k]), backgroundColor: kategoriList.map(k=>katColor[k]), borderWidth: 2, borderColor:'#fff' }]
+      },
+      options: {
+        responsive:true, maintainAspectRatio:false,
+        plugins: {
+          legend: { position:'right', labels:{ font:{size:11}, padding:8 } },
+          tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.raw} (${total>0?((ctx.raw/total)*100).toFixed(1):0}%)` } }
+        }
+      }
+    });
+  }
+
+  // Grafik pie gender
+  if (_pubChartPieGender) _pubChartPieGender.destroy();
+  const c2 = document.getElementById('pubChartPieGender');
+  if (c2) {
+    _pubChartPieGender = new Chart(c2, {
+      type: 'doughnut',
+      data: {
+        labels: ['Laki-laki','Perempuan'],
+        datasets: [{ data:[jmlL,jmlP], backgroundColor:['#2563eb','#db2777'], borderWidth:2, borderColor:'#fff' }]
+      },
+      options: {
+        responsive:true, maintainAspectRatio:false,
+        plugins: {
+          legend: { position:'right', labels:{ font:{size:11}, padding:8 } },
+          tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.raw} (${total>0?((ctx.raw/total)*100).toFixed(1):0}%)` } }
+        }
+      }
+    });
+  }
+
+  // Bar chart kategori per kolom
+  if (_pubChartBarKolom) _pubChartBarKolom.destroy();
+  const c3 = document.getElementById('pubChartBarKolom');
+  const koloms = [...new Set(data.map(j=>j.kolom).filter(Boolean))].sort((a,b)=>a-b);
+  if (c3) {
+    _pubChartBarKolom = new Chart(c3, {
+      type:'bar',
+      data: {
+        labels: koloms.map(k=>`Kol.${k}`),
+        datasets: kategoriList.map(k=>({
+          label: katLabel[k],
+          data: koloms.map(kol=>data.filter(j=>j.kolom==kol&&j.bipra===k).length),
+          backgroundColor: katColor[k]+'bb', borderColor: katColor[k], borderWidth:1, borderRadius:3
+        }))
+      },
+      options: {
+        responsive:true, maintainAspectRatio:false,
+        plugins: { legend:{ position:'top', labels:{ font:{size:10}, padding:8 } }, tooltip:{ mode:'index', intersect:false } },
+        scales: {
+          x:{ grid:{display:false}, ticks:{font:{size:10}} },
+          y:{ beginAtZero:true, ticks:{stepSize:1,font:{size:10}}, grid:{color:'#f0ede6'} }
+        }
+      }
+    });
+  }
+
+  // Bar chart baptis/sidi per kolom
+  if (_pubChartBarBaptis) _pubChartBarBaptis.destroy();
+  const c4 = document.getElementById('pubChartBarBaptis');
+  if (c4) {
+    _pubChartBarBaptis = new Chart(c4, {
+      type:'bar',
+      data: {
+        labels: koloms.map(k=>`Kol.${k}`),
+        datasets: [
+          { label:'Baptis', data:koloms.map(k=>data.filter(j=>j.kolom==k&&j.baptis==='sudah-baptis').length), backgroundColor:'#2563eb99', borderColor:'#2563eb', borderWidth:1, borderRadius:3 },
+          { label:'Sidi',   data:koloms.map(k=>data.filter(j=>j.kolom==k&&j.sidi==='sudah-sidi').length),    backgroundColor:'#16a34a99', borderColor:'#16a34a', borderWidth:1, borderRadius:3 },
+          { label:'Lansia', data:koloms.map(k=>data.filter(j=>j.kolom==k&&j.lansia==='lansia').length),       backgroundColor:'#d9770699', borderColor:'#d97706', borderWidth:1, borderRadius:3 }
+        ]
+      },
+      options: {
+        responsive:true, maintainAspectRatio:false,
+        plugins: { legend:{ position:'top', labels:{ font:{size:10}, padding:8 } }, tooltip:{ mode:'index', intersect:false } },
+        scales: {
+          x:{ grid:{display:false}, ticks:{font:{size:10}} },
+          y:{ beginAtZero:true, ticks:{font:{size:10}}, grid:{color:'#f0ede6'} }
+        }
+      }
+    });
+  }
+}
+
 async function loadPubVideo() {
   const grid = document.getElementById('pubVideoGrid');
   if (!grid) return;
