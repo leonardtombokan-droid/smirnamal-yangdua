@@ -414,6 +414,8 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
   </div>
   <div class="header-actions">
     <button class="btn btn-outline btn-sm" onclick="exportCSV()">⬇ Export CSV</button>
+    <button class="btn btn-outline btn-sm" onclick="bukaModalSimpan()">💾 Simpan Geospasial</button>
+    <button class="btn btn-outline btn-sm" onclick="bukaModalCetak()">🖨️ Cetak Peta</button>
     <button class="btn btn-outline btn-sm" onclick="runSpatialAnalysis()">🔄 Update Status</button>
     <button class="btn btn-accent btn-sm" onclick="switchTab('tambah')">+ Tambah Keluarga</button>
   </div>
@@ -455,6 +457,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
         <div class="kolom-filters" id="kolom-filters">
           <div class="kolom-chip active" data-kolom="all" onclick="filterByKolom('all', this)" style="background:var(--primary);color:white;border-color:var(--primary)">Semua</div>
         </div>
+        <div id="kolom-info" style="font-size:10px;color:var(--text-xs);margin-top:4px"></div>
       </div>
 
       <!-- List -->
@@ -483,11 +486,20 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
           <label>Kolom / Wilayah Pelayanan *</label>
           <select class="form-input" id="f-kolom">
             <option value="">-- Pilih Kolom --</option>
-            <option>Kolom I</option>
-            <option>Kolom II</option>
-            <option>Kolom III</option>
-            <option>Kolom IV</option>
-            <option>Kolom V</option>
+            <option value="1">Kolom 1</option>
+            <option value="2">Kolom 2</option>
+            <option value="3">Kolom 3</option>
+            <option value="4">Kolom 4</option>
+            <option value="5">Kolom 5</option>
+            <option value="6">Kolom 6</option>
+            <option value="7">Kolom 7</option>
+            <option value="8">Kolom 8</option>
+            <option value="9">Kolom 9</option>
+            <option value="10">Kolom 10</option>
+            <option value="11">Kolom 11</option>
+            <option value="12">Kolom 12</option>
+            <option value="13">Kolom 13</option>
+            <option value="14">Kolom 14</option>
           </select>
         </div>
         <div class="form-row">
@@ -650,9 +662,118 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
   </div>
 </div>
 
+<!-- MODAL CETAK PETA -->
+<div id="modal-cetak" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9000;align-items:center;justify-content:center;">
+  <div style="background:white;border-radius:14px;padding:24px;width:380px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+      <div style="font-size:15px;font-weight:600;color:var(--primary)">🖨️ Cetak Peta</div>
+      <button onclick="document.getElementById('modal-cetak').style.display='none'" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-muted)">×</button>
+    </div>
+    <div style="margin-bottom:14px">
+      <label style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px;display:block;margin-bottom:6px">Cakupan Peta</label>
+      <select id="cetak-cakupan" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;background:var(--surface2)">
+        <option value="all">Seluruh Wilayah Jemaat</option>
+        <option value="1">Kolom 1</option>
+        <option value="2">Kolom 2</option>
+        <option value="3">Kolom 3</option>
+        <option value="4">Kolom 4</option>
+        <option value="5">Kolom 5</option>
+        <option value="6">Kolom 6</option>
+        <option value="7">Kolom 7</option>
+        <option value="8">Kolom 8</option>
+        <option value="9">Kolom 9</option>
+        <option value="10">Kolom 10</option>
+        <option value="11">Kolom 11</option>
+        <option value="12">Kolom 12</option>
+        <option value="13">Kolom 13</option>
+        <option value="14">Kolom 14</option>
+      </select>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+      <div>
+        <label style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px;display:block;margin-bottom:6px">Ukuran Kertas</label>
+        <select id="cetak-ukuran" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;background:var(--surface2)">
+          <option value="A4">A4 (210×297mm)</option>
+          <option value="A3">A3 (297×420mm)</option>
+          <option value="A1">A1 (594×841mm)</option>
+          <option value="A0">A0 (841×1189mm)</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px;display:block;margin-bottom:6px">Format</label>
+        <select id="cetak-format" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;background:var(--surface2)">
+          <option value="jpeg">JPEG</option>
+          <option value="pdf">PDF</option>
+        </select>
+      </div>
+    </div>
+    <div style="margin-bottom:16px;padding:10px 12px;background:var(--surface2);border-radius:8px;font-size:12px;color:var(--text-muted)">
+      ℹ️ Peta akan dicetak sesuai tampilan saat ini termasuk legenda dan skala.
+    </div>
+    <div style="display:flex;gap:10px">
+      <button onclick="document.getElementById('modal-cetak').style.display='none'" style="flex:1;padding:10px;border:1px solid var(--border);border-radius:8px;background:white;cursor:pointer;font-family:inherit;font-size:13px">Batal</button>
+      <button onclick="cetakPeta()" style="flex:2;padding:10px;border:none;border-radius:8px;background:var(--primary);color:white;cursor:pointer;font-family:inherit;font-size:13px;font-weight:600">🖨️ Cetak Sekarang</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL SIMPAN GEOSPASIAL -->
+<div id="modal-simpan" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9000;align-items:center;justify-content:center;">
+  <div style="background:white;border-radius:14px;padding:24px;width:420px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+      <div style="font-size:15px;font-weight:600;color:var(--primary)">💾 Simpan Data Geospasial</div>
+      <button onclick="document.getElementById('modal-simpan').style.display='none'" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-muted)">×</button>
+    </div>
+    <div style="margin-bottom:14px">
+      <label style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px;display:block;margin-bottom:6px">Cakupan Data</label>
+      <select id="simpan-cakupan" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;background:var(--surface2)">
+        <option value="all">Seluruh Jemaat</option>
+        <option value="1">Kolom 1</option>
+        <option value="2">Kolom 2</option>
+        <option value="3">Kolom 3</option>
+        <option value="4">Kolom 4</option>
+        <option value="5">Kolom 5</option>
+        <option value="6">Kolom 6</option>
+        <option value="7">Kolom 7</option>
+        <option value="8">Kolom 8</option>
+        <option value="9">Kolom 9</option>
+        <option value="10">Kolom 10</option>
+        <option value="11">Kolom 11</option>
+        <option value="12">Kolom 12</option>
+        <option value="13">Kolom 13</option>
+        <option value="14">Kolom 14</option>
+      </select>
+    </div>
+    <div style="margin-bottom:14px">
+      <label style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px;display:block;margin-bottom:6px">Format File</label>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+        <label style="display:flex;align-items:center;gap:6px;padding:9px 10px;border:1.5px solid var(--border);border-radius:8px;cursor:pointer;font-size:12px;font-family:inherit">
+          <input type="radio" name="simpan-format" value="csv" checked> CSV
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;padding:9px 10px;border:1.5px solid var(--border);border-radius:8px;cursor:pointer;font-size:12px;font-family:inherit">
+          <input type="radio" name="simpan-format" value="geojson"> GeoJSON
+        </label>
+        <label style="display:flex;align-items:center;gap=6px;padding:9px 10px;border:1.5px solid var(--border);border-radius:8px;cursor:pointer;font-size:12px;font-family:inherit">
+          <input type="radio" name="simpan-format" value="kml"> KML
+        </label>
+      </div>
+    </div>
+    <div style="margin-bottom:16px;padding:10px 12px;background:#f0fdf4;border-radius:8px;border-left:3px solid var(--success)">
+      <div style="font-size:11px;font-weight:600;color:var(--success);margin-bottom:4px">Kolom yang disimpan:</div>
+      <div style="font-size:11px;color:#166534">nama_keluarga · kolom · latitude · longitude · status_wilayah</div>
+    </div>
+    <div style="display:flex;gap:10px">
+      <button onclick="document.getElementById('modal-simpan').style.display='none'" style="flex:1;padding:10px;border:1px solid var(--border);border-radius:8px;background:white;cursor:pointer;font-family:inherit;font-size:13px">Batal</button>
+      <button onclick="simpanGeospasial()" style="flex:2;padding:10px;border:none;border-radius:8px;background:var(--success);color:white;cursor:pointer;font-family:inherit;font-size:13px;font-weight:600">💾 Simpan File</button>
+    </div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
 window.onload = function() {
 // ============================================
@@ -1015,39 +1136,65 @@ function updateStats() {
 }
 
 function updateKolomFilters() {
-  const koloms = [...new Set(families.map(f => f.kolom))].sort();
+  // Hitung berapa KK per kolom dari data yang ada
+  const kolomCount = {};
+  families.forEach(f => {
+    const k = f.kolom;
+    kolomCount[k] = (kolomCount[k] || 0) + 1;
+  });
+
   const container = document.getElementById('kolom-filters');
   const allActive = activeKolom === 'all';
-  container.innerHTML = `<div class="kolom-chip ${allActive ? 'active' : ''}" 
-    data-kolom="all" onclick="filterByKolom('all', this)"
-    style="${allActive ? 'background:var(--primary);color:white;border-color:var(--primary)' : ''}">Semua</div>`;
 
-  koloms.forEach(k => {
-    const color = getKolomColor(k);
-    const isActive = activeKolom === k;
-    container.innerHTML += `<div class="kolom-chip ${isActive ? 'active' : ''}"
-      data-kolom="${k}" onclick="filterByKolom('${k}', this)"
-      style="${isActive ? `background:${color};color:white;border-color:${color}` : `border-color:${color};color:${color}`}">${k}</div>`;
-  });
+  // Tombol "Semua"
+  let html = `<div class="kolom-chip ${allActive ? 'active' : ''}" 
+    data-kolom="all" onclick="filterByKolom('all', this)"
+    style="${allActive ? 'background:var(--primary);color:white;border-color:var(--primary)' : ''}">
+    Semua <span style="font-size:10px;opacity:0.8">(${families.length})</span>
+  </div>`;
+
+  // Kolom 1-14
+  for (let k = 1; k <= 14; k++) {
+    const key = `Kolom ${k}`;
+    const count = kolomCount[key] || 0;
+    const color = getKolomColor(key);
+    const isActive = activeKolom === key;
+    const hasData = count > 0;
+
+    html += `<div class="kolom-chip ${isActive ? 'active' : ''}"
+      data-kolom="${key}" onclick="filterByKolom('${key}', this)"
+      title="${hasData ? count + ' keluarga' : 'Belum ada data koordinat'}"
+      style="${isActive
+        ? `background:${color};color:white;border-color:${color}`
+        : hasData
+          ? `border-color:${color};color:${color}`
+          : 'border-color:#ddd;color:#bbb;cursor:default'
+      }">
+      K${k}${hasData ? ` <span style="font-size:10px;opacity:0.8">(${count})</span>` : ' <span style="font-size:9px;opacity:0.5">—</span>'}
+    </div>`;
+  }
+
+  container.innerHTML = html;
+
+  // Info teks
+  const withData = Object.keys(kolomCount).length;
+  document.getElementById('kolom-info').textContent =
+    `${withData} dari 14 kolom sudah punya data koordinat`;
 }
 
 function filterByKolom(kolom, el) {
+  // Jika kolom tidak ada datanya, abaikan klik
+  if (kolom !== 'all') {
+    const hasData = families.some(f => f.kolom === kolom);
+    if (!hasData) {
+      showToast(`ℹ️ ${kolom} belum ada data koordinat`);
+      return;
+    }
+  }
   activeKolom = kolom;
-  document.querySelectorAll('.kolom-chip').forEach(c => {
-    c.classList.remove('active');
-    const k = c.dataset.kolom;
-    const col = k === 'all' ? 'var(--primary)' : getKolomColor(k);
-    c.style.background = '';
-    c.style.color = col === 'var(--primary)' ? 'var(--text-muted)' : col;
-    c.style.borderColor = col;
-  });
-  el.classList.add('active');
-  const col = kolom === 'all' ? 'var(--primary)' : getKolomColor(kolom);
-  el.style.background = col;
-  el.style.color = 'white';
-  el.style.borderColor = col;
   renderFamilyList();
   renderMarkers();
+  updateKolomFilters();
 }
 
 function filterFamilies() {
@@ -1428,6 +1575,241 @@ function editFamily(id) {
 }
 
 // ============================================
+// CETAK PETA
+// ============================================
+function bukaModalCetak() {
+  document.getElementById('modal-cetak').style.display = 'flex';
+}
+
+// Ukuran kertas dalam mm
+const PAPER_SIZES = {
+  A4: { w: 297, h: 210 }, // landscape
+  A3: { w: 420, h: 297 },
+  A1: { w: 841, h: 594 },
+  A0: { w: 1189, h: 841 }
+};
+
+async function cetakPeta() {
+  const cakupan = document.getElementById('cetak-cakupan').value;
+  const ukuran  = document.getElementById('cetak-ukuran').value;
+  const format  = document.getElementById('cetak-format').value;
+  document.getElementById('modal-cetak').style.display = 'none';
+
+  // Fit peta ke cakupan yang dipilih
+  if (cakupan === 'all') {
+    map.fitBounds(wilayahLayer.getBounds(), { padding: [20,20] });
+  } else {
+    const kolomKey = `Kolom ${cakupan}`;
+    const pts = families.filter(f => f.kolom === kolomKey);
+    if (pts.length === 0) { showToast(`⚠️ Kolom ${cakupan} belum ada data`); return; }
+    map.fitBounds(pts.map(f => [f.lat, f.lng]), { padding: [40,40] });
+  }
+
+  showToast('⏳ Mempersiapkan peta...');
+  await new Promise(r => setTimeout(r, 1500)); // tunggu tiles termuat
+
+  const mapEl = document.getElementById('map');
+  const paper = PAPER_SIZES[ukuran];
+  const judulCakupan = cakupan === 'all' ? 'Seluruh Wilayah Jemaat' : `Kolom ${cakupan}`;
+  const tanggal = new Date().toLocaleDateString('id-ID', { day:'2-digit', month:'long', year:'numeric' });
+
+  try {
+    const canvas = await html2canvas(mapEl, {
+      useCORS: true,
+      allowTaint: true,
+      scale: 2,
+      logging: false
+    });
+
+    // Tambah info peta ke canvas (judul, skala, tanggal)
+    const finalCanvas = document.createElement('canvas');
+    const DPI = 96;
+    const mmToPx = mm => Math.round(mm * DPI / 25.4);
+    finalCanvas.width  = mmToPx(paper.w);
+    finalCanvas.height = mmToPx(paper.h);
+    const ctx = finalCanvas.getContext('2d');
+
+    // Background putih
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, finalCanvas.width, finalCanvas.height);
+
+    // Area peta (sisakan margin 15mm + header 20mm)
+    const margin  = mmToPx(12);
+    const headerH = mmToPx(20);
+    const footerH = mmToPx(14);
+    const mapW = finalCanvas.width  - margin * 2;
+    const mapH = finalCanvas.height - margin * 2 - headerH - footerH;
+
+    ctx.drawImage(canvas, margin, margin + headerH, mapW, mapH);
+
+    // Border peta
+    ctx.strokeStyle = '#1a4a6b';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(margin, margin + headerH, mapW, mapH);
+
+    // Header
+    ctx.fillStyle = '#1a4a6b';
+    ctx.fillRect(0, 0, finalCanvas.width, margin + headerH - 2);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = `bold ${mmToPx(6)}px sans-serif`;
+    ctx.fillText(`PETA ${judulCakupan.toUpperCase()} — GMIM "SMIRNA" WILAYAH MANADO MALALAYANG BARAT`, margin + 6, margin + mmToPx(8));
+    ctx.font = `${mmToPx(4)}px sans-serif`;
+    ctx.fillStyle = 'rgba(255,255,255,0.8)';
+    ctx.fillText(`Sistem Informasi Geografis Jemaat  |  Dicetak: ${tanggal}  |  Ukuran: ${ukuran}`, margin + 6, margin + mmToPx(14));
+
+    // Skala sederhana di footer
+    ctx.fillStyle = '#1a4a6b';
+    ctx.font = `bold ${mmToPx(3.5)}px sans-serif`;
+    ctx.fillText(`Sistem Koordinat: WGS 84 (EPSG:4326)  |  Sumber: OpenStreetMap  |  ${judulCakupan}`, margin, finalCanvas.height - mmToPx(5));
+
+    // Kotak legenda kecil
+    const legX = finalCanvas.width - margin - mmToPx(50);
+    const legY = finalCanvas.height - footerH - mmToPx(24);
+    ctx.fillStyle = 'rgba(255,255,255,0.92)';
+    ctx.strokeStyle = '#1a4a6b';
+    ctx.lineWidth = 1;
+    ctx.fillRect(legX, legY, mmToPx(48), mmToPx(22));
+    ctx.strokeRect(legX, legY, mmToPx(48), mmToPx(22));
+    ctx.fillStyle = '#1a4a6b';
+    ctx.font = `bold ${mmToPx(3)}px sans-serif`;
+    ctx.fillText('LEGENDA', legX + mmToPx(2), legY + mmToPx(5));
+    const items = [
+      { color:'#16a34a', label:'Dalam wilayah teritorial' },
+      { color:'#dc2626', label:'Luar wilayah teritorial' },
+      { color:'#1a4a6b', label:'Batas wilayah jemaat' }
+    ];
+    items.forEach((item, i) => {
+      ctx.fillStyle = item.color;
+      ctx.fillRect(legX + mmToPx(2), legY + mmToPx(7 + i*4.5), mmToPx(4), mmToPx(3));
+      ctx.fillStyle = '#1a1a2e';
+      ctx.font = `${mmToPx(2.8)}px sans-serif`;
+      ctx.fillText(item.label, legX + mmToPx(8), legY + mmToPx(9.5 + i*4.5));
+    });
+
+    const fileName = `Peta_${judulCakupan.replace(/\s+/g,'_')}_${ukuran}_${tanggal.replace(/\s/g,'')}.${format}`;
+
+    if (format === 'jpeg') {
+      const link = document.createElement('a');
+      link.download = fileName;
+      link.href = finalCanvas.toDataURL('image/jpeg', 0.92);
+      link.click();
+      showToast('✅ Peta berhasil disimpan sebagai JPEG!');
+    } else {
+      // PDF menggunakan jsPDF
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: ukuran.toLowerCase() });
+      const imgData = finalCanvas.toDataURL('image/jpeg', 0.92);
+      pdf.addImage(imgData, 'JPEG', 0, 0, paper.w, paper.h);
+      pdf.save(fileName.replace('.pdf','') + '.pdf');
+      showToast('✅ Peta berhasil disimpan sebagai PDF!');
+    }
+  } catch(err) {
+    console.error(err);
+    showToast('❌ Gagal mencetak peta. Coba lagi.');
+  }
+}
+
+// ============================================
+// SIMPAN DATA GEOSPASIAL
+// ============================================
+function bukaModalSimpan() {
+  document.getElementById('modal-simpan').style.display = 'flex';
+}
+
+function simpanGeospasial() {
+  const cakupan = document.getElementById('simpan-cakupan').value;
+  const format  = document.querySelector('input[name="simpan-format"]:checked').value;
+  document.getElementById('modal-simpan').style.display = 'none';
+
+  const judulCakupan = cakupan === 'all' ? 'Seluruh_Jemaat' : `Kolom_${cakupan}`;
+  const tanggal = new Date().toISOString().slice(0,10);
+
+  // Filter data
+  let data = families;
+  if (cakupan !== 'all') {
+    data = families.filter(f => f.kolom === `Kolom ${cakupan}`);
+  }
+
+  if (data.length === 0) {
+    showToast(`⚠️ Tidak ada data untuk ${judulCakupan.replace('_',' ')}`);
+    return;
+  }
+
+  let content, mimeType, ext;
+
+  if (format === 'csv') {
+    // CSV dengan koordinat desimal
+    const header = 'nama_keluarga,kolom,latitude,longitude,status_wilayah';
+    const rows = data.map(f =>
+      `"${f.nama_kk}","${f.kolom}",${f.lat.toFixed(8)},${f.lng.toFixed(8)},"${f.status_wilayah}"`
+    );
+    content = [header, ...rows].join('\n');
+    mimeType = 'text/csv;charset=utf-8;';
+    ext = 'csv';
+
+  } else if (format === 'geojson') {
+    // GeoJSON standar
+    const geojson = {
+      type: 'FeatureCollection',
+      name: `GIS Jemaat GMIM Smirna - ${judulCakupan.replace('_',' ')}`,
+      crs: { type: 'name', properties: { name: 'urn:ogc:def:crs:OGC:1.3:CRS84' } },
+      features: data.map(f => ({
+        type: 'Feature',
+        properties: {
+          nama_keluarga: f.nama_kk,
+          kolom: f.kolom,
+          latitude: f.lat,
+          longitude: f.lng,
+          status_wilayah: f.status_wilayah
+        },
+        geometry: {
+          type: 'Point',
+          coordinates: [parseFloat(f.lng.toFixed(8)), parseFloat(f.lat.toFixed(8))]
+        }
+      }))
+    };
+    content = JSON.stringify(geojson, null, 2);
+    mimeType = 'application/geo+json';
+    ext = 'geojson';
+
+  } else if (format === 'kml') {
+    // KML standar Google Earth
+    const placemarks = data.map(f => `
+    <Placemark>
+      <name>${f.nama_kk}</name>
+      <description>Kolom: ${f.kolom} | Status: ${f.status_wilayah}</description>
+      <ExtendedData>
+        <Data name="kolom"><value>${f.kolom}</value></Data>
+        <Data name="latitude"><value>${f.lat.toFixed(8)}</value></Data>
+        <Data name="longitude"><value>${f.lng.toFixed(8)}</value></Data>
+        <Data name="status_wilayah"><value>${f.status_wilayah}</value></Data>
+      </ExtendedData>
+      <Point><coordinates>${f.lng.toFixed(8)},${f.lat.toFixed(8)},0</coordinates></Point>
+    </Placemark>`).join('');
+
+    content = `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>GIS Jemaat GMIM Smirna - ${judulCakupan.replace('_',' ')}</name>
+    <description>Ekspor data geospasial ${tanggal}</description>
+    <Style id="dalam"><IconStyle><color>ff4aa316</color><scale>0.9</scale></IconStyle></Style>
+    <Style id="luar"><IconStyle><color>ff2626dc</color><scale>0.9</scale></IconStyle></Style>
+    ${placemarks}
+  </Document>
+</kml>`;
+    mimeType = 'application/vnd.google-earth.kml+xml';
+    ext = 'kml';
+  }
+
+  const blob = new Blob([content], { type: mimeType });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `GeoSpasial_${judulCakupan}_${tanggal}.${ext}`;
+  a.click();
+  showToast(`✅ ${data.length} data disimpan sebagai ${format.toUpperCase()}!`);
+}
+
+// ============================================
 // LOAD DATA DARI TABEL JEMAAT (Supabase)
 // ============================================
 async function loadFromStorage() {
@@ -1512,6 +1894,10 @@ window.dragOver = dragOver;
 window.dragLeave = dragLeave;
 window.dropCSV = dropCSV;
 window.selectFamily = selectFamily;
+window.bukaModalCetak = bukaModalCetak;
+window.cetakPeta = cetakPeta;
+window.bukaModalSimpan = bukaModalSimpan;
+window.simpanGeospasial = simpanGeospasial;
 
 }; // end window.onload
 </script>
