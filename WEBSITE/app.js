@@ -3030,97 +3030,106 @@ async function loadVisitorCounter() {
   const fmt = n => { n=parseInt(n)||0; return n>=1000?(n/1000).toFixed(1)+'K':String(n); };
   const set = (id,v) => { const el=document.getElementById(id); if(el) el.textContent=fmt(v); };
 
-  const today   = new Date().toISOString().split('T')[0];
-  const LS_KEY  = 'sid_visitor_v3';
+  const today = new Date().toISOString().split('T')[0];
 
-  // ── Baca / inisialisasi data localStorage ──
-  let ls = {};
-  try { ls = JSON.parse(localStorage.getItem(LS_KEY)||'{}'); } catch(e){}
-  if (!ls.days) ls.days = {};
-  if (!ls.total) ls.total = 0;
-
-  // Catat kunjungan sesi ini (1x per hari per browser)
-  const sessKey = 'sid_sess_'+today;
+  // ── Catat kunjungan sesi ini ke Supabase (1x per sesi per hari) ──
+  const sessKey = 'sid_sess_v4_' + today;
   if (!sessionStorage.getItem(sessKey)) {
-    sessionStorage.setItem(sessKey,'1');
-    ls.days[today] = (ls.days[today]||0) + 1;
-    ls.total = (ls.total||0) + 1;
-    // Bersihkan data > 90 hari
-    const cut = new Date(Date.now()-90*24*60*60*1000).toISOString().split('T')[0];
-    Object.keys(ls.days).forEach(d=>{ if(d<cut) delete ls.days[d]; });
-    try { localStorage.setItem(LS_KEY, JSON.stringify(ls)); } catch(e){}
-    // Simpan ke Supabase (opsional)
+    sessionStorage.setItem(sessKey, '1');
     try {
-      await sbAdmin.from('log_perubahan').insert({
-        aksi:'visitor', keterangan:'kunjungan_publik',
-        oleh:'publik', waktu:new Date().toISOString()
+      await sb.from('log_perubahan').insert({
+        aksi: 'visitor',
+        keterangan: 'kunjungan_publik',
+        oleh: 'publik',
+        waktu: new Date().toISOString()
       });
-    } catch(e){}
+    } catch(e) { console.warn('Gagal catat visitor:', e.message); }
   }
 
-  // ── Hitung stats dari localStorage ──
-  const todayCount = ls.days[today] || 0;
-  const week7 = new Date(Date.now()-7*24*60*60*1000).toISOString().split('T')[0];
-  const weekCount = Object.entries(ls.days)
-    .filter(([d])=>d>=week7).reduce((s,[,v])=>s+v,0);
-  const totalCount = ls.total || 0;
+  // ── Baca data kunjungan dari Supabase ──
+  try {
+    const since90 = new Date(Date.now()-90*24*60*60*1000).toISOString();
+    const { data: rows, error } = await sb.from('log_perubahan')
+      .select('waktu')
+      .eq('aksi', 'visitor')
+      .eq('keterangan', 'kunjungan_publik')
+      .gte('waktu', since90)
+      .order('waktu', { ascending: true });
 
-  set('visitorHariIni', todayCount);
-  set('visitorMinggu',  weekCount);
-  set('visitorTotal',   totalCount);
+    if (error) throw error;
 
-  // ── Buat data 7 hari untuk grafik ──
-  const labels = [], dataPoints = [];
-  for (let i=6; i>=0; i--) {
-    const d = new Date(Date.now()-i*24*60*60*1000);
-    const key = d.toISOString().split('T')[0];
-    const label = d.toLocaleDateString('id-ID',{day:'numeric',month:'short'});
-    labels.push(label);
-    dataPoints.push(ls.days[key]||0);
-  }
+    // Agregasi per hari
+    const dayMap = {};
+    (rows||[]).forEach(r => {
+      const d = r.waktu.split('T')[0];
+      dayMap[d] = (dayMap[d]||0) + 1;
+    });
 
-  // ── Render Chart.js ──
-  const canvas = document.getElementById('visitorChart');
-  if (!canvas) return;
-  if (_visitorChartInstance) { _visitorChartInstance.destroy(); _visitorChartInstance=null; }
+    const week7 = new Date(Date.now()-7*24*60*60*1000).toISOString().split('T')[0];
+    const todayCount = dayMap[today] || 0;
+    const weekCount  = Object.entries(dayMap).filter(([d])=>d>=week7).reduce((s,[,v])=>s+v,0);
+    const totalCount = Object.values(dayMap).reduce((s,v)=>s+v,0);
 
-  const ctx = canvas.getContext('2d');
-  const gradient = ctx.createLinearGradient(0,0,0,100);
-  gradient.addColorStop(0,'rgba(26,58,92,0.25)');
-  gradient.addColorStop(1,'rgba(26,58,92,0.01)');
+    set('visitorHariIni', todayCount);
+    set('visitorMinggu',  weekCount);
+    set('visitorTotal',   totalCount);
 
-  _visitorChartInstance = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [{
-        data: dataPoints,
-        borderColor: '#1a3a5c',
-        borderWidth: 2,
-        backgroundColor: gradient,
-        fill: true,
-        tension: 0.4,
-        pointRadius: 3,
-        pointBackgroundColor: '#c8a96e',
-        pointBorderColor: '#fff',
-        pointBorderWidth: 1.5,
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend:{display:false}, tooltip:{
-        backgroundColor:'#1a3a5c',
-        titleFont:{size:11}, bodyFont:{size:12},
-        callbacks:{ title:i=>i[0].label, label:i=>`${i.raw} kunjungan` }
-      }},
-      scales: {
-        x: { grid:{display:false}, ticks:{font:{size:9}, color:'#94a3b8'} },
-        y: { grid:{color:'#f1f5f9'}, ticks:{font:{size:9}, color:'#94a3b8', stepSize:1,
-             callback:v=>Number.isInteger(v)?v:'' }, min:0 }
-      }
+    // ── Buat data 7 hari untuk grafik ──
+    const labels = [], dataPoints = [];
+    for (let i=6; i>=0; i--) {
+      const d = new Date(Date.now()-i*24*60*60*1000);
+      const key = d.toISOString().split('T')[0];
+      const label = d.toLocaleDateString('id-ID',{day:'numeric',month:'short'});
+      labels.push(label);
+      dataPoints.push(dayMap[key]||0);
     }
-  });
+
+    // ── Render Chart.js ──
+    const canvas = document.getElementById('visitorChart');
+    if (!canvas) return;
+    if (_visitorChartInstance) { _visitorChartInstance.destroy(); _visitorChartInstance=null; }
+
+    const ctx = canvas.getContext('2d');
+    const gradient = ctx.createLinearGradient(0,0,0,100);
+    gradient.addColorStop(0,'rgba(26,58,92,0.25)');
+    gradient.addColorStop(1,'rgba(26,58,92,0.01)');
+
+    _visitorChartInstance = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          data: dataPoints,
+          borderColor: '#1a3a5c',
+          borderWidth: 2,
+          backgroundColor: gradient,
+          fill: true,
+          tension: 0.4,
+          pointRadius: 3,
+          pointBackgroundColor: '#c8a96e',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 1.5,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend:{display:false}, tooltip:{
+          backgroundColor:'#1a3a5c',
+          titleFont:{size:11}, bodyFont:{size:12},
+          callbacks:{ title:i=>i[0].label, label:i=>`${i.raw} kunjungan` }
+        }},
+        scales: {
+          x: { grid:{display:false}, ticks:{font:{size:9}, color:'#94a3b8'} },
+          y: { grid:{color:'#f1f5f9'}, ticks:{font:{size:9}, color:'#94a3b8', stepSize:1,
+               callback:v=>Number.isInteger(v)?v:'' }, min:0 }
+        }
+      }
+    });
+
+  } catch(e) {
+    console.error('loadVisitorCounter error:', e.message);
+  }
 }
 
 // ===== SOCIAL MEDIA =====
