@@ -242,16 +242,16 @@ body{font-family:'Source Sans 3',sans-serif;background:var(--bg);color:var(--tex
 .user-info .name { font-size:13px; font-weight:600; color:var(--accent-light); }
 .user-info .role { font-size:12px; color:rgba(255,255,255,0.5); }
 .sidebar-nav { flex:1; padding:16px 0; overflow-y:auto; }
-.nav-item { display:flex; align-items:center; gap:12px; padding:12px 20px; cursor:pointer; transition:background 0.2s; font-size:14px; color:rgba(255,255,255,0.7); border-left:3px solid transparent; }
+.nav-item { display:flex; align-items:center; gap:12px; padding:13px 20px; cursor:pointer; transition:background 0.2s; font-size:15px; color:rgba(255,255,255,0.8); border-left:3px solid transparent; font-weight:500; }
 .nav-item:hover { background:rgba(255,255,255,0.08); color:white; }
 .nav-item.active { background:rgba(200,169,110,0.15); color:var(--accent); border-left-color:var(--accent); }
-.nav-item .icon { font-size:18px; width:20px; text-align:center; }
+.nav-item .icon { font-size:19px; width:22px; text-align:center; }
 .nav-group { position:relative; }
 .nav-item .arrow { margin-left:auto; font-size:11px; transition:transform 0.25s; color:rgba(255,255,255,0.4); }
 .nav-group.open > .nav-item .arrow { transform:rotate(90deg); }
 .nav-sub { max-height:0; overflow:hidden; transition:max-height 0.3s ease; background:rgba(0,0,0,0.2); }
 .nav-group.open > .nav-sub { max-height:500px; }
-.nav-sub-item { display:flex; align-items:center; gap:10px; padding:9px 20px 9px 44px; cursor:pointer; font-size:13px; color:rgba(255,255,255,0.6); border-left:3px solid transparent; transition:background 0.2s; }
+.nav-sub-item { display:flex; align-items:center; gap:10px; padding:10px 20px 10px 44px; cursor:pointer; font-size:14px; color:rgba(255,255,255,0.7); border-left:3px solid transparent; transition:background 0.2s; }
 .nav-sub-item:hover { background:rgba(255,255,255,0.06); color:white; }
 .nav-sub-item.active { background:rgba(200,169,110,0.12); color:var(--accent); border-left-color:var(--accent); }
 .nav-sub-item .sub-dot { width:6px; height:6px; border-radius:50%; background:currentColor; opacity:0.6; flex-shrink:0; }
@@ -1545,6 +1545,10 @@ tr:hover td { background:rgba(26,58,92,0.03); }
   <div class="main-content">
     <!-- DASHBOARD -->
     <div class="page active" id="page-dashboard">
+      <div id="adminToolbar" style="display:none;gap:10px;margin-bottom:20px;flex-wrap:wrap;">
+        <button id="btnSosmedAdmin" onclick="openSosmedModal()" style="display:none;padding:11px 20px;background:rgba(200,169,110,0.18);color:var(--accent);border:2px solid rgba(200,169,110,0.4);border-radius:10px;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;letter-spacing:0.3px;">📱 Atur Media Sosial</button>
+        <button id="btnEmailAdmin" onclick="openEmailModal()" style="display:none;padding:11px 20px;background:rgba(200,169,110,0.18);color:var(--accent);border:2px solid rgba(200,169,110,0.4);border-radius:10px;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;letter-spacing:0.3px;">📧 Notifikasi Email</button>
+      </div>
       <div class="page-header"><h1>Dashboard</h1><p>Selamat datang di Sistem Informasi Data Jemaat</p></div>
       <div class="stats-grid" id="statsGrid">
         <div class="stat-card"><div class="label">Total Jemaat</div><div class="value" id="statTotal">-</div><div class="sub">seluruh kolom</div></div>
@@ -1700,10 +1704,6 @@ tr:hover td { background:rgba(26,58,92,0.03); }
 
     <!-- KELUARGA -->
     <div class="page" id="page-keluarga">
-      <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
-        <button id="btnSosmedAdmin" onclick="openSosmedModal()" style="display:none;padding:10px 16px;background:rgba(200,169,110,0.15);color:var(--accent);border:1px solid rgba(200,169,110,0.3);border-radius:8px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;">📱 Atur Media Sosial</button>
-        <button id="btnEmailAdmin" onclick="openEmailModal()" style="display:none;padding:10px 16px;background:rgba(200,169,110,0.15);color:var(--accent);border:1px solid rgba(200,169,110,0.3);border-radius:8px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;">📧 Notifikasi Email</button>
-      </div>
       <div class="page-header"><h1>Data Keluarga</h1><p id="keluargaSubtitle">Daftar keluarga per kolom</p></div>
       <div class="table-controls">
         <input class="search-box" type="text" id="searchKeluarga" placeholder="🔍 Cari nama keluarga..." oninput="filterKeluarga()">
