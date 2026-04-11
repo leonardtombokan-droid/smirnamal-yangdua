@@ -585,7 +585,8 @@ function renderSubKeluarga() {
         <span>⛪ Kolom ${kolom}</span>
         <span style="font-size:12px;opacity:0.8;font-weight:400">${famKeys.length} keluarga</span>
       </div>
-      <div style="border:1px solid var(--border);border-top:none;border-radius:0 0 10px 10px;overflow-x:auto">
+      <div class="top-scroll-bar" style="overflow-x:auto;overflow-y:hidden;height:12px;border:1px solid var(--border);border-top:none;border-bottom:none;background:rgba(0,0,0,0.02)"><div class="top-scroll-inner" style="height:1px"></div></div>
+      <div class="table-scroll-wrap" style="border:1px solid var(--border);border-top:none;border-radius:0 0 10px 10px;overflow-x:auto">
         <table style="width:max-content;min-width:100%;border-collapse:collapse;font-size:13px">
           <thead>
             <tr style="background:#f1f5f9;color:var(--text-muted);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px">
@@ -647,6 +648,20 @@ function renderSubKeluarga() {
       </div>
     </div>`;
   }).join('');
+
+  // Sync top scrollbar dengan table scroll
+  requestAnimationFrame(()=>{
+    container.querySelectorAll('.table-scroll-wrap').forEach(wrap=>{
+      const bar=wrap.previousElementSibling;
+      if(!bar||!bar.classList.contains('top-scroll-bar'))return;
+      const inner=bar.querySelector('.top-scroll-inner');
+      if(!inner)return;
+      inner.style.width=wrap.scrollWidth+'px';
+      let syncingFromBar=false,syncingFromWrap=false;
+      bar.addEventListener('scroll',()=>{if(syncingFromWrap)return;syncingFromBar=true;wrap.scrollLeft=bar.scrollLeft;syncingFromBar=false;},{passive:true});
+      wrap.addEventListener('scroll',()=>{if(syncingFromBar)return;syncingFromWrap=true;bar.scrollLeft=wrap.scrollLeft;inner.style.width=wrap.scrollWidth+'px';syncingFromWrap=false;},{passive:true});
+    });
+  });
 }
 
 function tambahAnggotaDariPerKeluarga(namaKeluarga, kolom, noKK, alamatRumah, jemaatAsal, alamatKolom) {
