@@ -585,8 +585,8 @@ function renderSubKeluarga() {
         <span>⛪ Kolom ${kolom}</span>
         <span style="font-size:12px;opacity:0.8;font-weight:400">${famKeys.length} keluarga</span>
       </div>
-      <div style="border:1px solid var(--border);border-top:none;border-radius:0 0 10px 10px;overflow:hidden">
-        <table style="width:100%;border-collapse:collapse;font-size:13px">
+      <div style="border:1px solid var(--border);border-top:none;border-radius:0 0 10px 10px;overflow-x:auto">
+        <table style="width:max-content;min-width:100%;border-collapse:collapse;font-size:13px">
           <thead>
             <tr style="background:#f1f5f9;color:var(--text-muted);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px">
               <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);min-width:130px">Keluarga</th>
