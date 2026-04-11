@@ -260,7 +260,7 @@ body{font-family:'Source Sans 3',sans-serif;background:var(--bg);color:var(--tex
 .btn-logout:hover { background:rgba(155,35,53,0.6); }
 
 /* MAIN CONTENT */
-.main-content { margin-left:var(--sidebar-w); padding:32px; min-height:100vh; min-width:0; }
+.main-content { margin-left:var(--sidebar-w); padding:32px; padding-bottom:60px; min-height:100vh; min-width:0; }
 .page { display:none; }
 .page.active { display:block; }
 .page-header { margin-bottom:28px; }
@@ -349,7 +349,7 @@ tr:hover td { background:rgba(26,58,92,0.03); }
   .mobile-toggle { display:block; }
   .sidebar { transform:translateX(-100%); transition:transform 0.3s ease; z-index:200; }
   .sidebar.open { transform:translateX(0); }
-  .main-content { margin-left:0; padding:20px; padding-top:64px; }
+  .main-content { margin-left:0; padding:20px; padding-top:64px; padding-bottom:60px; }
   .form-grid { grid-template-columns:1fr; }
   .stats-grid { grid-template-columns:1fr 1fr; }
   .table-controls { flex-direction:column; }
@@ -1711,7 +1711,7 @@ tr:hover td { background:rgba(26,58,92,0.03); }
         <button class="btn btn-primary" onclick="openModal(null,'keluarga-baru')">🏠 + Keluarga Baru</button>
         <button class="btn btn-outline" onclick="window.print()">🖨️ Cetak</button>
       </div>
-      <div id="keluargaList"></div>
+      <div id="keluargaList" style="padding-bottom:24px"></div>
     </div>
 
     <!-- PETA JEMAAT -->
