@@ -387,9 +387,11 @@ async function doLogin() {
   if (navVid) navVid.style.display = isSuperAdmin() ? 'flex' : 'none';
 
   const btnSosmed = document.getElementById('btnSosmedAdmin');
-  if (btnSosmed) btnSosmed.style.display = isSuperAdmin() ? 'block' : 'none';
+  if (btnSosmed) btnSosmed.style.display = isSuperAdmin() ? 'inline-flex' : 'none';
   const btnEmail = document.getElementById('btnEmailAdmin');
-  if (btnEmail) btnEmail.style.display = isSuperAdmin() ? 'block' : 'none';
+  if (btnEmail) btnEmail.style.display = isSuperAdmin() ? 'inline-flex' : 'none';
+  const adminToolbar = document.getElementById('adminToolbar');
+  if (adminToolbar) adminToolbar.style.display = isSuperAdmin() ? 'flex' : 'none';
 
   document.getElementById('publicPage').style.display='none';
   document.getElementById('loginPage').style.display='none';
