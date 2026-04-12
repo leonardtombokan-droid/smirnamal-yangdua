@@ -294,12 +294,62 @@ body{font-family:'Source Sans 3',sans-serif;background:var(--bg);color:var(--tex
 .btn-excel:hover { background:#155a34; }
 
 .table-wrapper { background:var(--bg-card); border-radius:12px; border:1px solid var(--border); overflow-x:auto; display:block; width:100%; }
-/* Mirror scrollbar atas & bawah */
-.table-scroll-top { overflow-x:auto; overflow-y:hidden; height:12px; border-radius:12px 12px 0 0; border:1px solid var(--border); border-bottom:none; background:var(--bg-card); }
-.table-scroll-top > div { height:1px; }
-.table-wrapper-outer { position:relative; margin-bottom:16px; }
-.table-wrapper-outer .table-wrapper { border-radius:0 0 12px 12px; margin-bottom:0; }
-.table-wrapper-outer .table-scroll-top { border-bottom:none; }
+
+/* ===== SCROLLBAR HORIZONTAL STICKY ATAS & BAWAH ===== */
+.table-wrapper-outer { position:relative; margin-bottom:16px; display:flex; flex-direction:column; }
+
+/* Scrollbar ATAS — sticky di bagian atas viewport saat scroll turun */
+.table-scroll-top {
+  overflow-x: auto;
+  overflow-y: hidden;
+  height: 14px;
+  border-radius: 12px 12px 0 0;
+  border: 1px solid var(--border);
+  border-bottom: none;
+  background: var(--bg-card);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.table-scroll-top > div { height: 1px; }
+
+/* Scrollbar BAWAH — sticky di bagian bawah viewport saat scroll turun */
+.table-scroll-bottom {
+  overflow-x: auto;
+  overflow-y: hidden;
+  height: 14px;
+  border-radius: 0 0 12px 12px;
+  border: 1px solid var(--border);
+  border-top: none;
+  background: var(--bg-card);
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+}
+.table-scroll-bottom > div { height: 1px; }
+
+/* Wrapper tabel di tengah, tanpa border-radius sendiri */
+.table-wrapper-outer .table-wrapper {
+  border-radius: 0;
+  border-top: none;
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+/* Scrollbar styling tipis & branded */
+.table-scroll-top::-webkit-scrollbar,
+.table-scroll-bottom::-webkit-scrollbar,
+.table-wrapper::-webkit-scrollbar { height: 8px; }
+.table-scroll-top::-webkit-scrollbar-track,
+.table-scroll-bottom::-webkit-scrollbar-track,
+.table-wrapper::-webkit-scrollbar-track { background: rgba(0,0,0,0.04); border-radius: 4px; }
+.table-scroll-top::-webkit-scrollbar-thumb,
+.table-scroll-bottom::-webkit-scrollbar-thumb,
+.table-wrapper::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 4px; opacity: 0.7; }
+.table-scroll-top::-webkit-scrollbar-thumb:hover,
+.table-scroll-bottom::-webkit-scrollbar-thumb:hover,
+.table-wrapper::-webkit-scrollbar-thumb:hover { background: var(--primary-light); }
+
 table { width:max-content; min-width:100%; border-collapse:collapse; font-size:14px; }
 td:last-child, th:last-child { min-width:100px; }
 thead { background:var(--primary); color:white; }
@@ -2674,36 +2724,49 @@ function initTableScrollMirrors() {
     const outer = document.createElement('div');
     outer.className = 'table-wrapper-outer';
 
-    // Buat scrollbar atas
+    // Scrollbar ATAS (sticky top)
     const topScroll = document.createElement('div');
     topScroll.className = 'table-scroll-top';
-    const phantom = document.createElement('div');
-    topScroll.appendChild(phantom);
+    const phantomTop = document.createElement('div');
+    topScroll.appendChild(phantomTop);
 
-    // Sisipkan
+    // Scrollbar BAWAH (sticky bottom)
+    const botScroll = document.createElement('div');
+    botScroll.className = 'table-scroll-bottom';
+    const phantomBot = document.createElement('div');
+    botScroll.appendChild(phantomBot);
+
+    // Sisipkan: [scrollTop] [wrapper] [scrollBottom]
     wrapper.parentNode.insertBefore(outer, wrapper);
     outer.appendChild(topScroll);
     outer.appendChild(wrapper);
+    outer.appendChild(botScroll);
 
     // Sync lebar phantom dengan tabel
     function syncWidth() {
-      phantom.style.width = table.scrollWidth + 'px';
+      const w = table.scrollWidth + 'px';
+      phantomTop.style.width = w;
+      phantomBot.style.width = w;
     }
     syncWidth();
     new ResizeObserver(syncWidth).observe(table);
 
-    // Sync scroll dua arah
+    // Sync scroll 3-arah tanpa loop
     let syncing = false;
-    topScroll.addEventListener('scroll', () => {
-      if (syncing) return; syncing = true;
-      wrapper.scrollLeft = topScroll.scrollLeft;
-      syncing = false;
-    });
-    wrapper.addEventListener('scroll', () => {
-      if (syncing) return; syncing = true;
-      topScroll.scrollLeft = wrapper.scrollLeft;
-      syncing = false;
-    });
+    function onScroll(src) {
+      return function() {
+        if (syncing) return;
+        syncing = true;
+        const left = src.scrollLeft;
+        [topScroll, wrapper, botScroll].forEach(el => {
+          if (el !== src) el.scrollLeft = left;
+        });
+        syncing = false;
+      };
+    }
+    topScroll.addEventListener('scroll', onScroll(topScroll));
+    wrapper.addEventListener('scroll', onScroll(wrapper));
+    botScroll.addEventListener('scroll', onScroll(botScroll));
   });
 }
 
