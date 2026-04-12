@@ -200,13 +200,13 @@ function renderDashUltah(hari, minggu, bulan) {
   // Helper: buat tabel ulang tahun
   const mkTable = (list, emptyMsg) => {
     if (!list.length) return `<div style="color:var(--text-muted);font-size:13px;padding:8px 0">${emptyMsg}</div>`;
-    return `<table style="width:100%;border-collapse:collapse;font-size:13px">
+    return `<div class="table-wrapper"><table style="width:max-content;min-width:100%;border-collapse:collapse;font-size:13px">
       <thead>
         <tr style="background:var(--bg);border-bottom:2px solid var(--border)">
           <th style="padding:7px 10px;text-align:left;font-weight:600;color:var(--text-muted);width:28px">No</th>
           <th style="padding:7px 10px;text-align:left;font-weight:600;color:var(--text-muted)">Nama Lengkap</th>
           <th style="padding:7px 10px;text-align:center;font-weight:600;color:var(--text-muted);width:40px">L/P</th>
-          <th style="padding:7px 10px;text-align:left;font-weight:600;color:var(--text-muted)">Tanggal Lahir</th>
+          <th style="padding:7px 10px;text-align:left;font-weight:600;color:var(--text-muted);white-space:nowrap">Tanggal Lahir</th>
           <th style="padding:7px 10px;text-align:center;font-weight:600;color:var(--text-muted)">Kolom</th>
           <th style="padding:7px 10px;text-align:center;font-weight:600;color:var(--text-muted)">Keterangan</th>
         </tr>
@@ -219,26 +219,26 @@ function renderDashUltah(hari, minggu, bulan) {
             : j.diff > 0 ? `${j.diff} hari lagi` : `${Math.abs(j.diff)} hari lalu`;
           return `<tr style="border-bottom:1px solid var(--border);${isToday?'background:#fffbeb;':''}${i%2===0&&!isToday?'background:var(--bg);':''}">
             <td style="padding:7px 10px;color:var(--text-muted)">${i+1}</td>
-            <td style="padding:7px 10px;font-weight:${isToday?'700':'500'}">${isToday?'🎂 ':''}${j.nama_lengkap||'-'}</td>
+            <td style="padding:7px 10px;font-weight:${isToday?'700':'500'};white-space:nowrap">${isToday?'🎂 ':''}${j.nama_lengkap||'-'}</td>
             <td style="padding:7px 10px;text-align:center"><span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;background:${j.lp==='L'?'#dbeafe':'#fce7f3'};color:${j.lp==='L'?'#1e40af':'#9d174d'}">${j.lp||'-'}</span></td>
-            <td style="padding:7px 10px;color:var(--text-muted)">${formatTanggal(j.tanggal_lahir)}</td>
+            <td style="padding:7px 10px;color:var(--text-muted);white-space:nowrap">${formatTanggal(j.tanggal_lahir)}</td>
             <td style="padding:7px 10px;text-align:center"><span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;background:#e8f4f0;color:#2d6a4f">Kol.${j.kolom||'-'}</span></td>
-            <td style="padding:7px 10px;text-align:center">${ket}</td>
+            <td style="padding:7px 10px;text-align:center;white-space:nowrap">${ket}</td>
           </tr>`;
         }).join('')}
       </tbody>
-    </table>`;
+    </table></div>`;
   };
 
   // Helper: buat tabel perkawinan
   const mkTableNikah = (list, emptyMsg) => {
     if (!list.length) return `<div style="color:var(--text-muted);font-size:13px;padding:8px 0">${emptyMsg}</div>`;
-    return `<table style="width:100%;border-collapse:collapse;font-size:13px">
+    return `<div class="table-wrapper"><table style="width:max-content;min-width:100%;border-collapse:collapse;font-size:13px">
       <thead>
         <tr style="background:var(--bg);border-bottom:2px solid var(--border)">
           <th style="padding:7px 10px;text-align:left;font-weight:600;color:var(--text-muted);width:28px">No</th>
-          <th style="padding:7px 10px;text-align:left;font-weight:600;color:var(--text-muted)">Nama Keluarga</th>
-          <th style="padding:7px 10px;text-align:center;font-weight:600;color:var(--text-muted)">Tahun Ke-</th>
+          <th style="padding:7px 10px;text-align:left;font-weight:600;color:var(--text-muted);white-space:nowrap">Nama Keluarga</th>
+          <th style="padding:7px 10px;text-align:center;font-weight:600;color:var(--text-muted);white-space:nowrap">Tahun Ke-</th>
           <th style="padding:7px 10px;text-align:center;font-weight:600;color:var(--text-muted)">Kolom</th>
           <th style="padding:7px 10px;text-align:center;font-weight:600;color:var(--text-muted)">Keterangan</th>
         </tr>
@@ -251,14 +251,14 @@ function renderDashUltah(hari, minggu, bulan) {
             : n.diff > 0 ? `${n.diff} hari lagi` : `${Math.abs(n.diff)} hari lalu`;
           return `<tr style="border-bottom:1px solid var(--border);${isToday?'background:#fff7ed;':''}${i%2===0&&!isToday?'background:var(--bg);':''}">
             <td style="padding:7px 10px;color:var(--text-muted)">${i+1}</td>
-            <td style="padding:7px 10px;font-weight:${isToday?'700':'500'}">${isToday?'💍 ':''}${n.nama_keluarga||'-'}</td>
-            <td style="padding:7px 10px;text-align:center;font-weight:600;color:#c2410c">${n.tahunKe} tahun</td>
+            <td style="padding:7px 10px;font-weight:${isToday?'700':'500'};white-space:nowrap">${isToday?'💍 ':''}${n.nama_keluarga||'-'}</td>
+            <td style="padding:7px 10px;text-align:center;font-weight:600;color:#c2410c;white-space:nowrap">${n.tahunKe} tahun</td>
             <td style="padding:7px 10px;text-align:center"><span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;background:#e8f4f0;color:#2d6a4f">Kol.${n.kolom||'-'}</span></td>
-            <td style="padding:7px 10px;text-align:center">${ket}</td>
+            <td style="padding:7px 10px;text-align:center;white-space:nowrap">${ket}</td>
           </tr>`;
         }).join('')}
       </tbody>
-    </table>`;
+    </table></div>`;
   };
 
   const h = document.getElementById('dashUltahHari');
@@ -306,6 +306,11 @@ function renderDashUltah(hari, minggu, bulan) {
   if (nb) nb.innerHTML=`
     <div style="font-size:13px;font-weight:700;color:#c2410c;margin-bottom:6px;margin-top:14px">🗓️ Bulan ini (${nBulan.length})</div>
     ${mkTableNikah(nBulan,'Tidak ada data bulan ini')}`;
+
+  // Re-init scroll mirrors untuk tabel dashboard yang baru dirender
+  requestAnimationFrame(() => {
+    if (typeof initTableScrollMirrors === 'function') initTableScrollMirrors();
+  });
 }
 
 // loadPubPengumuman sudah di-override di bawah
@@ -587,8 +592,8 @@ function renderSubKeluarga() {
         <span>⛪ Kolom ${kolom}</span>
         <span style="font-size:12px;opacity:0.8;font-weight:400">${famKeys.length} keluarga</span>
       </div>
-      <div class="top-scroll-bar" style="overflow-x:auto;overflow-y:hidden;height:12px;border:1px solid var(--border);border-top:none;border-bottom:none;background:rgba(0,0,0,0.02)"><div class="top-scroll-inner" style="height:1px"></div></div>
-      <div class="table-scroll-wrap" style="border:1px solid var(--border);border-top:none;border-radius:0 0 10px 10px;overflow-x:auto">
+      <div class="pk-scroll-top" style="overflow-x:auto;overflow-y:hidden;height:14px;border:1px solid var(--border);border-top:none;border-bottom:none;background:var(--bg-card);position:sticky;top:0;z-index:10"><div class="pk-scroll-phantom" style="height:1px"></div></div>
+      <div class="pk-table-wrap" style="border:1px solid var(--border);border-top:none;border-bottom:none;overflow-x:auto;-webkit-overflow-scrolling:touch">
         <table style="width:max-content;min-width:100%;border-collapse:collapse;font-size:13px">
           <thead>
             <tr style="background:#f1f5f9;color:var(--text-muted);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px">
@@ -648,20 +653,37 @@ function renderSubKeluarga() {
           </tbody>
         </table>
       </div>
+      <div class="pk-scroll-bottom" style="overflow-x:auto;overflow-y:hidden;height:14px;border:1px solid var(--border);border-top:none;border-radius:0 0 10px 10px;background:var(--bg-card);position:sticky;bottom:0;z-index:10"><div class="pk-scroll-phantom-bot" style="height:1px"></div></div>
     </div>`;
   }).join('');
 
-  // Sync top scrollbar dengan table scroll
+  // Sync scrollbar atas + bawah dengan tabel (3-arah)
   requestAnimationFrame(()=>{
-    container.querySelectorAll('.table-scroll-wrap').forEach(wrap=>{
-      const bar=wrap.previousElementSibling;
-      if(!bar||!bar.classList.contains('top-scroll-bar'))return;
-      const inner=bar.querySelector('.top-scroll-inner');
-      if(!inner)return;
-      inner.style.width=wrap.scrollWidth+'px';
-      let syncingFromBar=false,syncingFromWrap=false;
-      bar.addEventListener('scroll',()=>{if(syncingFromWrap)return;syncingFromBar=true;wrap.scrollLeft=bar.scrollLeft;syncingFromBar=false;},{passive:true});
-      wrap.addEventListener('scroll',()=>{if(syncingFromBar)return;syncingFromWrap=true;bar.scrollLeft=wrap.scrollLeft;inner.style.width=wrap.scrollWidth+'px';syncingFromWrap=false;},{passive:true});
+    container.querySelectorAll('.pk-table-wrap').forEach(wrap=>{
+      const topBar  = wrap.previousElementSibling; // .pk-scroll-top
+      const botBar  = wrap.nextElementSibling;     // .pk-scroll-bottom
+      if (!topBar || !botBar) return;
+      const phantomTop = topBar.querySelector('.pk-scroll-phantom');
+      const phantomBot = botBar.querySelector('.pk-scroll-phantom-bot');
+      function syncWidth() {
+        const w = wrap.scrollWidth + 'px';
+        if (phantomTop) phantomTop.style.width = w;
+        if (phantomBot) phantomBot.style.width = w;
+      }
+      syncWidth();
+      try { new ResizeObserver(syncWidth).observe(wrap); } catch(e){}
+      let syncing = false;
+      function onScroll(src) {
+        return function() {
+          if (syncing) return; syncing = true;
+          const left = src.scrollLeft;
+          [topBar, wrap, botBar].forEach(el => { if (el !== src) el.scrollLeft = left; });
+          syncing = false;
+        };
+      }
+      topBar.addEventListener('scroll', onScroll(topBar), {passive:true});
+      wrap.addEventListener('scroll', onScroll(wrap), {passive:true});
+      botBar.addEventListener('scroll', onScroll(botBar), {passive:true});
     });
   });
 }
@@ -2835,17 +2857,19 @@ function showUltahModal(mode) {
         <button onclick="document.getElementById('modalUltahPub').remove()" style="background:none;border:none;font-size:24px;cursor:pointer;color:var(--text-muted)">×</button>
       </div>
       <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px">${list.length} jemaat</p>
-      <table style="width:100%;border-collapse:collapse;font-size:13px">
+      <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:8px;border:1px solid var(--border)">
+      <table style="width:max-content;min-width:100%;border-collapse:collapse;font-size:13px">
         <thead style="background:var(--primary);color:white">
           <tr>
-            <th style="padding:8px 10px;text-align:left">Tanggal</th>
-            <th style="padding:8px 10px;text-align:left">Nama</th>
-            <th style="padding:8px 10px;text-align:left">Kolom</th>
-            <th style="padding:8px 10px;text-align:left">Keterangan</th>
+            <th style="padding:8px 10px;text-align:left;white-space:nowrap">Tanggal</th>
+            <th style="padding:8px 10px;text-align:left;white-space:nowrap">Nama</th>
+            <th style="padding:8px 10px;text-align:left;white-space:nowrap">Kolom</th>
+            <th style="padding:8px 10px;text-align:left;white-space:nowrap">Keterangan</th>
           </tr>
         </thead>
         <tbody>${rows}</tbody>
       </table>
+      </div>
     </div>`;
 }
 
@@ -4134,15 +4158,16 @@ async function bukaModalDaftarMeninggal() {
       <div style="padding:12px 16px;background:#f8fafc;border-bottom:1px solid var(--border);font-size:12px;color:var(--text-muted)">
         Total: <strong style="color:var(--text)">${data.length} jemaat</strong>
       </div>
-      <table style="width:100%;border-collapse:collapse;font-size:13px">
+      <div class="table-wrapper" style="border-radius:0">
+      <table style="width:max-content;min-width:100%;border-collapse:collapse;font-size:13px">
         <thead>
           <tr style="background:#1a3a5c;color:white">
-            <th style="padding:9px 12px;text-align:left;font-weight:600">Nama</th>
-            <th style="padding:9px 12px;text-align:left;font-weight:600">Kolom/Keluarga</th>
-            <th style="padding:9px 12px;text-align:left;font-weight:600">Tgl Meninggal</th>
-            <th style="padding:9px 12px;text-align:left;font-weight:600">Usia</th>
-            <th style="padding:9px 12px;text-align:left;font-weight:600">Penyebab</th>
-            <th style="padding:9px 8px;text-align:center;font-weight:600">Cetak</th>
+            <th style="padding:9px 12px;text-align:left;font-weight:600;white-space:nowrap">Nama</th>
+            <th style="padding:9px 12px;text-align:left;font-weight:600;white-space:nowrap">Kolom/Keluarga</th>
+            <th style="padding:9px 12px;text-align:left;font-weight:600;white-space:nowrap">Tgl Meninggal</th>
+            <th style="padding:9px 12px;text-align:left;font-weight:600;white-space:nowrap">Usia</th>
+            <th style="padding:9px 12px;text-align:left;font-weight:600;white-space:nowrap">Penyebab</th>
+            <th style="padding:9px 8px;text-align:center;font-weight:600;white-space:nowrap">Cetak</th>
           </tr>
         </thead>
         <tbody>
@@ -4168,7 +4193,7 @@ async function bukaModalDaftarMeninggal() {
                 <br><small style="color:var(--text-muted)">${j.nama_keluarga||'-'}</small>
               </td>
               <td style="padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowrap;font-size:12px">${tglMStr}</td>
-              <td style="padding:8px 12px;border-bottom:1px solid var(--border);font-size:12px">${usia}</td>
+              <td style="padding:8px 12px;border-bottom:1px solid var(--border);font-size:12px;white-space:nowrap">${usia}</td>
               <td style="padding:8px 12px;border-bottom:1px solid var(--border);font-size:12px;color:var(--text-muted)">${j.penyebab_meninggal||'-'}</td>
               <td style="padding:8px;border-bottom:1px solid var(--border);text-align:center">
                 <button class="btn btn-outline btn-sm" style="font-size:11px;padding:3px 8px" onclick="_cetakKartuDuka(${j.id},'${(j.tanggal_meninggal||new Date().toISOString()).slice(0,16)}','${(j.penyebab_meninggal||'').replace(/'/g,"\\\\'")}')">🖨️ Cetak</button>
@@ -4176,7 +4201,8 @@ async function bukaModalDaftarMeninggal() {
             </tr>`;
           }).join('')}
         </tbody>
-      </table>`;
+      </table>
+      </div>`;
   } catch(e) {
     el.innerHTML = `<div style="text-align:center;padding:32px;color:#dc2626">Gagal memuat: ${e.message}</div>`;
   }
