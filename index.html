@@ -60,7 +60,7 @@ body{font-family:'Source Sans 3',sans-serif;background:var(--bg);color:var(--tex
   position: relative;
   overflow: hidden;
   padding: 0;
-  min-height: 240px;
+  min-height: 320px;
 }
 .pub-hero-bg {
   position: absolute; inset:0;
@@ -83,12 +83,12 @@ body{font-family:'Source Sans 3',sans-serif;background:var(--bg);color:var(--tex
 .pub-hero-overlay {
   position: relative; z-index:2;
   display: flex; flex-direction:column; align-items:center;
-  padding: 48px 20px 36px;
+  padding: 64px 32px 52px;
   text-align: center;
 }
-.pub-hero-overlay .cross { font-size:48px; color:var(--accent); }
-.pub-hero-overlay h1 { font-family:'Playfair Display',serif; font-size:28px; color:white; margin-top:8px; line-height:1.3; }
-.pub-hero-overlay p { font-size:14px; color:rgba(255,255,255,0.7); margin-top:4px; }
+.pub-hero-overlay .cross { font-size:56px; color:var(--accent); }
+.pub-hero-overlay h1 { font-family:'Playfair Display',serif; font-size:42px; color:white; margin-top:12px; line-height:1.25; text-shadow: 0 3px 12px rgba(0,0,0,0.6); }
+.pub-hero-overlay p { font-size:18px; color:rgba(255,255,255,0.85); margin-top:10px; text-shadow: 0 2px 8px rgba(0,0,0,0.5); letter-spacing:0.5px; }
 .btn-login-pub {
   position: absolute; top:20px; right:20px; z-index:10;
   padding: 10px 20px; background: var(--accent); color: var(--primary);
@@ -294,6 +294,12 @@ body{font-family:'Source Sans 3',sans-serif;background:var(--bg);color:var(--tex
 .btn-excel:hover { background:#155a34; }
 
 .table-wrapper { background:var(--bg-card); border-radius:12px; border:1px solid var(--border); overflow-x:auto; display:block; width:100%; }
+/* Mirror scrollbar atas & bawah */
+.table-scroll-top { overflow-x:auto; overflow-y:hidden; height:12px; border-radius:12px 12px 0 0; border:1px solid var(--border); border-bottom:none; background:var(--bg-card); }
+.table-scroll-top > div { height:1px; }
+.table-wrapper-outer { position:relative; margin-bottom:16px; }
+.table-wrapper-outer .table-wrapper { border-radius:0 0 12px 12px; margin-bottom:0; }
+.table-wrapper-outer .table-scroll-top { border-bottom:none; }
 table { width:max-content; min-width:100%; border-collapse:collapse; font-size:14px; }
 td:last-child, th:last-child { min-width:100px; }
 thead { background:var(--primary); color:white; }
@@ -1037,6 +1043,149 @@ tr:hover td { background:rgba(26,58,92,0.03); }
 .berita-pub-card { cursor:pointer; }
 .berita-pub-card .bp-baca { display:inline-block; margin-top:10px; font-size:12px; color:var(--accent); font-weight:700; text-decoration:none; }
 
+/* ===================================================
+   RESPONSIF LENGKAP — HP ANDROID & IPHONE
+   =================================================== */
+
+/* Perbaiki modal di semua layar kecil */
+@media (max-width: 768px) {
+  /* ---- HERO ---- */
+  .pub-hero { min-height: 220px; }
+  .pub-hero-overlay { padding: 40px 20px 32px; }
+  .pub-hero-overlay h1 { font-size: 26px !important; letter-spacing: 1px !important; }
+  .pub-hero-overlay p { font-size: 13px !important; letter-spacing: 0.5px !important; }
+  .btn-login-pub { top:12px; right:12px; padding:8px 14px; font-size:13px; }
+
+  /* ---- MODAL ---- */
+  .modal-overlay { padding: 12px; align-items: flex-end; }
+  .modal {
+    padding: 20px 16px;
+    max-height: 92vh;
+    border-radius: 16px 16px 0 0;
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+  .modal-header h2 { font-size: 18px; }
+  .form-grid { grid-template-columns: 1fr !important; gap: 12px; }
+  .modal-footer { flex-direction: column; gap: 8px; }
+  .modal-footer .btn { width: 100%; justify-content: center; }
+
+  /* ---- SIDEBAR & MAIN ---- */
+  .main-content { padding: 16px; padding-top: 64px; padding-bottom: 80px; }
+  .page-header h1 { font-size: 22px; }
+  .stats-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
+  .stat-card { padding: 16px; }
+  .stat-card .value { font-size: 28px; }
+
+  /* ---- TABLE ---- */
+  .table-controls { flex-direction: column; gap: 8px; }
+  .table-controls > * { width: 100%; }
+  .search-box { min-width: unset; width: 100%; }
+  .filter-select { width: 100%; }
+  .perpage-select { width: 100%; }
+  .table-wrapper { border-radius: 8px; -webkit-overflow-scrolling: touch; }
+  table { font-size: 13px; }
+  th, td { padding: 9px 10px; }
+
+  /* ---- PAGINATION ---- */
+  .pagination { flex-wrap: wrap; gap: 6px; }
+  .page-btn { padding: 6px 10px; font-size: 13px; }
+
+  /* ---- BUTTONS ---- */
+  .btn { font-size: 13px; padding: 9px 14px; }
+  .btn-sm { padding: 5px 10px; font-size: 12px; }
+
+  /* ---- PUBLIC LAYOUT ---- */
+  .pub-layout { grid-template-columns: 1fr; padding: 12px; gap: 14px; }
+  .pub-sidebar { position: static; }
+  .pub-content { padding: 12px; }
+  .pub-nav-link { padding: 10px 12px; font-size: 12px; }
+
+  /* ---- KOP ---- */
+  .pub-kop { padding: 10px 16px; }
+  .pub-kop-text .kop-gereja { font-size: 13px; }
+  .pub-kop-text .kop-jemaat { font-size: 11px; letter-spacing: 1px; }
+  .pub-kop-logo { width: 48px; height: 48px; }
+
+  /* ---- CARDS ---- */
+  .keluarga-cards { grid-template-columns: 1fr; }
+  .profile-grid { grid-template-columns: 1fr; }
+  .str-admin-grid { grid-template-columns: repeat(2, 1fr); }
+  .berita-admin-card { flex-direction: column; }
+  .berita-admin-card .ba-foto,
+  .berita-admin-card .ba-foto-ph { width: 100%; height: 160px; }
+  .warta-grid { grid-template-columns: 1fr; }
+
+  /* ---- TOAST ---- */
+  .toast { bottom: 16px; right: 12px; left: 12px; text-align: center; font-size: 13px; }
+
+  /* ---- BERITA DETAIL ---- */
+  .berita-detail-body { padding: 18px 16px; }
+  .berita-detail-judul { font-size: 20px; }
+
+  /* ---- KEHADIRAN ---- */
+  .kehadiran-summary { grid-template-columns: 1fr 1fr; gap: 10px; }
+}
+
+/* Layar sangat kecil: iPhone SE, Android kecil (< 400px) */
+@media (max-width: 400px) {
+  .pub-hero { min-height: 190px; }
+  .pub-hero-overlay h1 { font-size: 20px !important; }
+  .pub-hero-overlay p { font-size: 11px !important; }
+  .btn-login-pub { padding: 6px 10px; font-size: 12px; top: 8px; right: 8px; }
+  .stats-grid { grid-template-columns: 1fr; }
+  .str-admin-grid { grid-template-columns: 1fr; }
+  .kehadiran-summary { grid-template-columns: 1fr; }
+  .pub-nav-link { padding: 9px 10px; font-size: 11px; gap: 3px; }
+  .page-header h1 { font-size: 20px; }
+  table { font-size: 12px; }
+  th, td { padding: 7px 8px; }
+  .visitor-stats-row { grid-template-columns: 1fr; gap: 6px; }
+}
+
+/* Tablet (768px – 1024px) */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .main-content { padding: 24px; padding-bottom: 60px; }
+  .pub-layout { padding: 16px; grid-template-columns: minmax(0,1fr) 260px; }
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .pub-hero-overlay h1 { font-size: 32px !important; }
+  .pub-hero-overlay p { font-size: 15px !important; }
+}
+
+/* ---- Pastikan input/select tidak zoom di iOS ---- */
+input, select, textarea {
+  font-size: 16px !important;
+}
+@media (min-width: 769px) {
+  input, select, textarea { font-size: 14px !important; }
+}
+
+/* ---- Touch target minimal 44px (iOS/Android accessibility) ---- */
+.btn, .nav-item, .nav-sub-item, .pub-nav-link,
+.page-btn, .btn-login-pub, .btn-logout {
+  min-height: 44px;
+}
+@media (max-width: 768px) {
+  .btn-sm { min-height: 36px; }
+}
+
+/* ---- Scrollbar horizontal selalu terlihat di mobile ---- */
+.table-wrapper {
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: var(--primary) transparent;
+}
+.table-wrapper::-webkit-scrollbar { height: 6px; }
+.table-wrapper::-webkit-scrollbar-track { background: transparent; }
+.table-wrapper::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 3px; }
+
+/* ---- Safe area iPhone X/notch ---- */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .main-content { padding-bottom: calc(80px + env(safe-area-inset-bottom)); }
+  .toast { bottom: calc(16px + env(safe-area-inset-bottom)); }
+  .modal-overlay { padding-bottom: env(safe-area-inset-bottom); }
+}
+
 @media print {
   /* Sembunyikan semua elemen kecuali modal cetak KK */
   body > * { display:none!important; }
@@ -1143,8 +1292,8 @@ tr:hover td { background:rgba(26,58,92,0.03); }
     <div class="pub-hero-gradient"></div>
     <button class="btn-login-pub" onclick="showLoginPage()">🔐 Login Admin</button>
     <div class="pub-hero-overlay">
-      <h1 style="font-size:22px;letter-spacing:2px;text-transform:uppercase">SISTEM INFORMASI DIGITAL<br>JEMAAT</h1>
-      <p style="font-size:13px;letter-spacing:1px;text-transform:uppercase;color:var(--accent-light)">GMIM "Smirna" Wilayah Manado Malalayang Barat</p>
+      <h1 style="font-size:38px;letter-spacing:2px;text-transform:uppercase;font-weight:800">SISTEM INFORMASI DIGITAL<br>JEMAAT</h1>
+      <p style="font-size:16px;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent-light);font-weight:600">GMIM "Smirna" Wilayah Manado Malalayang Barat</p>
     </div>
   </div>
 
@@ -2512,5 +2661,63 @@ tr:hover td { background:rgba(26,58,92,0.03); }
 <div class="toast" id="toast"></div>
 
 <script src="app.js"></script>
+<script>
+// ===== MIRROR SCROLLBAR ATAS & BAWAH UNTUK SEMUA TABLE =====
+function initTableScrollMirrors() {
+  document.querySelectorAll('.table-wrapper').forEach(wrapper => {
+    // Jangan duplikat jika sudah dibungkus
+    if (wrapper.parentElement.classList.contains('table-wrapper-outer')) return;
+    const table = wrapper.querySelector('table');
+    if (!table) return;
+
+    // Buat outer container
+    const outer = document.createElement('div');
+    outer.className = 'table-wrapper-outer';
+
+    // Buat scrollbar atas
+    const topScroll = document.createElement('div');
+    topScroll.className = 'table-scroll-top';
+    const phantom = document.createElement('div');
+    topScroll.appendChild(phantom);
+
+    // Sisipkan
+    wrapper.parentNode.insertBefore(outer, wrapper);
+    outer.appendChild(topScroll);
+    outer.appendChild(wrapper);
+
+    // Sync lebar phantom dengan tabel
+    function syncWidth() {
+      phantom.style.width = table.scrollWidth + 'px';
+    }
+    syncWidth();
+    new ResizeObserver(syncWidth).observe(table);
+
+    // Sync scroll dua arah
+    let syncing = false;
+    topScroll.addEventListener('scroll', () => {
+      if (syncing) return; syncing = true;
+      wrapper.scrollLeft = topScroll.scrollLeft;
+      syncing = false;
+    });
+    wrapper.addEventListener('scroll', () => {
+      if (syncing) return; syncing = true;
+      topScroll.scrollLeft = wrapper.scrollLeft;
+      syncing = false;
+    });
+  });
+}
+
+// Jalankan setelah halaman load dan setiap kali navigasi ganti tab
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(initTableScrollMirrors, 600);
+});
+
+// Patch showPage agar re-init setiap buka halaman baru
+const _origShowPage = window.showPage;
+window.showPage = function(...args) {
+  if (_origShowPage) _origShowPage.apply(this, args);
+  setTimeout(initTableScrollMirrors, 400);
+};
+</script>
 </body>
 </html>
