@@ -155,12 +155,22 @@ async function loadPublicData() {
   loadVisitorCounter();
   // Load jemaat untuk ulang tahun + info sidebar
   try {
-    const { data } = await sbAdmin.from('jemaat')
-      .select('nama_lengkap,tanggal_lahir,tanggal_nikah,kolom,lp,lansia,bipra,nama_keluarga,relasi,baptis,sidi,status_jemaat,pekerjaan,alamat_rumah')
-      .order('kolom');
-    if (data && data.length) {
-      allJemaat = data;
-      renderPubUltah(data);
+    let allData = [];
+    let from = 0;
+    const batchSize = 1000;
+    while (true) {
+      const { data } = await sbAdmin.from('jemaat')
+        .select('nama_lengkap,tanggal_lahir,tanggal_nikah,kolom,lp,lansia,bipra,nama_keluarga,relasi,baptis,sidi,status_jemaat,pekerjaan,alamat_rumah')
+        .order('kolom')
+        .range(from, from + batchSize - 1);
+      if (!data || data.length === 0) break;
+      allData = allData.concat(data);
+      if (data.length < batchSize) break;
+      from += batchSize;
+    }
+    if (allData.length) {
+      allJemaat = allData;
+      renderPubUltah(allData);
       loadSidebarData();
     } else {
       const elH = document.getElementById('sideUltahHari');
