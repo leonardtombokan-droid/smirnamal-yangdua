@@ -155,8 +155,8 @@ async function loadPublicData() {
   loadVisitorCounter();
   // Load jemaat untuk ulang tahun + info sidebar
   try {
-    const { data } = await sb.from('jemaat')
-      .select('nama_lengkap,tanggal_lahir,tanggal_nikah,kolom,lp,lansia,bipra,nama_keluarga,relasi')
+    const { data } = await sbAdmin.from('jemaat')
+      .select('nama_lengkap,tanggal_lahir,tanggal_nikah,kolom,lp,lansia,bipra,nama_keluarga,relasi,baptis,sidi,status_jemaat,pekerjaan,alamat_rumah')
       .order('kolom');
     if (data && data.length) {
       allJemaat = data;
