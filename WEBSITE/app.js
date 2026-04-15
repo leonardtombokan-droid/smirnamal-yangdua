@@ -8,6 +8,23 @@ const sbAdmin = supabase.createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {auth:
 let currentUser = null;
 function isAdmin() { return currentUser && (currentUser.kolom === 0 || currentUser.kolom === -1); }
 function isSuperAdmin() { return currentUser && currentUser.kolom === 0; }
+// === Fungsi Log Aktivitas ===
+function logAktivitas(aksi, detail) {
+  try {
+    const log = JSON.parse(localStorage.getItem('logAktivitas') || '[]');
+    log.unshift({
+      waktu: new Date().toISOString(),
+      user: currentUser?.nama_lengkap || '-',
+      aksi: aksi,
+      detail: detail
+    });
+    if (log.length > 500) log.length = 500;
+    localStorage.setItem('logAktivitas', JSON.stringify(log));
+  } catch(e) {
+    console.warn('Gagal menyimpan log aktivitas:', e);
+  }
+}
+
 let allJemaat = [];
 let filteredJemaat = [];
 let currentPage = 1;
