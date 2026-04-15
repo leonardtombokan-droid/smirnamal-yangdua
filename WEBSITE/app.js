@@ -656,7 +656,8 @@ function renderSubKeluarga() {
                 const famCell=isFirst?`<td style="padding:10px 12px;font-weight:700;color:var(--primary);background:rgba(26,58,92,0.04);border-right:3px solid var(--accent);white-space:nowrap;vertical-align:top" rowspan="${rowspan}">
                   🏠 ${fam}
                   <br><small style="font-weight:400;color:var(--text-muted);font-size:11px">${rowspan} anggota</small>
-                  ${canEdit?`<br><button class="btn btn-primary btn-sm" style="margin-top:7px;padding:3px 9px;font-size:11px" onclick="tambahAnggotaDariPerKeluarga('${_famEsc}',${_kolomFam},'${_noKK}','${_alamatE}','${_jemaatE}','${_alamatKolE}')">👤 + Anggota</button>`:''}
+                  ${canEdit?`<br><button class="btn btn-primary btn-sm" style="margin-top:7px;padding:3px 9px;font-size:11px" onclick="tambahAnggotaDariPerKeluarga('${_famEsc}',${_kolomFam},'${_noKK}','${_alamatE}','${_jemaatE}','${_alamatKolE}')">👤 + Anggota</button>
+                  <br><button class="btn btn-outline btn-sm" style="margin-top:4px;padding:3px 9px;font-size:11px;color:#7c3aed;border-color:#7c3aed" onclick="bukaModalPindahKeluarga('${_famEsc}',${_kolomFam})">🔀 Pindah Kolom</button>`:''}
                 </td>`:'';
                 const borderTop=isFirst?'border-top:2px solid var(--accent-light)':'';
                 return `<tr style="${borderTop}">
@@ -3998,6 +3999,74 @@ async function simpanPindahAnggota() {
     showToast('Gagal memindahkan: ' + e.message, 'error');
   } finally {
     if (btnSave) { btnSave.disabled = false; btnSave.textContent = '🔀 Pindahkan'; }
+  }
+}
+
+// ===== PINDAH KELUARGA KE KOLOM LAIN =====
+function bukaModalPindahKeluarga(namaKeluarga, kolomAsal) {
+  const members = allJemaat.filter(j => j.nama_keluarga === namaKeluarga && j.kolom == kolomAsal);
+  if (!members.length) { showToast('Keluarga tidak ditemukan', 'error'); return; }
+  
+  document.getElementById('pindahKeluargaNama').textContent = namaKeluarga;
+  document.getElementById('pindahKeluargaKolomAsal').textContent = 'Kolom ' + kolomAsal;
+  document.getElementById('pindahKeluargaJumlah').textContent = members.length + ' anggota';
+  document.getElementById('pindahKeluargaNamaHidden').value = namaKeluarga;
+  document.getElementById('pindahKeluargaKolomAsalHidden').value = kolomAsal;
+  
+  const koloms = [...new Set(allJemaat.map(j=>j.kolom).filter(Boolean))].sort((a,b)=>a-b);
+  const sel = document.getElementById('pindahKeluargaKolomTujuan');
+  sel.innerHTML = koloms.filter(k => k != kolomAsal).map(k => `<option value="${k}">Kolom ${k}</option>`).join('');
+  
+  document.getElementById('pindahKeluargaAnggota').innerHTML = members.map(m => 
+    `<div style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13px">
+      <span class="badge ${m.lp==='L'?'badge-l':'badge-p'}" style="font-size:10px">${m.lp||'-'}</span>
+      <span>${m.nama_lengkap||'-'}</span>
+      <span style="color:var(--text-muted);font-size:11px">(${m.relasi||'-'})</span>
+    </div>`
+  ).join('');
+  
+  document.getElementById('modalPindahKeluarga').classList.add('open');
+}
+
+function closeModalPindahKeluarga() {
+  document.getElementById('modalPindahKeluarga').classList.remove('open');
+}
+
+async function simpanPindahKeluarga() {
+  const namaKeluarga = document.getElementById('pindahKeluargaNamaHidden').value;
+  const kolomAsal = document.getElementById('pindahKeluargaKolomAsalHidden').value;
+  const kolomTujuan = document.getElementById('pindahKeluargaKolomTujuan').value;
+  
+  if (!kolomTujuan) { showToast('Pilih kolom tujuan!', 'error'); return; }
+  if (kolomTujuan == kolomAsal) { showToast('Kolom tujuan sama dengan kolom asal!', 'error'); return; }
+  
+  const members = allJemaat.filter(j => j.nama_keluarga === namaKeluarga && j.kolom == kolomAsal);
+  if (!members.length) { showToast('Data keluarga tidak ditemukan', 'error'); return; }
+  
+  const confirmMsg = `Pindahkan seluruh keluarga "${namaKeluarga}" (${members.length} anggota) dari Kolom ${kolomAsal} ke Kolom ${kolomTujuan}?`;
+  if (!confirm(confirmMsg)) return;
+  
+  const btn = document.querySelector('#modalPindahKeluarga .btn-primary');
+  if (btn) { btn.disabled = true; btn.textContent = 'Memproses...'; }
+  
+  try {
+    const ids = members.map(m => m.id);
+    const { error } = await sbAdmin.from('jemaat').update({ 
+      kolom: parseInt(kolomTujuan),
+      updated_at: new Date().toISOString()
+    }).in('id', ids);
+    
+    if (error) throw error;
+    
+    showToast(`Keluarga ${namaKeluarga} (${members.length} anggota) berhasil dipindahkan ke Kolom ${kolomTujuan} ✅`, 'success');
+    logAktivitas('pindah-keluarga', `Pindah keluarga: ${namaKeluarga} (${members.length} anggota) Kolom ${kolomAsal} → Kolom ${kolomTujuan}`);
+    closeModalPindahKeluarga();
+    await loadJemaat();
+    renderSubKeluarga();
+  } catch(e) {
+    showToast('Gagal memindahkan: ' + e.message, 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '🔀 Pindahkan'; }
   }
 }
 
