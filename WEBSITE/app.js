@@ -983,6 +983,9 @@ async function loadDashboard() {
   if (!data) return;
 
   console.log('Dashboard data count:', data.length);
+  const _kol9 = data.filter(j=>j.kolom==9);
+  const _kol9fam = [...new Set(_kol9.map(j=>j.nama_keluarga).filter(Boolean))];
+  console.log('Kolom 9: jemaat=', _kol9.length, 'keluarga=', _kol9fam.length, _kol9fam);
   console.log('Sample row baptis/sidi:', data[0]?.baptis, data[0]?.sidi);
   console.log('Baptis count:', data.filter(j=>j.baptis==='sudah-baptis').length);
   console.log('Sidi count:', data.filter(j=>j.sidi==='sudah-sidi').length);
