@@ -1001,12 +1001,12 @@ async function loadDashboard() {
   document.getElementById('statLama').textContent = jumlahLama;
 
   // Kategori stat cards
-  const kategoriList = ['bipra','pemuda','remaja','anak','bapak','ibu'];
-  const katLabel = {bipra:'Bipra',pemuda:'Pemuda',remaja:'Remaja',anak:'Anak SM',bapak:'Bapak',ibu:'Ibu'};
-  const katIcon  = {bipra:'👩',pemuda:'🧑',remaja:'👦',anak:'👶',bapak:'👨',ibu:'👩‍🦱'};
-  const katColor = {bipra:'#7c3aed',pemuda:'#2563eb',remaja:'#0891b2',anak:'#d97706',bapak:'#1a4a6b',ibu:'#db2777'};
+  const kategoriList = ['bapak','ibu','pemuda','remaja','anak','lansia'];
+  const katLabel = {bapak:'Bapak',ibu:'Ibu',pemuda:'Pemuda',remaja:'Remaja',anak:'Anak SM',lansia:'Lansia'};
+  const katIcon  = {bapak:'👨',ibu:'👩‍🦱',pemuda:'🧑',remaja:'👦',anak:'👶',lansia:'🧓'};
+  const katColor = {bapak:'#1a4a6b',ibu:'#db2777',pemuda:'#2563eb',remaja:'#0891b2',anak:'#d97706',lansia:'#9333ea'};
   const katCount = {};
-  kategoriList.forEach(k => { katCount[k] = data.filter(j=>j.bipra===k).length; });
+  kategoriList.forEach(k => { katCount[k] = k==='lansia' ? data.filter(j=>j.lansia==='lansia').length : data.filter(j=>j.bipra===k).length; });
 
   document.getElementById('statsKategori').innerHTML = kategoriList.map(k => {
     const pct = total > 0 ? ((katCount[k]/total)*100).toFixed(1) : 0;
@@ -1106,9 +1106,9 @@ function renderChartBar(data) {
   const ctxBar = document.getElementById('chartBarKolom');
   if (!ctxBar) return;
 
-  const kategoriList = ['bipra','pemuda','remaja','anak','bapak','ibu'];
-  const katLabel = {bipra:'Bipra',pemuda:'Pemuda',remaja:'Remaja',anak:'Anak SM',bapak:'Bapak',ibu:'Ibu'};
-  const katColor = {bipra:'#7c3aed',pemuda:'#2563eb',remaja:'#0891b2',anak:'#d97706',bapak:'#1a4a6b',ibu:'#db2777'};
+  const kategoriList = ['bapak','ibu','pemuda','remaja','anak','lansia'];
+  const katLabel = {bapak:'Bapak',ibu:'Ibu',pemuda:'Pemuda',remaja:'Remaja',anak:'Anak SM',lansia:'Lansia'};
+  const katColor = {bapak:'#1a4a6b',ibu:'#db2777',pemuda:'#2563eb',remaja:'#0891b2',anak:'#d97706',lansia:'#9333ea'};
   const koloms = [...new Set(data.map(j=>j.kolom).filter(Boolean))].sort((a,b)=>a-b);
 
   _chartBarKolom = new Chart(ctxBar, {
@@ -1117,7 +1117,7 @@ function renderChartBar(data) {
       labels: koloms.map(k=>`Kolom ${k}`),
       datasets: kategoriList.map(k => ({
         label: katLabel[k],
-        data: koloms.map(kol => data.filter(j=>j.kolom==kol&&j.bipra===k).length),
+        data: koloms.map(kol => k==='lansia' ? data.filter(j=>j.kolom==kol&&j.lansia==='lansia').length : data.filter(j=>j.kolom==kol&&j.bipra===k).length),
         backgroundColor: katColor[k] + 'cc',
         borderColor: katColor[k],
         borderWidth: 1,
@@ -3386,12 +3386,12 @@ async function loadPubDashboard() {
   _s('pubStatSidi', jmlSidi);
 
   // Kategori cards
-  const kategoriList = ['bipra','pemuda','remaja','anak','bapak','ibu'];
-  const katLabel = {bipra:'Bipra',pemuda:'Pemuda',remaja:'Remaja',anak:'Anak SM',bapak:'Bapak',ibu:'Ibu'};
-  const katIcon  = {bipra:'👩',pemuda:'🧑',remaja:'👦',anak:'👶',bapak:'👨',ibu:'👩‍🦱'};
-  const katColor = {bipra:'#7c3aed',pemuda:'#2563eb',remaja:'#0891b2',anak:'#d97706',bapak:'#1a4a6b',ibu:'#db2777'};
+  const kategoriList = ['bapak','ibu','pemuda','remaja','anak','lansia'];
+  const katLabel = {bapak:'Bapak',ibu:'Ibu',pemuda:'Pemuda',remaja:'Remaja',anak:'Anak SM',lansia:'Lansia'};
+  const katIcon  = {bapak:'👨',ibu:'👩‍🦱',pemuda:'🧑',remaja:'👦',anak:'👶',lansia:'🧓'};
+  const katColor = {bapak:'#1a4a6b',ibu:'#db2777',pemuda:'#2563eb',remaja:'#0891b2',anak:'#d97706',lansia:'#9333ea'};
   const katCount = {};
-  kategoriList.forEach(k => { katCount[k] = data.filter(j=>j.bipra===k).length; });
+  kategoriList.forEach(k => { katCount[k] = k==='lansia' ? data.filter(j=>j.lansia==='lansia').length : data.filter(j=>j.bipra===k).length; });
 
   const elKat = document.getElementById('pubDashKategori');
   if (elKat) {
@@ -3457,7 +3457,7 @@ async function loadPubDashboard() {
         labels: koloms.map(k=>`Kol.${k}`),
         datasets: kategoriList.map(k=>({
           label: katLabel[k],
-          data: koloms.map(kol=>data.filter(j=>j.kolom==kol&&j.bipra===k).length),
+          data: koloms.map(kol=>k==='lansia' ? data.filter(j=>j.kolom==kol&&j.lansia==='lansia').length : data.filter(j=>j.kolom==kol&&j.bipra===k).length),
           backgroundColor: katColor[k]+'bb', borderColor: katColor[k], borderWidth:1, borderRadius:3
         }))
       },
