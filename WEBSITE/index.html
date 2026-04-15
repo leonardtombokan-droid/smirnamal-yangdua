@@ -1507,6 +1507,16 @@ input, select, textarea {
           </div>
         </div>
 
+        <!-- Ringkasan Per Kolom -->
+        <div style="font-size:14px;font-weight:700;color:var(--primary);margin:20px 0 10px">📋 Ringkasan Per Kolom</div>
+        <div style="background:var(--bg-card);border-radius:10px;border:1px solid var(--border);padding:14px;margin-bottom:20px">
+          <div style="background:linear-gradient(135deg,#1a3a5c,#2d5a80);border-radius:8px;padding:12px 20px;text-align:center;color:white;display:inline-block;margin-bottom:12px">
+            <div style="font-size:11px;opacity:0.8;text-transform:uppercase">Total Keluarga</div>
+            <div style="font-size:28px;font-weight:700;font-family:'Playfair Display',serif" id="pubStatTotalKeluarga">-</div>
+          </div>
+          <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="background:var(--primary);color:white"><th style="padding:8px 12px;text-align:left">Kolom</th><th style="padding:8px 12px;text-align:center">Keluarga</th><th style="padding:8px 12px;text-align:center">Jemaat</th><th style="padding:8px 12px;text-align:center">L</th><th style="padding:8px 12px;text-align:center">P</th></tr></thead><tbody id="pubRingkasanKolomBody"></tbody></table></div>
+        </div>
+
         <!-- Kategori Cards -->
         <div style="font-size:14px;font-weight:700;color:var(--primary);margin-bottom:10px">Kategori Jemaat</div>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:24px" id="pubDashKategori"></div>
@@ -1758,6 +1768,18 @@ input, select, textarea {
         <div class="stat-card"><div class="label">Sudah Sidi</div><div class="value" id="statSidi">-</div><div class="sub">jemaat sidi</div></div>
         <div class="stat-card" style="border-left:4px solid #f59e0b"><div class="label">🆕 Jemaat Baru</div><div class="value" id="statBaru">-</div><div class="sub">keluarga baru</div></div>
         <div class="stat-card" style="border-left:4px solid #10b981"><div class="label">✅ Jemaat Lama</div><div class="value" id="statLama">-</div><div class="sub">keluarga lama</div></div>
+      </div>
+
+      <!-- Ringkasan Per Kolom -->
+      <div class="page-header" style="margin-top:8px;margin-bottom:16px"><h1 style="font-size:20px">📋 Ringkasan Per Kolom</h1></div>
+      <div style="background:var(--bg-card);border-radius:12px;border:1px solid var(--border);padding:16px;margin-bottom:20px">
+        <div style="display:flex;gap:16px;margin-bottom:16px">
+          <div style="background:linear-gradient(135deg,#1a3a5c,#2d5a80);border-radius:10px;padding:16px 24px;text-align:center;color:white;min-width:160px">
+            <div style="font-size:12px;opacity:0.8;text-transform:uppercase;letter-spacing:0.5px">Total Keluarga</div>
+            <div style="font-size:36px;font-weight:700;font-family:'Playfair Display',serif" id="statTotalKeluarga">-</div>
+          </div>
+        </div>
+        <div class="table-wrapper"><table id="tabelRingkasanKolom"><thead><tr><th>Kolom</th><th>Jumlah Keluarga</th><th>Jumlah Jemaat</th><th>Laki-laki</th><th>Perempuan</th></tr></thead><tbody id="ringkasanKolomBody"></tbody></table></div>
       </div>
 
       <!-- Kategori Jemaat: Stat Cards -->

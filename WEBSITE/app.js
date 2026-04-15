@@ -1000,6 +1000,22 @@ async function loadDashboard() {
   document.getElementById('statBaru').textContent = jumlahBaru;
   document.getElementById('statLama').textContent = jumlahLama;
 
+  // Ringkasan per kolom
+  const koloms = [...new Set(data.map(j=>j.kolom).filter(Boolean))].sort((a,b)=>a-b);
+  const totalKeluarga = [...new Set(data.map(j=>j.nama_keluarga).filter(Boolean))].length;
+  const elTK = document.getElementById('statTotalKeluarga');
+  if (elTK) elTK.textContent = totalKeluarga;
+  const elRK = document.getElementById('ringkasanKolomBody');
+  if (elRK) {
+    elRK.innerHTML = koloms.map(k => {
+      const kData = data.filter(j=>j.kolom==k);
+      const kKeluarga = [...new Set(kData.map(j=>j.nama_keluarga).filter(Boolean))].length;
+      const kL = kData.filter(j=>j.lp==='L').length;
+      const kP = kData.filter(j=>j.lp==='P').length;
+      return `<tr><td style="font-weight:600">Kolom ${k}</td><td style="text-align:center">${kKeluarga}</td><td style="text-align:center">${kData.length}</td><td style="text-align:center">${kL}</td><td style="text-align:center">${kP}</td></tr>`;
+    }).join('') + `<tr style="font-weight:700;background:var(--bg-card);border-top:2px solid var(--primary)"><td>TOTAL</td><td style="text-align:center">${totalKeluarga}</td><td style="text-align:center">${total}</td><td style="text-align:center">${data.filter(j=>j.lp==='L').length}</td><td style="text-align:center">${data.filter(j=>j.lp==='P').length}</td></tr>`;
+  }
+
   // Kategori stat cards
   const kategoriList = ['bapak','ibu','pemuda','remaja','anak','lansia'];
   const katLabel = {bapak:'Bapak',ibu:'Ibu',pemuda:'Pemuda',remaja:'Remaja',anak:'Anak SM',lansia:'Lansia'};
@@ -3384,6 +3400,21 @@ async function loadPubDashboard() {
   _s('pubStatLansia', jmlLansia);
   _s('pubStatBaptis', jmlBaptis);
   _s('pubStatSidi', jmlSidi);
+
+  // Ringkasan per kolom
+  const koloms = [...new Set(data.map(j=>j.kolom).filter(Boolean))].sort((a,b)=>a-b);
+  const totalKeluarga = [...new Set(data.map(j=>j.nama_keluarga).filter(Boolean))].length;
+  _s('pubStatTotalKeluarga', totalKeluarga);
+  const elRK = document.getElementById('pubRingkasanKolomBody');
+  if (elRK) {
+    elRK.innerHTML = koloms.map(k => {
+      const kData = data.filter(j=>j.kolom==k);
+      const kKeluarga = [...new Set(kData.map(j=>j.nama_keluarga).filter(Boolean))].length;
+      const kL = kData.filter(j=>j.lp==='L').length;
+      const kP = kData.filter(j=>j.lp==='P').length;
+      return `<tr style="border-bottom:1px solid var(--border)"><td style="padding:7px 12px;font-weight:600">Kolom ${k}</td><td style="padding:7px 12px;text-align:center">${kKeluarga}</td><td style="padding:7px 12px;text-align:center">${kData.length}</td><td style="padding:7px 12px;text-align:center">${kL}</td><td style="padding:7px 12px;text-align:center">${kP}</td></tr>`;
+    }).join('') + `<tr style="font-weight:700;background:rgba(26,58,92,0.06);border-top:2px solid var(--primary)"><td style="padding:8px 12px">TOTAL</td><td style="padding:8px 12px;text-align:center">${totalKeluarga}</td><td style="padding:8px 12px;text-align:center">${total}</td><td style="padding:8px 12px;text-align:center">${jmlL}</td><td style="padding:8px 12px;text-align:center">${jmlP}</td></tr>`;
+  }
 
   // Kategori cards
   const kategoriList = ['bapak','ibu','pemuda','remaja','anak','lansia'];
