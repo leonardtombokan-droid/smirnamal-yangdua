@@ -816,7 +816,7 @@ async function loadJemaat() {
   let from = 0;
   const batchSize = 1000;
   while (true) {
-    let q = sb.from('jemaat').select('*').order('kolom').order('id').range(from, from + batchSize - 1);
+    let q = sbAdmin.from('jemaat').select('*').order('kolom').order('id').range(from, from + batchSize - 1);
     if (!isAdmin()) q = q.eq('kolom', currentUser.kolom);
     const { data, error } = await q;
     if (error) { showToast('Gagal memuat data', 'error'); return; }
@@ -960,7 +960,7 @@ async function loadDashboard() {
   let from = 0;
   const batchSize = 1000;
   while (true) {
-    let q = sb.from('jemaat').select('*').range(from, from + batchSize - 1);
+    let q = sbAdmin.from('jemaat').select('*').range(from, from + batchSize - 1);
     if (!isAdmin()) q = q.eq('kolom', currentUser.kolom);
     const { data, error } = await q;
     if (error) { console.error('Dashboard error:', error.message); showToast('Gagal memuat dashboard: ' + error.message, 'error'); return; }
