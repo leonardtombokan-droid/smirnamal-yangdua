@@ -960,7 +960,7 @@ async function loadDashboard() {
   let from = 0;
   const batchSize = 1000;
   while (true) {
-    let q = sbAdmin.from('jemaat').select('*').range(from, from + batchSize - 1);
+    let q = sbAdmin.from('jemaat').select('id,kolom,nama_lengkap,lp,baptis,sidi,lansia,bipra,status_jemaat,tanggal_lahir,tanggal_nikah,nama_keluarga,relasi,pekerjaan,alamat_rumah').range(from, from + batchSize - 1);
     if (!isAdmin()) q = q.eq('kolom', currentUser.kolom);
     const { data, error } = await q;
     if (error) { console.error('Dashboard error:', error.message); showToast('Gagal memuat dashboard: ' + error.message, 'error'); return; }
@@ -972,6 +972,11 @@ async function loadDashboard() {
   const data = allData;
   _dashData = data;
   if (!data) return;
+
+  console.log('Dashboard data count:', data.length);
+  console.log('Sample row baptis/sidi:', data[0]?.baptis, data[0]?.sidi);
+  console.log('Baptis count:', data.filter(j=>j.baptis==='sudah-baptis').length);
+  console.log('Sidi count:', data.filter(j=>j.sidi==='sudah-sidi').length);
 
   const total = data.length;
   const jumlahBaru = data.filter(j=>j.status_jemaat==='baru').length;
