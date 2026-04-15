@@ -24,7 +24,6 @@ function logAktivitas(aksi, detail) {
     console.warn('Gagal menyimpan log aktivitas:', e);
   }
 }
-
 let allJemaat = [];
 let filteredJemaat = [];
 let currentPage = 1;
@@ -1001,13 +1000,13 @@ async function loadDashboard() {
   document.getElementById('statLama').textContent = jumlahLama;
 
   // Ringkasan per kolom
-  const koloms = [...new Set(data.map(j=>j.kolom).filter(Boolean))].sort((a,b)=>a-b);
+  const koloms_rk = [...new Set(data.map(j=>j.kolom).filter(Boolean))].sort((a,b)=>a-b);
   const totalKeluarga = [...new Set(data.map(j=>j.nama_keluarga).filter(Boolean))].length;
   const elTK = document.getElementById('statTotalKeluarga');
   if (elTK) elTK.textContent = totalKeluarga;
   const elRK = document.getElementById('ringkasanKolomBody');
   if (elRK) {
-    elRK.innerHTML = koloms.map(k => {
+    elRK.innerHTML = koloms_rk.map(k => {
       const kData = data.filter(j=>j.kolom==k);
       const kKeluarga = [...new Set(kData.map(j=>j.nama_keluarga).filter(Boolean))].length;
       const kL = kData.filter(j=>j.lp==='L').length;
@@ -3402,18 +3401,18 @@ async function loadPubDashboard() {
   _s('pubStatSidi', jmlSidi);
 
   // Ringkasan per kolom
-  const koloms = [...new Set(data.map(j=>j.kolom).filter(Boolean))].sort((a,b)=>a-b);
-  const totalKeluarga = [...new Set(data.map(j=>j.nama_keluarga).filter(Boolean))].length;
-  _s('pubStatTotalKeluarga', totalKeluarga);
-  const elRK = document.getElementById('pubRingkasanKolomBody');
-  if (elRK) {
-    elRK.innerHTML = koloms.map(k => {
+  const koloms_pub = [...new Set(data.map(j=>j.kolom).filter(Boolean))].sort((a,b)=>a-b);
+  const totalKeluargaPub = [...new Set(data.map(j=>j.nama_keluarga).filter(Boolean))].length;
+  _s('pubStatTotalKeluarga', totalKeluargaPub);
+  const elRKpub = document.getElementById('pubRingkasanKolomBody');
+  if (elRKpub) {
+    elRKpub.innerHTML = koloms_pub.map(k => {
       const kData = data.filter(j=>j.kolom==k);
       const kKeluarga = [...new Set(kData.map(j=>j.nama_keluarga).filter(Boolean))].length;
       const kL = kData.filter(j=>j.lp==='L').length;
       const kP = kData.filter(j=>j.lp==='P').length;
       return `<tr style="border-bottom:1px solid var(--border)"><td style="padding:7px 12px;font-weight:600">Kolom ${k}</td><td style="padding:7px 12px;text-align:center">${kKeluarga}</td><td style="padding:7px 12px;text-align:center">${kData.length}</td><td style="padding:7px 12px;text-align:center">${kL}</td><td style="padding:7px 12px;text-align:center">${kP}</td></tr>`;
-    }).join('') + `<tr style="font-weight:700;background:rgba(26,58,92,0.06);border-top:2px solid var(--primary)"><td style="padding:8px 12px">TOTAL</td><td style="padding:8px 12px;text-align:center">${totalKeluarga}</td><td style="padding:8px 12px;text-align:center">${total}</td><td style="padding:8px 12px;text-align:center">${jmlL}</td><td style="padding:8px 12px;text-align:center">${jmlP}</td></tr>`;
+    }).join('') + `<tr style="font-weight:700;background:rgba(26,58,92,0.06);border-top:2px solid var(--primary)"><td style="padding:8px 12px">TOTAL</td><td style="padding:8px 12px;text-align:center">${totalKeluargaPub}</td><td style="padding:8px 12px;text-align:center">${total}</td><td style="padding:8px 12px;text-align:center">${jmlL}</td><td style="padding:8px 12px;text-align:center">${jmlP}</td></tr>`;
   }
 
   // Kategori cards
