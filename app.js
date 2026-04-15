@@ -526,7 +526,7 @@ function renderSubJemaat() {
     if (sub==='belum-sidi') return j.sidi!=='sudah-sidi';
     return true;
   }).filter(j=>(!q||(j.nama_lengkap||'').toLowerCase().includes(q))&&(!kolom||String(j.kolom)===String(kolom))&&(!lp||j.lp===lp))
-    .sort((a,b)=>(a.kolom||0)-(b.kolom||0)||(a.nama_lengkap||'').localeCompare(b.nama_lengkap||''));
+    .sort((a,b)=>(a.kolom||0)-(b.kolom||0)||(a.nama_keluarga||'').localeCompare(b.nama_keluarga||'')||(a.nama_lengkap||'').localeCompare(b.nama_lengkap||''));
   document.getElementById(cfg.subtitle).textContent=`${data.length} data ditemukan`;
   const pages=Math.ceil(data.length/subPerPage); if (subCurrentPage>pages) subCurrentPage=1;
   const start=(subCurrentPage-1)*subPerPage;
