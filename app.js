@@ -204,12 +204,18 @@ function renderPubUltah(data) {
   bulanIni.sort((a,b)=>a.bd-b.bd);
   mingguIni.sort((a,b)=>a.diff-b.diff);
 
-  const mkCard = (j,isToday) => `
-    <div class="ultah-card ${isToday?'today':''}">
+  const mkCard = (j,isToday) => {
+    const dLahir = parseTanggal(j.tanggal_lahir);
+    const usia = dLahir ? (today.getFullYear() - dLahir.getFullYear()) : null;
+    const usiaStr = usia !== null ? ` &nbsp;·&nbsp; ${usia} thn` : '';
+    const kelStr = j.nama_keluarga ? `<div class="uc-keluarga" style="font-size:11px;opacity:0.75;margin-top:2px">Kel. ${j.nama_keluarga}</div>` : '';
+    return `<div class="ultah-card ${isToday?'today':''}">
       <div class="uc-name">${isToday?'🎉 ':''}${j.nama_lengkap||'-'}</div>
-      <div class="uc-info">Kolom ${j.kolom||'-'} &nbsp;·&nbsp; ${j.lp==='L'?'👦':'👧'} ${j.lp||'-'}</div>
+      <div class="uc-info">Kolom ${j.kolom||'-'} &nbsp;·&nbsp; ${j.lp==='L'?'👦':'👧'} ${j.lp||'-'}${usiaStr}</div>
+      ${kelStr}
       <div class="uc-hari">${isToday?'🎂 Hari ini berulang tahun!' : j.diff>0?`${j.diff} hari lagi`:j.diff===0?'Hari ini!':'Sudah lewat'}</div>
     </div>`;
+  };
 
   const _elUH = document.getElementById('pubUltahHariList');
   const _elUM = document.getElementById('pubUltahMingguList');
@@ -223,16 +229,16 @@ function renderPubUltah(data) {
 }
 
 function renderDashUltah(hari, minggu, bulan) {
-  // Helper: buat tabel ulang tahun
   const mkTable = (list, emptyMsg) => {
     if (!list.length) return `<div style="color:var(--text-muted);font-size:13px;padding:8px 0">${emptyMsg}</div>`;
     return `<div class="table-wrapper"><table style="width:max-content;min-width:100%;border-collapse:collapse;font-size:13px">
       <thead>
         <tr style="background:var(--bg);border-bottom:2px solid var(--border)">
           <th style="padding:7px 10px;text-align:left;font-weight:600;color:var(--text-muted);width:28px">No</th>
-          <th style="padding:7px 10px;text-align:left;font-weight:600;color:var(--text-muted)">Nama Lengkap</th>
+          <th style="padding:7px 10px;text-align:left;font-weight:600;color:var(--text-muted)">Nama / Keluarga</th>
           <th style="padding:7px 10px;text-align:center;font-weight:600;color:var(--text-muted);width:40px">L/P</th>
           <th style="padding:7px 10px;text-align:left;font-weight:600;color:var(--text-muted);white-space:nowrap">Tanggal Lahir</th>
+          <th style="padding:7px 10px;text-align:center;font-weight:600;color:var(--text-muted)">Usia</th>
           <th style="padding:7px 10px;text-align:center;font-weight:600;color:var(--text-muted)">Kolom</th>
           <th style="padding:7px 10px;text-align:center;font-weight:600;color:var(--text-muted)">Keterangan</th>
         </tr>
@@ -243,11 +249,19 @@ function renderDashUltah(hari, minggu, bulan) {
           const ket = isToday
             ? '<span style="color:#dc2626;font-weight:700">🎉 Hari ini!</span>'
             : j.diff > 0 ? `${j.diff} hari lagi` : `${Math.abs(j.diff)} hari lalu`;
+          const dLahir = parseTanggal(j.tanggal_lahir);
+          const usia = dLahir ? (new Date().getFullYear() - dLahir.getFullYear()) : null;
+          const usiaHtml = usia !== null ? `<span style="font-weight:700;color:var(--primary)">${usia}</span> <span style="font-size:11px;color:var(--text-muted)">thn</span>` : '-';
+          const kelHtml = j.nama_keluarga ? `<div style="font-size:11px;color:var(--text-muted);margin-top:1px">Kel. ${j.nama_keluarga}</div>` : '';
           return `<tr style="border-bottom:1px solid var(--border);${isToday?'background:#fffbeb;':''}${i%2===0&&!isToday?'background:var(--bg);':''}">
             <td style="padding:7px 10px;color:var(--text-muted)">${i+1}</td>
-            <td style="padding:7px 10px;font-weight:${isToday?'700':'500'};white-space:nowrap">${isToday?'🎂 ':''}${j.nama_lengkap||'-'}</td>
+            <td style="padding:7px 10px">
+              <div style="font-weight:${isToday?'700':'500'};white-space:nowrap">${isToday?'🎂 ':''}${j.nama_lengkap||'-'}</div>
+              ${kelHtml}
+            </td>
             <td style="padding:7px 10px;text-align:center"><span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;background:${j.lp==='L'?'#dbeafe':'#fce7f3'};color:${j.lp==='L'?'#1e40af':'#9d174d'}">${j.lp||'-'}</span></td>
             <td style="padding:7px 10px;color:var(--text-muted);white-space:nowrap">${formatTanggal(j.tanggal_lahir)}</td>
+            <td style="padding:7px 10px;text-align:center">${usiaHtml}</td>
             <td style="padding:7px 10px;text-align:center"><span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;background:#e8f4f0;color:#2d6a4f">Kol.${j.kolom||'-'}</span></td>
             <td style="padding:7px 10px;text-align:center;white-space:nowrap">${ket}</td>
           </tr>`;
@@ -264,7 +278,9 @@ function renderDashUltah(hari, minggu, bulan) {
         <tr style="background:var(--bg);border-bottom:2px solid var(--border)">
           <th style="padding:7px 10px;text-align:left;font-weight:600;color:var(--text-muted);width:28px">No</th>
           <th style="padding:7px 10px;text-align:left;font-weight:600;color:var(--text-muted);white-space:nowrap">Nama Keluarga</th>
-          <th style="padding:7px 10px;text-align:center;font-weight:600;color:var(--text-muted);white-space:nowrap">Tahun Ke-</th>
+          <th style="padding:7px 10px;text-align:left;font-weight:600;color:var(--text-muted);white-space:nowrap">Suami</th>
+          <th style="padding:7px 10px;text-align:left;font-weight:600;color:var(--text-muted);white-space:nowrap">Istri</th>
+          <th style="padding:7px 10px;text-align:center;font-weight:600;color:var(--text-muted);white-space:nowrap">Usia Pernikahan</th>
           <th style="padding:7px 10px;text-align:center;font-weight:600;color:var(--text-muted)">Kolom</th>
           <th style="padding:7px 10px;text-align:center;font-weight:600;color:var(--text-muted)">Keterangan</th>
         </tr>
@@ -278,7 +294,9 @@ function renderDashUltah(hari, minggu, bulan) {
           return `<tr style="border-bottom:1px solid var(--border);${isToday?'background:#fff7ed;':''}${i%2===0&&!isToday?'background:var(--bg);':''}">
             <td style="padding:7px 10px;color:var(--text-muted)">${i+1}</td>
             <td style="padding:7px 10px;font-weight:${isToday?'700':'500'};white-space:nowrap">${isToday?'💍 ':''}${n.nama_keluarga||'-'}</td>
-            <td style="padding:7px 10px;text-align:center;font-weight:600;color:#c2410c;white-space:nowrap">${n.tahunKe} tahun</td>
+            <td style="padding:7px 10px;white-space:nowrap;color:var(--text-muted)">${n.suami||'-'}</td>
+            <td style="padding:7px 10px;white-space:nowrap;color:var(--text-muted)">${n.istri||'-'}</td>
+            <td style="padding:7px 10px;text-align:center;white-space:nowrap"><span style="font-weight:700;color:#c2410c">${n.tahunKe}</span> <span style="font-size:11px;color:var(--text-muted)">tahun</span></td>
             <td style="padding:7px 10px;text-align:center"><span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;background:#e8f4f0;color:#2d6a4f">Kol.${n.kolom||'-'}</span></td>
             <td style="padding:7px 10px;text-align:center;white-space:nowrap">${ket}</td>
           </tr>`;
@@ -314,7 +332,9 @@ function renderDashUltah(hari, minggu, bulan) {
     const thisYear = new Date(today.getFullYear(), bm, bd);
     const diff = Math.ceil((thisYear-today)/(1000*60*60*24));
     const tahunKe = today.getFullYear()-d.getFullYear()+(diff<=0?0:-1);
-    familyNikah[j.nama_keluarga] = {nama_keluarga:j.nama_keluarga,kolom:j.kolom,bm,bd,diff,tahunKe};
+    const suami = allJemaat.find(x=>x.nama_keluarga===j.nama_keluarga&&(x.relasi||'').toLowerCase()==='suami');
+    const istri = allJemaat.find(x=>x.nama_keluarga===j.nama_keluarga&&(x.relasi||'').toLowerCase()==='istri');
+    familyNikah[j.nama_keluarga] = {nama_keluarga:j.nama_keluarga,kolom:j.kolom,bm,bd,diff,tahunKe,suami:suami?.nama_lengkap||'-',istri:istri?.nama_lengkap||'-'};
   });
   const nikahList = Object.values(familyNikah);
   const nHari = nikahList.filter(n=>n.bm===todayM&&n.bd===todayD);
@@ -2896,16 +2916,25 @@ function showUltahModal(mode) {
     const d = parseTanggal(j.tanggal_lahir);
     const tgl = d ? `${String(d.getDate()).padStart(2,'0')} ${namaBulan[d.getMonth()]}` : '-';
     const diff = j.diff !== undefined ? (j.diff===0?'<span style="color:#dc2626;font-weight:700">Hari ini!</span>':`<span style="color:var(--success)">${j.diff} hari lagi</span>`) : '';
-    return `<tr>
-      <td style="padding:8px 10px;border-bottom:1px solid #e5e7eb">${tgl}</td>
-      <td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;font-weight:600">${j.nama_lengkap||'-'}</td>
-      <td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;color:var(--text-muted)">Kol. ${j.kolom||'-'}</td>
+    // Hitung usia (ulang tahun ke-berapa tahun ini)
+    const usia = d ? (today.getFullYear() - d.getFullYear()) : null;
+    const usiaLabel = usia !== null ? `<span style="font-weight:700;color:var(--primary)">${usia}</span> <span style="color:var(--text-muted);font-size:11px">tahun</span>` : '-';
+    // Nama keluarga
+    const keluarga = j.nama_keluarga ? `<span style="color:var(--text-muted);font-size:12px">Kel. ${j.nama_keluarga}</span>` : '<span style="color:#ccc;font-size:12px">-</span>';
+    return `<tr style="transition:background 0.15s" onmouseover="this.style.background='#f0f4ff'" onmouseout="this.style.background=''">
+      <td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;white-space:nowrap">${tgl}</td>
+      <td style="padding:8px 10px;border-bottom:1px solid #e5e7eb">
+        <div style="font-weight:600;line-height:1.3">${j.nama_lengkap||'-'}</div>
+        <div style="margin-top:2px">${keluarga}</div>
+      </td>
+      <td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;color:var(--text-muted);white-space:nowrap">Kol. ${j.kolom||'-'}</td>
+      <td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;text-align:center">${usiaLabel}</td>
       <td style="padding:8px 10px;border-bottom:1px solid #e5e7eb">${diff}</td>
     </tr>`;
-  }).join('') : '<tr><td colspan="4" style="padding:24px;text-align:center;color:var(--text-muted)">Tidak ada data</td></tr>';
+  }).join('') : '<tr><td colspan="5" style="padding:24px;text-align:center;color:var(--text-muted)">Tidak ada data</td></tr>';
 
   modal.innerHTML = `
-    <div style="background:white;border-radius:14px;width:100%;max-width:580px;max-height:85vh;overflow-y:auto;padding:24px;box-shadow:0 24px 64px rgba(0,0,0,0.3)">
+    <div style="background:white;border-radius:14px;width:100%;max-width:660px;max-height:85vh;overflow-y:auto;padding:24px;box-shadow:0 24px 64px rgba(0,0,0,0.3)">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
         <h2 style="font-family:'Playfair Display',serif;font-size:20px;color:var(--primary)">${title}</h2>
         <button onclick="document.getElementById('modalUltahPub').remove()" style="background:none;border:none;font-size:24px;cursor:pointer;color:var(--text-muted)">×</button>
@@ -2916,8 +2945,9 @@ function showUltahModal(mode) {
         <thead style="background:var(--primary);color:white">
           <tr>
             <th style="padding:8px 10px;text-align:left;white-space:nowrap">Tanggal</th>
-            <th style="padding:8px 10px;text-align:left;white-space:nowrap">Nama</th>
+            <th style="padding:8px 10px;text-align:left;white-space:nowrap">Nama / Keluarga</th>
             <th style="padding:8px 10px;text-align:left;white-space:nowrap">Kolom</th>
+            <th style="padding:8px 10px;text-align:center;white-space:nowrap">Usia</th>
             <th style="padding:8px 10px;text-align:left;white-space:nowrap">Keterangan</th>
           </tr>
         </thead>
