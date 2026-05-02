@@ -560,13 +560,14 @@ function renderSubJemaat() {
   const pages=Math.ceil(data.length/subPerPage); if (subCurrentPage>pages) subCurrentPage=1;
   const start=(subCurrentPage-1)*subPerPage;
   const tbody=document.getElementById(cfg.body);
-  if (!data.slice(start,start+subPerPage).length) { tbody.innerHTML='<tr><td colspan="12" style="text-align:center;padding:32px;color:var(--text-muted)">Tidak ada data</td></tr>'; document.getElementById(cfg.pag).innerHTML=''; return; }
+  if (!data.slice(start,start+subPerPage).length) { tbody.innerHTML='<tr><td colspan="13" style="text-align:center;padding:32px;color:var(--text-muted)">Tidak ada data</td></tr>'; document.getElementById(cfg.pag).innerHTML=''; return; }
   tbody.innerHTML=data.slice(start,start+subPerPage).map((j,i)=>`<tr>
     <td>${start+i+1}</td>
     <td><span class="badge badge-l" style="background:#e8f4f0;color:#2d6a4f">Kol ${j.kolom||'-'}</span></td>
     <td>${j.nama_keluarga||'-'}</td>
     <td><strong>${j.nama_lengkap||'-'}</strong></td>
     <td><span class="badge ${j.lp==='L'?'badge-l':'badge-p'}">${j.lp||'-'}</span></td>
+    <td style="font-size:12px;color:var(--text-muted);white-space:nowrap">${j.nik||'-'}</td>
     <td>${formatTanggal(j.tanggal_lahir)}</td>
     <td>${hitungUmur(j.tanggal_lahir)}</td>
     <td>${j.pekerjaan||'-'}</td>
@@ -873,6 +874,7 @@ function renderTable() {
       <td>${start+i+1}</td>
       <td><strong>${j.nama_lengkap||'-'}</strong>${j.kolom?`<br><small style="color:var(--text-muted)">Kolom ${j.kolom}</small>`:''}</td>
       <td><span class="badge ${j.lp==='L'?'badge-l':'badge-p'}">${j.lp||'-'}</span></td>
+      <td style="font-size:12px;color:var(--text-muted);white-space:nowrap">${j.nik||'-'}</td>
       <td>${formatTanggal(j.tanggal_lahir)}</td>
       <td>${hitungUmur(j.tanggal_lahir)}</td>
       <td>${j.pekerjaan||'-'}</td>
