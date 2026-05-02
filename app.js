@@ -677,7 +677,8 @@ function renderSubKeluarga() {
                   🏠 ${fam}
                   <br><small style="font-weight:400;color:var(--text-muted);font-size:11px">${rowspan} anggota</small>
                   ${canEdit?`<br><button class="btn btn-primary btn-sm" style="margin-top:7px;padding:3px 9px;font-size:11px" onclick="tambahAnggotaDariPerKeluarga('${_famEsc}',${_kolomFam},'${_noKK}','${_alamatE}','${_jemaatE}','${_alamatKolE}')">👤 + Anggota</button>
-                  <br><button class="btn btn-outline btn-sm" style="margin-top:4px;padding:3px 9px;font-size:11px;color:#7c3aed;border-color:#7c3aed" onclick="bukaModalPindahKeluarga('${_famEsc}',${_kolomFam})">🔀 Pindah Kolom</button>`:''}
+                  <br><button class="btn btn-outline btn-sm" style="margin-top:4px;padding:3px 9px;font-size:11px;color:#7c3aed;border-color:#7c3aed" onclick="bukaModalPindahKeluarga('${_famEsc}',${_kolomFam})">🔀 Pindah Kolom</button>
+                  <br><button class="btn btn-danger btn-sm" style="margin-top:4px;padding:3px 9px;font-size:11px" onclick="hapusKeluarga('${_famEsc}',${_kolomFam})">🗑️ Hapus Keluarga</button>`:''}
                 </td>`:'';
                 const borderTop=isFirst?'border-top:2px solid var(--accent-light)':'';
                 return `<tr style="${borderTop}">
@@ -978,6 +979,34 @@ async function deleteJemaat(id,nama) {
   loadJemaat(); loadDashboard();
   const _actPg2 = document.querySelector('.page.active');
   if (_actPg2 && _actPg2.id === 'page-per-keluarga') renderSubKeluarga();
+}
+
+async function hapusKeluarga(namaKeluarga, kolom) {
+  if (!isAdmin() && currentUser.kolom != kolom) {
+    alert("⛔ Anda hanya dapat menghapus data Kolom " + currentUser.kolom);
+    return;
+  }
+  const members = allJemaat.filter(j => j.nama_keluarga === namaKeluarga && j.kolom == kolom);
+  if (!members.length) { showToast("Keluarga tidak ditemukan", "error"); return; }
+  const listNama = members.map(m => "• " + (m.nama_lengkap||"-") + " (" + (m.relasi||"-") + ")").join("\n");
+  const confirmMsg = "⚠️ HAPUS SELURUH KELUARGA?\n\nKeluarga: " + namaKeluarga + "\nKolom: " + kolom + "\nJumlah anggota: " + members.length + "\n\n" + listNama + "\n\nSemua data anggota akan dihapus permanen. Lanjutkan?";
+  if (!confirm(confirmMsg)) return;
+  const konfirmasi2 = prompt("Ketik \"HAPUS\" untuk mengonfirmasi penghapusan keluarga \"" + namaKeluarga + "\":");
+  if (konfirmasi2 !== "HAPUS") { showToast("Penghapusan dibatalkan", "info"); return; }
+  try {
+    const ids = members.map(m => m.id);
+    const { error } = await sbAdmin.from("jemaat").delete().in("id", ids);
+    if (error) throw error;
+    allJemaat = allJemaat.filter(j => !(j.nama_keluarga === namaKeluarga && j.kolom == kolom));
+    filteredJemaat = [...allJemaat];
+    showToast("Keluarga \"" + namaKeluarga + "\" (" + members.length + " anggota) berhasil dihapus ✅", "success");
+    await catatLog("hapus", "Hapus keluarga: " + namaKeluarga + " Kolom " + kolom + " (" + members.length + " anggota)", null);
+    await loadJemaat();
+    await loadDashboard();
+    renderSubKeluarga();
+  } catch(e) {
+    showToast("Gagal menghapus keluarga: " + e.message, "error");
+  }
 }
 
 // ===== DASHBOARD =====
