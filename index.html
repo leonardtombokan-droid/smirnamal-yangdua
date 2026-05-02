@@ -342,13 +342,14 @@ body{font-family:'Source Sans 3',sans-serif;background:var(--bg);color:var(--tex
 .table-wrapper::-webkit-scrollbar { height: 8px; }
 .table-scroll-top::-webkit-scrollbar-track,
 .table-scroll-bottom::-webkit-scrollbar-track,
-.table-wrapper::-webkit-scrollbar-track { background: rgba(0,0,0,0.04); border-radius: 4px; }
+.table-wrapper::-webkit-scrollbar-track { background: rgba(0,0,0,0.08); border-radius: 4px; }
 .table-scroll-top::-webkit-scrollbar-thumb,
 .table-scroll-bottom::-webkit-scrollbar-thumb,
-.table-wrapper::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 4px; opacity: 0.7; }
+.table-wrapper::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 4px; }
 .table-scroll-top::-webkit-scrollbar-thumb:hover,
 .table-scroll-bottom::-webkit-scrollbar-thumb:hover,
 .table-wrapper::-webkit-scrollbar-thumb:hover { background: var(--primary-light); }
+.table-scroll-top, .table-scroll-bottom, .table-wrapper { overflow-x: scroll; }
 
 table { width:max-content; min-width:100%; border-collapse:collapse; font-size:14px; }
 td:last-child, th:last-child { min-width:100px; }
